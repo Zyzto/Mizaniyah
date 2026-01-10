@@ -78,17 +78,13 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
     });
 
     // Create new controllers based on current route
-    // Accounts: 2 tabs (Accounts, SMS Patterns)
+    // Accounts: 2 tabs (Accounts, SMS Templates)
     if (widget.location.startsWith(RoutePaths.accounts)) {
-      if (_accountsTabController == null) {
-        _accountsTabController = TabController(length: 2, vsync: this);
-      }
+      _accountsTabController ??= TabController(length: 2, vsync: this);
     }
     // Budget: 2 tabs (Budgets, Categories)
     if (widget.location.startsWith(RoutePaths.budget)) {
-      if (_budgetTabController == null) {
-        _budgetTabController = TabController(length: 2, vsync: this);
-      }
+      _budgetTabController ??= TabController(length: 2, vsync: this);
     }
   }
 
@@ -126,54 +122,57 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
       appBar: _buildAppBar(context, ref),
       body: Stack(
         children: [
-          // Main content with bottom padding for floating nav bar
+          // Main content with bottom padding for floating nav bar (only if nav bar is visible)
           Padding(
-            padding: const EdgeInsets.only(bottom: 100),
+            padding: EdgeInsets.only(
+              bottom: widget.location.startsWith(RoutePaths.smsTemplateBuilder) ? 0 : 100,
+            ),
             child: widget.location.startsWith(RoutePaths.accounts)
                 ? AccountsPage(tabController: _accountsTabController!)
                 : widget.location.startsWith(RoutePaths.budget)
                 ? BudgetsPage(tabController: _budgetTabController!)
                 : widget.child,
           ),
-          // Floating navigation bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 16,
-            child: FloatingNavBar(
-              selectedIndex: widget.selectedIndex,
-              onDestinationSelected: (index) {
-                switch (index) {
-                  case 0:
-                    context.go(RoutePaths.home);
-                    break;
-                  case 1:
-                    context.go(RoutePaths.accounts);
-                    break;
-                  case 2:
-                    context.go(RoutePaths.budget);
-                    break;
-                }
-              },
-              destinations: [
-                FloatingNavDestination(
-                  icon: Icons.home_outlined,
-                  selectedIcon: Icons.home,
-                  label: 'home'.tr(),
-                ),
-                FloatingNavDestination(
-                  icon: Icons.account_balance_wallet_outlined,
-                  selectedIcon: Icons.account_balance_wallet,
-                  label: 'accounts'.tr(),
-                ),
-                FloatingNavDestination(
-                  icon: Icons.account_balance_outlined,
-                  selectedIcon: Icons.account_balance,
-                  label: 'budget'.tr(),
-                ),
-              ],
+          // Floating navigation bar - hide during wizard flows
+          if (!widget.location.startsWith(RoutePaths.smsTemplateBuilder))
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 16,
+              child: FloatingNavBar(
+                selectedIndex: widget.selectedIndex,
+                onDestinationSelected: (index) {
+                  switch (index) {
+                    case 0:
+                      context.go(RoutePaths.home);
+                      break;
+                    case 1:
+                      context.go(RoutePaths.accounts);
+                      break;
+                    case 2:
+                      context.go(RoutePaths.budget);
+                      break;
+                  }
+                },
+                destinations: [
+                  FloatingNavDestination(
+                    icon: Icons.home_outlined,
+                    selectedIcon: Icons.home,
+                    label: 'home'.tr(),
+                  ),
+                  FloatingNavDestination(
+                    icon: Icons.account_balance_wallet_outlined,
+                    selectedIcon: Icons.account_balance_wallet,
+                    label: 'accounts'.tr(),
+                  ),
+                  FloatingNavDestination(
+                    icon: Icons.account_balance_outlined,
+                    selectedIcon: Icons.account_balance,
+                    label: 'budget'.tr(),
+                  ),
+                ],
+              ),
             ),
-          ),
           // Floating Action Button - positioned above nav bar
           // Only show when on transactions route and there are transactions
           if (showFab)

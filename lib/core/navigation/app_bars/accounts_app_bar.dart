@@ -25,8 +25,8 @@ PreferredSizeWidget buildAccountsAppBar(
           text: 'accounts'.tr(),
         ),
         Tab(
-          icon: const Icon(Icons.pattern_outlined),
-          text: 'sms_patterns'.tr(),
+          icon: const Icon(Icons.sms_outlined),
+          text: 'sms'.tr(),
         ),
       ],
     ) : null,

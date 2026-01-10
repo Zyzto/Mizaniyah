@@ -12,6 +12,7 @@ import 'package:mizaniyah/core/database/daos/card_dao.dart';
 import 'package:mizaniyah/core/database/daos/pending_sms_confirmation_dao.dart';
 import 'package:mizaniyah/core/database/daos/transaction_dao.dart';
 import 'package:mizaniyah/core/database/daos/category_dao.dart';
+import 'package:mizaniyah/core/database/daos/notification_history_dao.dart';
 import 'package:mizaniyah/core/services/category_seeder.dart';
 import 'package:mizaniyah/features/settings/providers/settings_framework_providers.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
@@ -122,6 +123,11 @@ void main() async {
       final pendingSmsDao = PendingSmsConfirmationDao(database);
       final transactionDao = TransactionDao(database);
       final categoryDao = CategoryDao(database);
+      final notificationHistoryDao = NotificationHistoryDao(database);
+
+      // Set notification history DAO in notification service
+      NotificationService.setNotificationHistoryDao(notificationHistoryDao);
+      Log.debug('Notification history DAO set');
 
       // Seed predefined categories
       final categorySeeder = CategorySeeder(categoryDao);

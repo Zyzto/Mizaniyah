@@ -8,7 +8,7 @@ class RoutePaths {
   
   // Legacy/alias for backward compatibility
   static const String transactions = '/home'; // Home defaults to transactions
-  static const String smsNotifications = '/accounts'; // SMS Patterns is in Accounts tab
+  static const String smsNotifications = '/accounts'; // SMS Templates is in Accounts tab
 
   // Transactions
   static const String transactionsAdd = '/transactions/add';
@@ -36,8 +36,8 @@ class RoutePaths {
 
   // Banks
   static const String banks = '/banks';
-  static const String smsPatternBuilder = '/banks/sms-pattern-builder';
-  static const String smsPatternPage = '/banks/sms-pattern';
+  static const String smsTemplateBuilder = '/banks/sms-template-builder';
+  static const String smsTemplatePage = '/banks/sms-template';
   static const String smsReader = '/banks/sms-reader';
   static const String smsTemplateForm = '/banks/sms-template-form';
   static String smsTemplateEdit(int id) => '/banks/sms-template/$id/edit';

@@ -7,7 +7,7 @@ import '../providers/account_providers.dart';
 import '../providers/card_providers.dart';
 import '../widgets/account_item.dart';
 import '../widgets/account_card.dart';
-import '../widgets/sms_patterns_tab.dart';
+import '../widgets/sms_templates_tab.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
 import '../../../core/widgets/error_state.dart';
@@ -33,7 +33,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       controller: widget.tabController,
       children: [
         _buildAccountsTab(),
-        const SmsPatternsTab(),
+        const SmsTemplatesTab(),
       ],
     );
   }

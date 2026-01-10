@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/navigation/route_paths.dart';
-import 'pages/sms_pattern_page.dart';
-import 'pages/sms_pattern_builder_wizard.dart';
+import 'pages/sms_template_page.dart';
+import 'pages/sms_template_builder_wizard.dart';
 import 'pages/sms_reader_page.dart';
 import 'pages/sms_template_form_page.dart';
 import '../../../core/database/providers/database_provider.dart';
@@ -13,16 +13,40 @@ import '../../../core/database/daos/sms_template_dao.dart';
 List<RouteBase> getBankRoutes() {
   return [
     GoRoute(
-      path: RoutePaths.smsPatternPage,
-      builder: (context, state) => const SmsPatternPage(),
+      path: RoutePaths.smsTemplatePage,
+      builder: (context, state) => const SmsTemplatePage(),
     ),
     GoRoute(
-      path: RoutePaths.smsPatternBuilder,
-      builder: (context, state) => const SmsPatternBuilderWizard(),
+      path: RoutePaths.smsTemplateBuilder,
+      builder: (context, state) {
+        String? decodedSms;
+        try {
+          final initialSms = state.uri.queryParameters['initialSms'];
+          if (initialSms != null) {
+            // Try to decode, but handle errors gracefully
+            try {
+              decodedSms = Uri.decodeComponent(initialSms);
+            } on ArgumentError {
+              // If decoding fails due to invalid encoding, use the original value
+              decodedSms = initialSms;
+            } catch (e) {
+              // For any other error, use the original value
+              decodedSms = initialSms;
+            }
+          }
+        } catch (e) {
+          // If URI parsing itself fails, just use null
+          decodedSms = null;
+        }
+        return SmsTemplateBuilderWizard(initialSms: decodedSms);
+      },
     ),
     GoRoute(
       path: RoutePaths.smsReader,
-      builder: (context, state) => const SmsReaderPage(),
+      builder: (context, state) => SmsReaderPage(
+        initialSender: state.uri.queryParameters['sender'],
+        initialBody: state.uri.queryParameters['body'],
+      ),
     ),
     GoRoute(
       path: RoutePaths.smsTemplateForm,
@@ -45,10 +69,7 @@ List<RouteBase> getBankRoutes() {
 class SmsTemplateFormPageLoader extends StatelessWidget {
   final int templateId;
 
-  const SmsTemplateFormPageLoader({
-    super.key,
-    required this.templateId,
-  });
+  const SmsTemplateFormPageLoader({super.key, required this.templateId});
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +88,7 @@ class SmsTemplateFormPageLoader extends StatelessWidget {
         final template = snapshot.data;
         if (template == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.go(RoutePaths.smsPatternPage);
+            context.go(RoutePaths.smsTemplatePage);
           });
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
+import 'package:drift/drift.dart' as drift;
+import '../database/daos/notification_history_dao.dart';
+import '../database/app_database.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin? _notifications = kIsWeb
@@ -84,6 +87,12 @@ class NotificationService {
     }
   }
 
+  static NotificationHistoryDao? _notificationHistoryDao;
+
+  static void setNotificationHistoryDao(NotificationHistoryDao dao) {
+    _notificationHistoryDao = dao;
+  }
+
   static void _onNotificationTapped(NotificationResponse response) {
     Log.info('Notification tapped: ${response.payload}');
 
@@ -94,11 +103,21 @@ class NotificationService {
         if (payload.startsWith('sms_confirmation:')) {
           final idStr = payload.substring('sms_confirmation:'.length);
           final id = int.tryParse(idStr);
+          
+          // Mark notification as tapped in history
+          // TODO: After running build_runner, implement notification lookup by confirmationId
+          if (id != null && _notificationHistoryDao != null) {
+            // Find notification by confirmationId and mark as tapped
+            // This requires querying by confirmationId first, then marking as tapped
+            // Implementation will be added after build_runner generates the code
+            Log.debug('Notification tap tracking ready (requires build_runner)');
+          }
+          
           if (id != null && _router != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               try {
-                _router!.go('/transactions/sms/$id');
-                Log.info('Navigated to SMS confirmation from notification tap');
+                _router!.go('/accounts'); // Navigate to SMS notifications page
+                Log.info('Navigated to SMS notifications from notification tap');
               } catch (e, stackTrace) {
                 Log.error(
                   'Failed to navigate using GoRouter',
@@ -190,13 +209,34 @@ class NotificationService {
         iOS: iosDetails,
       );
 
+      final title = 'Transaction Detected';
+      final body = '$storeName: ${amount.toStringAsFixed(2)} $currency';
+      final payload = 'sms_confirmation:$confirmationId';
+
       await _notifications!.show(
         confirmationId,
-        'Transaction Detected',
-        '$storeName: ${amount.toStringAsFixed(2)} $currency',
+        title,
+        body,
         details,
-        payload: 'sms_confirmation:$confirmationId',
+        payload: payload,
       );
+
+      // Track notification in history
+      if (_notificationHistoryDao != null) {
+        try {
+          await _notificationHistoryDao!.insertNotification(
+            NotificationHistoryCompanion.insert(
+              confirmationId: drift.Value(confirmationId),
+              notificationType: 'sms_confirmation',
+              title: title,
+              body: body,
+              payload: drift.Value(payload),
+            ),
+          );
+        } catch (e) {
+          Log.warning('Failed to track notification in history: $e');
+        }
+      }
 
       Log.info('SMS confirmation notification shown for id=$confirmationId');
     } catch (e, stackTrace) {

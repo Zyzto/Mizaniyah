@@ -11,7 +11,14 @@ import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
 
 class SmsReaderPage extends ConsumerStatefulWidget {
-  const SmsReaderPage({super.key});
+  final String? initialSender;
+  final String? initialBody;
+
+  const SmsReaderPage({
+    super.key,
+    this.initialSender,
+    this.initialBody,
+  });
 
   @override
   ConsumerState<SmsReaderPage> createState() => _SmsReaderPageState();
@@ -24,12 +31,21 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
   String _searchQuery = '';
   bool _showBankSmsOnly = false;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   int _loadedCount = 0;
   static const _pageSize = 50;
 
   @override
   void initState() {
     super.initState();
+    // Set initial search query if provided
+    if (widget.initialSender != null) {
+      _searchQuery = widget.initialSender!;
+      _searchController.text = widget.initialSender!;
+    } else if (widget.initialBody != null) {
+      _searchQuery = widget.initialBody!;
+      _searchController.text = widget.initialBody!;
+    }
     _loadSms();
     _scrollController.addListener(_onScroll);
   }
@@ -37,6 +53,7 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -123,6 +140,7 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
           child: Column(
             children: [
               TextField(
+                controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'search_sms_hint'.tr(),
                   prefixIcon: const Icon(Icons.search),
@@ -134,6 +152,7 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
                             HapticFeedback.lightImpact();
                             setState(() {
                               _searchQuery = '';
+                              _searchController.clear();
                             });
                           },
                         )
@@ -210,8 +229,8 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
                         sms: sms,
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          // Navigate to SMS Pattern page
-                          context.push('/banks/sms-pattern');
+                          // Navigate to SMS Template page
+                          context.push('/banks/sms-template');
                         },
                       );
                     },

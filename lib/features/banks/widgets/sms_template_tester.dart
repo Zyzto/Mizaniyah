@@ -4,22 +4,22 @@ import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import '../../../core/services/sms_parsing_service.dart';
 
-/// Widget for testing SMS patterns before saving templates
-class SmsPatternTester extends StatefulWidget {
+/// Widget for testing SMS templates before saving
+class SmsTemplateTester extends StatefulWidget {
   final String pattern;
   final String extractionRules;
 
-  const SmsPatternTester({
+  const SmsTemplateTester({
     super.key,
     required this.pattern,
     required this.extractionRules,
   });
 
   @override
-  State<SmsPatternTester> createState() => _SmsPatternTesterState();
+  State<SmsTemplateTester> createState() => _SmsTemplateTesterState();
 }
 
-class _SmsPatternTesterState extends State<SmsPatternTester> {
+class _SmsTemplateTesterState extends State<SmsTemplateTester> {
   final TextEditingController _testSmsController = TextEditingController();
   ParsedSmsData? _parsedData;
   String? _errorMessage;
@@ -93,7 +93,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'test_pattern_error'.tr(args: [e.toString()]);
+        _errorMessage = 'test_template_error'.tr(args: [e.toString()]);
       });
     }
   }
@@ -112,7 +112,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                 const Icon(Icons.bug_report, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'test_pattern'.tr(),
+                  'test_template'.tr(),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -140,7 +140,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                   _testPattern();
                 },
                 icon: const Icon(Icons.play_arrow),
-                label: Text('test_pattern'.tr()),
+                label: Text('test_template'.tr()),
               ),
             ),
             if (_errorMessage != null) ...[
@@ -191,7 +191,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'pattern_matched_successfully'.tr(),
+                          'template_matched_successfully'.tr(),
                           style: TextStyle(
                             color: Theme.of(
                               context,
@@ -237,7 +237,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'pattern_match_extraction_failed'.tr(),
+                        'template_match_extraction_failed'.tr(),
                         style: TextStyle(
                           color: Theme.of(
                             context,

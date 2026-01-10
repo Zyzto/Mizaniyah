@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'dart:convert';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/providers/dao_providers.dart';
@@ -11,8 +12,8 @@ import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/enhanced_text_form_field.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../../core/services/sms_parsing_service.dart';
-import '../widgets/sms_pattern_tester.dart';
-import 'sms_pattern_builder_wizard.dart';
+import '../widgets/sms_template_tester.dart';
+import 'sms_template_builder_wizard.dart';
 
 class SmsTemplateFormPage extends ConsumerStatefulWidget {
   final db.SmsTemplate? template;
@@ -26,12 +27,16 @@ class SmsTemplateFormPage extends ConsumerStatefulWidget {
 
 class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final _patternFieldKey = GlobalKey();
   late TextEditingController _senderPatternController;
   late TextEditingController _patternController;
   late TextEditingController _extractionRulesController;
   late TextEditingController _priorityController;
   bool _isActive = true;
   bool _isSaving = false;
+  bool _patternReceivedFromWizard = false;
+  bool _showSaveReminder = false;
 
   @override
   void initState() {
@@ -65,6 +70,7 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
     _patternController.dispose();
     _extractionRulesController.dispose();
     _priorityController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -79,8 +85,8 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
 
   Future<void> _launchPatternBuilder() async {
     HapticFeedback.lightImpact();
-    final result = await context.push<PatternBuilderResult>(
-      '/banks/sms-pattern-builder',
+    final result = await context.push<TemplateBuilderResult>(
+      '/banks/sms-template-builder',
     );
 
     if (result != null && mounted && context.mounted) {
@@ -88,11 +94,41 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
       setState(() {
         _patternController.text = result.pattern;
         _extractionRulesController.text = result.extractionRules;
+        _patternReceivedFromWizard = true;
+        _showSaveReminder = true;
       });
+      // Log to verify pattern was received
+      Log.info('[TemplateForm] Pattern received: ${result.pattern.length} chars');
+      Log.debug('[TemplateForm] Pattern: ${result.pattern.substring(0, result.pattern.length > 50 ? 50 : result.pattern.length)}...');
+      Log.debug('[TemplateForm] Extraction rules: ${result.extractionRules.length} chars');
+      
+      // Auto-scroll to pattern field after a short delay
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _patternFieldKey.currentContext != null) {
+          Scrollable.ensureVisible(
+            _patternFieldKey.currentContext!,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+      
+      // Show success message
       ErrorSnackbar.showSuccess(
         context,
-        'pattern_generated'.tr(),
+        'pattern_received_from_wizard'.tr(),
       );
+      
+      // Hide the banner after 5 seconds
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _patternReceivedFromWizard = false;
+          });
+        }
+      });
+    } else {
+      Log.warning('[TemplateForm] No pattern result returned from wizard');
     }
   }
 
@@ -167,6 +203,9 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
         if (!mounted || !context.mounted) return;
         HapticFeedback.heavyImpact();
         ErrorSnackbar.showSuccess(context, 'sms_template_created'.tr());
+        setState(() {
+          _showSaveReminder = false;
+        });
         context.pop();
       } else {
         // Update existing template
@@ -233,8 +272,94 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
       body: Form(
         key: _formKey,
         child: ListView(
+          controller: _scrollController,
           padding: const EdgeInsets.all(16),
           children: [
+            // Success banner when pattern is received from wizard
+            if (_patternReceivedFromWizard)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'pattern_received_from_wizard'.tr(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'click_save_to_create_template'.tr(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        setState(() {
+                          _patternReceivedFromWizard = false;
+                        });
+                      },
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ],
+                ),
+              ),
+            // Save reminder banner
+            if (_showSaveReminder && !_patternReceivedFromWizard && _patternController.text.trim().isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'click_save_to_create_template'.tr(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // Sender pattern (optional)
             EnhancedTextFormField(
               controller: _senderPatternController,
@@ -259,6 +384,7 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
               children: [
                 Expanded(
                   child: EnhancedTextFormField(
+                    key: _patternFieldKey,
                     controller: _patternController,
                     labelText: 'pattern_regex'.tr(),
                     hintText: 'pattern_regex_hint'.tr(),
@@ -334,7 +460,7 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
             // Pattern tester widget
             if (_patternController.text.trim().isNotEmpty &&
                 _extractionRulesController.text.trim().isNotEmpty)
-              SmsPatternTester(
+              SmsTemplateTester(
                 pattern: _patternController.text.trim(),
                 extractionRules: _extractionRulesController.text.trim(),
               ),

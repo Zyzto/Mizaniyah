@@ -6,6 +6,7 @@ import '../daos/category_dao.dart';
 import '../daos/budget_dao.dart';
 import '../daos/sms_template_dao.dart';
 import '../daos/pending_sms_confirmation_dao.dart';
+import '../daos/notification_history_dao.dart';
 import 'database_provider.dart';
 
 /// DAO providers - direct access to data layer without repository indirection
@@ -42,4 +43,9 @@ final smsTemplateDaoProvider = Provider<SmsTemplateDao>((ref) {
 final pendingSmsConfirmationDaoProvider = Provider<PendingSmsConfirmationDao>((ref) {
   final database = ref.watch(databaseProvider);
   return PendingSmsConfirmationDao(database);
+});
+
+final notificationHistoryDaoProvider = Provider<NotificationHistoryDao>((ref) {
+  final database = ref.watch(databaseProvider);
+  return NotificationHistoryDao(database);
 });

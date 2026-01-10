@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 /// Represents a text selection with a label
@@ -57,26 +58,74 @@ const List<String> _availableLabels = [
   'amount',
   'currency',
   'card_last4',
+  'intention',
+  'date',
+  'purchase_source',
 ];
 
-const Map<String, String> _labelDisplayNames = {
-  'store_name': 'Store Name',
-  'amount': 'Amount',
-  'currency': 'Currency',
-  'card_last4': 'Card (Last 4)',
-};
+// Helper function to get label display names with translations
+Map<String, String> _getLabelDisplayNames() {
+  return {
+    'store_name': 'label_store_name'.tr(),
+    'amount': 'label_amount'.tr(),
+    'currency': 'label_currency'.tr(),
+    'card_last4': 'label_card_last4'.tr(),
+    'intention': 'label_intention'.tr(),
+    'date': 'label_date'.tr(),
+    'purchase_source': 'label_purchase_source'.tr(),
+  };
+}
+
+// Helper function to get label descriptions
+Map<String, String> _getLabelDescriptions() {
+  return {
+    'store_name': 'label_store_name_description'.tr(),
+    'amount': 'label_amount_description'.tr(),
+    'currency': 'label_currency_description'.tr(),
+    'card_last4': 'label_card_last4_description'.tr(),
+    'intention': 'label_intention_description'.tr(),
+    'date': 'label_date_description'.tr(),
+    'purchase_source': 'label_purchase_source_description'.tr(),
+  };
+}
 
 const Map<String, Color> _labelColors = {
   'store_name': Color(0xFFFF9800), // Orange
   'amount': Color(0xFF9C27B0), // Purple
   'currency': Color(0xFF2196F3), // Blue
   'card_last4': Color(0xFFF44336), // Red
+  'intention': Color(0xFF4CAF50), // Green
+  'date': Color(0xFFFFC107), // Amber
+  'purchase_source': Color(0xFF00BCD4), // Cyan
 };
+
+// Helper function to get icons for labels
+IconData _getLabelIcon(String label) {
+  switch (label) {
+    case 'store_name':
+      return Icons.store;
+    case 'amount':
+      return Icons.attach_money;
+    case 'currency':
+      return Icons.currency_exchange;
+    case 'card_last4':
+      return Icons.credit_card;
+    case 'intention':
+      return Icons.category;
+    case 'date':
+      return Icons.calendar_today;
+    case 'purchase_source':
+      return Icons.point_of_sale;
+    default:
+      return Icons.label;
+  }
+}
 
 class _SmsTextSelectorState extends State<SmsTextSelector> {
   int? _selectionStart;
   int? _selectionEnd;
   SmsTextSelection? _editingSelection;
+
 
   @override
   void initState() {
@@ -156,11 +205,36 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
   }
 
   void _showLabelPicker(SmsTextSelection selection) {
+    final selectedText = widget.text.substring(
+      selection.start,
+      selection.end > widget.text.length ? widget.text.length : selection.end,
+    );
+    
     showDialog(
       context: context,
       builder: (context) => _LabelPickerDialog(
         selection: selection,
+        selectedText: selectedText,
         onLabelSelected: (label) {
+          // Validate label selection
+          final warning = _validateLabelSelection(label, selectedText);
+          if (warning != null) {
+            // Show warning but still allow selection
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(warning),
+                  duration: const Duration(seconds: 3),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              );
+            });
+          }
+          
           final updated = selection.copyWith(label: label);
           final newSelections = List<SmsTextSelection>.from(widget.selections);
           if (_editingSelection != null) {
@@ -176,6 +250,52 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         },
       ),
     );
+  }
+
+  // Validate label selection and provide warnings
+  String? _validateLabelSelection(String label, String selectedText) {
+    final trimmed = selectedText.trim();
+    
+    // For amount label, check if it's actually a valid number
+    if (label == 'amount') {
+      // Try to parse as a number
+      final cleaned = trimmed.replaceAll(',', '').replaceAll(' ', '');
+      final parsed = double.tryParse(cleaned);
+      
+      // If it's not a valid number at all, don't warn (might be text that will be extracted)
+      if (parsed == null) {
+        return null;
+      }
+      
+      // Only warn if it's exactly 4 digits with no decimal (likely card number, not amount)
+      // But allow amounts like 1000, 2000, etc. by checking if it's a round number >= 1000
+      if (RegExp(r'^\d{4}$').hasMatch(cleaned)) {
+        // If it's a round number >= 1000, it's likely a valid amount
+        if (parsed >= 1000 && parsed == parsed.roundToDouble()) {
+          return null; // Valid amount like 1000, 2000, etc.
+        }
+        // Otherwise, it might be a card number (like 2572)
+        return 'label_validation_card_number_warning'.tr();
+      }
+      
+      // Don't warn for small amounts - they might be valid (like 5.00, 100, etc.)
+      // Only warn if it's clearly not an amount (like a single digit or two digits that look like card parts)
+    }
+    
+    // Check if card_last4 label is used for a number that looks like an amount
+    if (label == 'card_last4') {
+      final cleaned = trimmed.replaceAll(',', '').replaceAll(' ', '');
+      // If it has a decimal point, it's likely an amount, not a card number
+      if (cleaned.contains('.') && double.tryParse(cleaned) != null) {
+        return 'label_validation_amount_warning'.tr();
+      }
+      // If it's more than 4 digits, it's likely an amount
+      if (RegExp(r'^\d+$').hasMatch(cleaned) && cleaned.length > 4) {
+        return 'label_validation_amount_warning'.tr();
+      }
+    }
+    
+    return null;
   }
 
   void _updateSelections(List<SmsTextSelection> selections) {
@@ -201,78 +321,214 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
     _showLabelPicker(selection);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Instructions and selection info
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
+  Widget _buildRequiredFieldsIndicator(BuildContext context) {
+    final hasStoreName = widget.selections.any((s) => s.label == 'store_name');
+    final hasAmount = widget.selections.any((s) => s.label == 'amount');
+    final allRequired = hasStoreName && hasAmount;
+    
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: allRequired
+            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: allRequired
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.error,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            allRequired ? Icons.check_circle : Icons.warning,
+            size: 16,
+            color: allRequired
+                ? Theme.of(context).colorScheme.onPrimaryContainer
+                : Theme.of(context).colorScheme.onErrorContainer,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Tap and drag to select text, then assign a label. Required: Store Name, Amount',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (widget.selections.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: widget.selections.map((selection) {
-                    return GestureDetector(
-                      onTap: () => _editSelection(selection),
-                      child: Chip(
-                        label: Text(
-                          '${_labelDisplayNames[selection.label] ?? selection.label} (${selection.captureGroup})',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        backgroundColor: _labelColors[selection.label]
-                            ?.withValues(alpha: 0.2),
-                        deleteIcon: const Icon(Icons.close, size: 16),
-                        onDeleted: () => _removeSelection(selection),
-                      ),
-                    );
-                  }).toList(),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                _buildRequiredFieldChip(
+                  context,
+                  'label_store_name'.tr(),
+                  hasStoreName,
+                  allRequired,
+                ),
+                _buildRequiredFieldChip(
+                  context,
+                  'label_amount'.tr(),
+                  hasAmount,
+                  allRequired,
                 ),
               ],
-            ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequiredFieldChip(
+    BuildContext context,
+    String label,
+    bool isSelected,
+    bool allRequired,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+          width: isSelected ? 2 : 1,
         ),
-        const SizedBox(height: 16),
-        // Selectable text area
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isSelected)
+            Icon(
+              Icons.check,
+              size: 14,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            )
+          else
+            Icon(
+              Icons.radio_button_unchecked,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Column(
+          children: [
+        // Instructions and selection info - now fills available space
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'step_2_selection_instructions'.tr(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Required fields indicator
+                  const SizedBox(height: 8),
+                  _buildRequiredFieldsIndicator(context),
+                  if (widget.selections.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: widget.selections.map((selection) {
+                        final displayNames = _getLabelDisplayNames();
+                        final color = _labelColors[selection.label] ?? Theme.of(context).colorScheme.primary;
+                        final selectedText = widget.text.substring(
+                          selection.start,
+                          selection.end > widget.text.length ? widget.text.length : selection.end,
+                        );
+                        // Truncate long text for preview
+                        final previewText = selectedText.length > 15 
+                            ? '${selectedText.substring(0, 15)}...' 
+                            : selectedText;
+                        return GestureDetector(
+                          onTap: () => _editSelection(selection),
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 48), // Minimum touch target
+                            margin: const EdgeInsets.only(right: 8, bottom: 4),
+                            child: Chip(
+                              label: Text(
+                                '${displayNames[selection.label] ?? selection.label}: "$previewText" (${selection.captureGroup})',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              backgroundColor: color.withValues(alpha: 0.2),
+                              side: BorderSide(color: color, width: 2), // Color border matching highlight
+                              deleteIcon: const Icon(Icons.close, size: 18),
+                              onDeleted: () => _removeSelection(selection),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ],
               ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Selectable text area - fills the background
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: SelectableText.rich(
               _buildTextSpan(),
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.5,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              // Better contrast and RTL support - auto-detect direction
               onSelectionChanged: (selection, cause) {
                 if (selection.start >= 0 &&
                     selection.end >= 0 &&
@@ -310,16 +566,23 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
             ),
           ),
         ),
-        // Create selection button
+      ],
+    ),
+        // Floating Create Selection button (FAB) - only show when text is actively selected
         if (_selectionStart != null &&
             _selectionEnd != null &&
             _selectionStart != _selectionEnd)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: ElevatedButton.icon(
-              onPressed: _createSelection,
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _createSelection();
+              },
               icon: const Icon(Icons.add),
               label: Text('create_selection'.tr()),
+              tooltip: 'create_selection'.tr(),
             ),
           ),
       ],
@@ -344,12 +607,16 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         spans.add(
           TextSpan(
             text: widget.text.substring(currentIndex, selection.start),
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 16, // Increased for better readability
+              height: 1.5,
+            ),
           ),
         );
       }
 
-      // Add selected text with highlight
+      // Add selected text with highlight - use background color instead of underline
       final selectedText = widget.text.substring(
         selection.start,
         selection.end,
@@ -359,11 +626,17 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         TextSpan(
           text: selectedText,
           style: TextStyle(
-            backgroundColor: color.withValues(alpha: 0.3),
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            decoration: TextDecoration.underline,
-            decorationColor: color,
+            backgroundColor: color.withValues(alpha: 0.4), // More visible background
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+            // Remove underline, use background highlight only
+            fontSize: 16, // Increased for better readability
+            height: 1.5,
+            // Better Arabic text rendering
+            fontFeatures: const [
+              FontFeature.enable('liga'),
+              FontFeature.enable('kern'),
+            ],
           ),
         ),
       );
@@ -376,7 +649,11 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
       spans.add(
         TextSpan(
           text: widget.text.substring(currentIndex),
-          style: const TextStyle(color: Colors.black87),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 15,
+            height: 1.5,
+          ),
         ),
       );
     }
@@ -388,44 +665,182 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
 /// Dialog for selecting a label
 class _LabelPickerDialog extends StatelessWidget {
   final SmsTextSelection selection;
+  final String selectedText;
   final ValueChanged<String> onLabelSelected;
 
   const _LabelPickerDialog({
     required this.selection,
+    required this.selectedText,
     required this.onLabelSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Select Label'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: _availableLabels.map((label) {
-          final displayName = _labelDisplayNames[label] ?? label;
-          final color = _labelColors[label] ?? Colors.blue;
-          final isSelected = selection.label == label;
-          return InkWell(
-            onTap: () {
-              onLabelSelected(label);
-              Navigator.of(context).pop();
-            },
-            child: ListTile(
-              leading: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.3),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color, width: 2),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = screenWidth > 600 ? 600.0 : screenWidth * 0.9;
+    // Ensure minWidth doesn't exceed maxWidth
+    final minWidth = maxWidth < 400 ? maxWidth : 400.0;
+    
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: minWidth,
+          maxWidth: maxWidth,
+          maxHeight: 600,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(
+                    'select_label'.tr(),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'close'.tr(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Show selected text preview
+            if (selectedText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.text_fields,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '"$selectedText"',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              title: Text(displayName),
-              subtitle: Text(label),
-              selected: isSelected,
+            if (selectedText.isNotEmpty) const Divider(height: 1),
+            // Content with better Arabic support
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _availableLabels.map((label) {
+                    final displayNames = _getLabelDisplayNames();
+                    final descriptions = _getLabelDescriptions();
+                    final displayName = displayNames[label] ?? label;
+                    final description = descriptions[label] ?? '';
+                    final color = _labelColors[label] ?? Colors.blue;
+                    final isSelected = selection.label == label;
+                    return InkWell(
+                      onTap: () {
+                        onLabelSelected(label);
+                        Navigator.of(context).pop();
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        color: isSelected
+                            ? color.withValues(alpha: 0.1)
+                            : Colors.transparent,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: color, width: 2.5),
+                              ),
+                              child: Icon(
+                                _getLabelIcon(label),
+                                color: color,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    displayName,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w600,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  if (description.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      description,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                        height: 1.3,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.check_circle,
+                                color: color,
+                                size: 24,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
-          );
-        }).toList(),
+          ],
+        ),
       ),
     );
   }

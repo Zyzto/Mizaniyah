@@ -3398,6 +3398,632 @@ class PendingSmsConfirmationsCompanion
   }
 }
 
+class $NotificationHistoryTable extends NotificationHistory
+    with TableInfo<$NotificationHistoryTable, NotificationHistoryData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotificationHistoryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _confirmationIdMeta = const VerificationMeta(
+    'confirmationId',
+  );
+  @override
+  late final GeneratedColumn<int> confirmationId = GeneratedColumn<int>(
+    'confirmation_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _transactionIdMeta = const VerificationMeta(
+    'transactionId',
+  );
+  @override
+  late final GeneratedColumn<int> transactionId = GeneratedColumn<int>(
+    'transaction_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notificationTypeMeta = const VerificationMeta(
+    'notificationType',
+  );
+  @override
+  late final GeneratedColumn<String> notificationType = GeneratedColumn<String>(
+    'notification_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _wasTappedMeta = const VerificationMeta(
+    'wasTapped',
+  );
+  @override
+  late final GeneratedColumn<bool> wasTapped = GeneratedColumn<bool>(
+    'was_tapped',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("was_tapped" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _wasDismissedMeta = const VerificationMeta(
+    'wasDismissed',
+  );
+  @override
+  late final GeneratedColumn<bool> wasDismissed = GeneratedColumn<bool>(
+    'was_dismissed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("was_dismissed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    confirmationId,
+    transactionId,
+    notificationType,
+    title,
+    body,
+    payload,
+    wasTapped,
+    wasDismissed,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notification_history';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotificationHistoryData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('confirmation_id')) {
+      context.handle(
+        _confirmationIdMeta,
+        confirmationId.isAcceptableOrUnknown(
+          data['confirmation_id']!,
+          _confirmationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('transaction_id')) {
+      context.handle(
+        _transactionIdMeta,
+        transactionId.isAcceptableOrUnknown(
+          data['transaction_id']!,
+          _transactionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notification_type')) {
+      context.handle(
+        _notificationTypeMeta,
+        notificationType.isAcceptableOrUnknown(
+          data['notification_type']!,
+          _notificationTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_notificationTypeMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    }
+    if (data.containsKey('was_tapped')) {
+      context.handle(
+        _wasTappedMeta,
+        wasTapped.isAcceptableOrUnknown(data['was_tapped']!, _wasTappedMeta),
+      );
+    }
+    if (data.containsKey('was_dismissed')) {
+      context.handle(
+        _wasDismissedMeta,
+        wasDismissed.isAcceptableOrUnknown(
+          data['was_dismissed']!,
+          _wasDismissedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotificationHistoryData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotificationHistoryData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      confirmationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}confirmation_id'],
+      ),
+      transactionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}transaction_id'],
+      ),
+      notificationType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notification_type'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      ),
+      wasTapped: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}was_tapped'],
+      )!,
+      wasDismissed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}was_dismissed'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $NotificationHistoryTable createAlias(String alias) {
+    return $NotificationHistoryTable(attachedDatabase, alias);
+  }
+}
+
+class NotificationHistoryData extends DataClass
+    implements Insertable<NotificationHistoryData> {
+  final int id;
+  final int? confirmationId;
+  final int? transactionId;
+  final String notificationType;
+  final String title;
+  final String body;
+  final String? payload;
+  final bool wasTapped;
+  final bool wasDismissed;
+  final DateTime createdAt;
+  const NotificationHistoryData({
+    required this.id,
+    this.confirmationId,
+    this.transactionId,
+    required this.notificationType,
+    required this.title,
+    required this.body,
+    this.payload,
+    required this.wasTapped,
+    required this.wasDismissed,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || confirmationId != null) {
+      map['confirmation_id'] = Variable<int>(confirmationId);
+    }
+    if (!nullToAbsent || transactionId != null) {
+      map['transaction_id'] = Variable<int>(transactionId);
+    }
+    map['notification_type'] = Variable<String>(notificationType);
+    map['title'] = Variable<String>(title);
+    map['body'] = Variable<String>(body);
+    if (!nullToAbsent || payload != null) {
+      map['payload'] = Variable<String>(payload);
+    }
+    map['was_tapped'] = Variable<bool>(wasTapped);
+    map['was_dismissed'] = Variable<bool>(wasDismissed);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  NotificationHistoryCompanion toCompanion(bool nullToAbsent) {
+    return NotificationHistoryCompanion(
+      id: Value(id),
+      confirmationId: confirmationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmationId),
+      transactionId: transactionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transactionId),
+      notificationType: Value(notificationType),
+      title: Value(title),
+      body: Value(body),
+      payload: payload == null && nullToAbsent
+          ? const Value.absent()
+          : Value(payload),
+      wasTapped: Value(wasTapped),
+      wasDismissed: Value(wasDismissed),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory NotificationHistoryData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotificationHistoryData(
+      id: serializer.fromJson<int>(json['id']),
+      confirmationId: serializer.fromJson<int?>(json['confirmationId']),
+      transactionId: serializer.fromJson<int?>(json['transactionId']),
+      notificationType: serializer.fromJson<String>(json['notificationType']),
+      title: serializer.fromJson<String>(json['title']),
+      body: serializer.fromJson<String>(json['body']),
+      payload: serializer.fromJson<String?>(json['payload']),
+      wasTapped: serializer.fromJson<bool>(json['wasTapped']),
+      wasDismissed: serializer.fromJson<bool>(json['wasDismissed']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'confirmationId': serializer.toJson<int?>(confirmationId),
+      'transactionId': serializer.toJson<int?>(transactionId),
+      'notificationType': serializer.toJson<String>(notificationType),
+      'title': serializer.toJson<String>(title),
+      'body': serializer.toJson<String>(body),
+      'payload': serializer.toJson<String?>(payload),
+      'wasTapped': serializer.toJson<bool>(wasTapped),
+      'wasDismissed': serializer.toJson<bool>(wasDismissed),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  NotificationHistoryData copyWith({
+    int? id,
+    Value<int?> confirmationId = const Value.absent(),
+    Value<int?> transactionId = const Value.absent(),
+    String? notificationType,
+    String? title,
+    String? body,
+    Value<String?> payload = const Value.absent(),
+    bool? wasTapped,
+    bool? wasDismissed,
+    DateTime? createdAt,
+  }) => NotificationHistoryData(
+    id: id ?? this.id,
+    confirmationId: confirmationId.present
+        ? confirmationId.value
+        : this.confirmationId,
+    transactionId: transactionId.present
+        ? transactionId.value
+        : this.transactionId,
+    notificationType: notificationType ?? this.notificationType,
+    title: title ?? this.title,
+    body: body ?? this.body,
+    payload: payload.present ? payload.value : this.payload,
+    wasTapped: wasTapped ?? this.wasTapped,
+    wasDismissed: wasDismissed ?? this.wasDismissed,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  NotificationHistoryData copyWithCompanion(NotificationHistoryCompanion data) {
+    return NotificationHistoryData(
+      id: data.id.present ? data.id.value : this.id,
+      confirmationId: data.confirmationId.present
+          ? data.confirmationId.value
+          : this.confirmationId,
+      transactionId: data.transactionId.present
+          ? data.transactionId.value
+          : this.transactionId,
+      notificationType: data.notificationType.present
+          ? data.notificationType.value
+          : this.notificationType,
+      title: data.title.present ? data.title.value : this.title,
+      body: data.body.present ? data.body.value : this.body,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      wasTapped: data.wasTapped.present ? data.wasTapped.value : this.wasTapped,
+      wasDismissed: data.wasDismissed.present
+          ? data.wasDismissed.value
+          : this.wasDismissed,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationHistoryData(')
+          ..write('id: $id, ')
+          ..write('confirmationId: $confirmationId, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('notificationType: $notificationType, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('payload: $payload, ')
+          ..write('wasTapped: $wasTapped, ')
+          ..write('wasDismissed: $wasDismissed, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    confirmationId,
+    transactionId,
+    notificationType,
+    title,
+    body,
+    payload,
+    wasTapped,
+    wasDismissed,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotificationHistoryData &&
+          other.id == this.id &&
+          other.confirmationId == this.confirmationId &&
+          other.transactionId == this.transactionId &&
+          other.notificationType == this.notificationType &&
+          other.title == this.title &&
+          other.body == this.body &&
+          other.payload == this.payload &&
+          other.wasTapped == this.wasTapped &&
+          other.wasDismissed == this.wasDismissed &&
+          other.createdAt == this.createdAt);
+}
+
+class NotificationHistoryCompanion
+    extends UpdateCompanion<NotificationHistoryData> {
+  final Value<int> id;
+  final Value<int?> confirmationId;
+  final Value<int?> transactionId;
+  final Value<String> notificationType;
+  final Value<String> title;
+  final Value<String> body;
+  final Value<String?> payload;
+  final Value<bool> wasTapped;
+  final Value<bool> wasDismissed;
+  final Value<DateTime> createdAt;
+  const NotificationHistoryCompanion({
+    this.id = const Value.absent(),
+    this.confirmationId = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    this.notificationType = const Value.absent(),
+    this.title = const Value.absent(),
+    this.body = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.wasTapped = const Value.absent(),
+    this.wasDismissed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  NotificationHistoryCompanion.insert({
+    this.id = const Value.absent(),
+    this.confirmationId = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    required String notificationType,
+    required String title,
+    required String body,
+    this.payload = const Value.absent(),
+    this.wasTapped = const Value.absent(),
+    this.wasDismissed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : notificationType = Value(notificationType),
+       title = Value(title),
+       body = Value(body);
+  static Insertable<NotificationHistoryData> custom({
+    Expression<int>? id,
+    Expression<int>? confirmationId,
+    Expression<int>? transactionId,
+    Expression<String>? notificationType,
+    Expression<String>? title,
+    Expression<String>? body,
+    Expression<String>? payload,
+    Expression<bool>? wasTapped,
+    Expression<bool>? wasDismissed,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (confirmationId != null) 'confirmation_id': confirmationId,
+      if (transactionId != null) 'transaction_id': transactionId,
+      if (notificationType != null) 'notification_type': notificationType,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (payload != null) 'payload': payload,
+      if (wasTapped != null) 'was_tapped': wasTapped,
+      if (wasDismissed != null) 'was_dismissed': wasDismissed,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  NotificationHistoryCompanion copyWith({
+    Value<int>? id,
+    Value<int?>? confirmationId,
+    Value<int?>? transactionId,
+    Value<String>? notificationType,
+    Value<String>? title,
+    Value<String>? body,
+    Value<String?>? payload,
+    Value<bool>? wasTapped,
+    Value<bool>? wasDismissed,
+    Value<DateTime>? createdAt,
+  }) {
+    return NotificationHistoryCompanion(
+      id: id ?? this.id,
+      confirmationId: confirmationId ?? this.confirmationId,
+      transactionId: transactionId ?? this.transactionId,
+      notificationType: notificationType ?? this.notificationType,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      payload: payload ?? this.payload,
+      wasTapped: wasTapped ?? this.wasTapped,
+      wasDismissed: wasDismissed ?? this.wasDismissed,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (confirmationId.present) {
+      map['confirmation_id'] = Variable<int>(confirmationId.value);
+    }
+    if (transactionId.present) {
+      map['transaction_id'] = Variable<int>(transactionId.value);
+    }
+    if (notificationType.present) {
+      map['notification_type'] = Variable<String>(notificationType.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (wasTapped.present) {
+      map['was_tapped'] = Variable<bool>(wasTapped.value);
+    }
+    if (wasDismissed.present) {
+      map['was_dismissed'] = Variable<bool>(wasDismissed.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotificationHistoryCompanion(')
+          ..write('id: $id, ')
+          ..write('confirmationId: $confirmationId, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('notificationType: $notificationType, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('payload: $payload, ')
+          ..write('wasTapped: $wasTapped, ')
+          ..write('wasDismissed: $wasDismissed, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3409,6 +4035,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SmsTemplatesTable smsTemplates = $SmsTemplatesTable(this);
   late final $PendingSmsConfirmationsTable pendingSmsConfirmations =
       $PendingSmsConfirmationsTable(this);
+  late final $NotificationHistoryTable notificationHistory =
+      $NotificationHistoryTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3421,6 +4049,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     transactions,
     smsTemplates,
     pendingSmsConfirmations,
+    notificationHistory,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -6211,6 +6840,319 @@ typedef $$PendingSmsConfirmationsTableProcessedTableManager =
       PendingSmsConfirmation,
       PrefetchHooks Function()
     >;
+typedef $$NotificationHistoryTableCreateCompanionBuilder =
+    NotificationHistoryCompanion Function({
+      Value<int> id,
+      Value<int?> confirmationId,
+      Value<int?> transactionId,
+      required String notificationType,
+      required String title,
+      required String body,
+      Value<String?> payload,
+      Value<bool> wasTapped,
+      Value<bool> wasDismissed,
+      Value<DateTime> createdAt,
+    });
+typedef $$NotificationHistoryTableUpdateCompanionBuilder =
+    NotificationHistoryCompanion Function({
+      Value<int> id,
+      Value<int?> confirmationId,
+      Value<int?> transactionId,
+      Value<String> notificationType,
+      Value<String> title,
+      Value<String> body,
+      Value<String?> payload,
+      Value<bool> wasTapped,
+      Value<bool> wasDismissed,
+      Value<DateTime> createdAt,
+    });
+
+class $$NotificationHistoryTableFilterComposer
+    extends Composer<_$AppDatabase, $NotificationHistoryTable> {
+  $$NotificationHistoryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get confirmationId => $composableBuilder(
+    column: $table.confirmationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notificationType => $composableBuilder(
+    column: $table.notificationType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get wasTapped => $composableBuilder(
+    column: $table.wasTapped,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get wasDismissed => $composableBuilder(
+    column: $table.wasDismissed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotificationHistoryTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotificationHistoryTable> {
+  $$NotificationHistoryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get confirmationId => $composableBuilder(
+    column: $table.confirmationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notificationType => $composableBuilder(
+    column: $table.notificationType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get wasTapped => $composableBuilder(
+    column: $table.wasTapped,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get wasDismissed => $composableBuilder(
+    column: $table.wasDismissed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotificationHistoryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotificationHistoryTable> {
+  $$NotificationHistoryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get confirmationId => $composableBuilder(
+    column: $table.confirmationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notificationType => $composableBuilder(
+    column: $table.notificationType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<bool> get wasTapped =>
+      $composableBuilder(column: $table.wasTapped, builder: (column) => column);
+
+  GeneratedColumn<bool> get wasDismissed => $composableBuilder(
+    column: $table.wasDismissed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$NotificationHistoryTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotificationHistoryTable,
+          NotificationHistoryData,
+          $$NotificationHistoryTableFilterComposer,
+          $$NotificationHistoryTableOrderingComposer,
+          $$NotificationHistoryTableAnnotationComposer,
+          $$NotificationHistoryTableCreateCompanionBuilder,
+          $$NotificationHistoryTableUpdateCompanionBuilder,
+          (
+            NotificationHistoryData,
+            BaseReferences<
+              _$AppDatabase,
+              $NotificationHistoryTable,
+              NotificationHistoryData
+            >,
+          ),
+          NotificationHistoryData,
+          PrefetchHooks Function()
+        > {
+  $$NotificationHistoryTableTableManager(
+    _$AppDatabase db,
+    $NotificationHistoryTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotificationHistoryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotificationHistoryTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$NotificationHistoryTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> confirmationId = const Value.absent(),
+                Value<int?> transactionId = const Value.absent(),
+                Value<String> notificationType = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<String?> payload = const Value.absent(),
+                Value<bool> wasTapped = const Value.absent(),
+                Value<bool> wasDismissed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => NotificationHistoryCompanion(
+                id: id,
+                confirmationId: confirmationId,
+                transactionId: transactionId,
+                notificationType: notificationType,
+                title: title,
+                body: body,
+                payload: payload,
+                wasTapped: wasTapped,
+                wasDismissed: wasDismissed,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> confirmationId = const Value.absent(),
+                Value<int?> transactionId = const Value.absent(),
+                required String notificationType,
+                required String title,
+                required String body,
+                Value<String?> payload = const Value.absent(),
+                Value<bool> wasTapped = const Value.absent(),
+                Value<bool> wasDismissed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => NotificationHistoryCompanion.insert(
+                id: id,
+                confirmationId: confirmationId,
+                transactionId: transactionId,
+                notificationType: notificationType,
+                title: title,
+                body: body,
+                payload: payload,
+                wasTapped: wasTapped,
+                wasDismissed: wasDismissed,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotificationHistoryTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotificationHistoryTable,
+      NotificationHistoryData,
+      $$NotificationHistoryTableFilterComposer,
+      $$NotificationHistoryTableOrderingComposer,
+      $$NotificationHistoryTableAnnotationComposer,
+      $$NotificationHistoryTableCreateCompanionBuilder,
+      $$NotificationHistoryTableUpdateCompanionBuilder,
+      (
+        NotificationHistoryData,
+        BaseReferences<
+          _$AppDatabase,
+          $NotificationHistoryTable,
+          NotificationHistoryData
+        >,
+      ),
+      NotificationHistoryData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6232,4 +7174,6 @@ class $AppDatabaseManager {
         _db,
         _db.pendingSmsConfirmations,
       );
+  $$NotificationHistoryTableTableManager get notificationHistory =>
+      $$NotificationHistoryTableTableManager(_db, _db.notificationHistory);
 }

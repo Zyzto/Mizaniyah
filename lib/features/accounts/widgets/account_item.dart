@@ -47,7 +47,7 @@ class _AccountItemState extends ConsumerState<AccountItem> {
                     : 'cards_count'.tr(args: [cards.length.toString()]),
               ),
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,

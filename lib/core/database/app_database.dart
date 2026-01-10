@@ -6,6 +6,7 @@ import 'models/categories.dart';
 import 'models/budgets.dart';
 import 'models/sms_templates.dart';
 import 'models/pending_sms_confirmations.dart';
+import 'models/notification_history.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'database_connection.dart';
 
@@ -20,6 +21,7 @@ part 'app_database.g.dart';
     Budgets,
     SmsTemplates,
     PendingSmsConfirmations,
+    NotificationHistory,
   ],
 )
 class AppDatabase extends _$AppDatabase with Loggable {
@@ -28,7 +30,7 @@ class AppDatabase extends _$AppDatabase with Loggable {
   }
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -216,38 +218,116 @@ class AppDatabase extends _$AppDatabase with Loggable {
         if (from < 7) {
           logInfo('Adding sortOrder column to categories table in version 7');
           try {
-            // Add the sortOrder column with default value
-            await m.database.customStatement(
-              'ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
-            );
-            // Set sortOrder for existing categories based on their creation order
-            await m.database.customStatement(
-              'UPDATE categories SET sort_order = (SELECT COUNT(*) FROM categories c2 WHERE c2.created_at <= categories.created_at) - 1',
-            );
-            logInfo('sortOrder column added successfully');
+            // Check if column already exists
+            final result = await m.database.customSelect(
+              "PRAGMA table_info(categories)",
+            ).get();
+            final hasSortOrder = result.any((row) => row.data['name'] == 'sort_order');
+            
+            if (!hasSortOrder) {
+              // Add the sortOrder column with default value
+              await m.database.customStatement(
+                'ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
+              );
+              // Set sortOrder for existing categories based on their creation order
+              await m.database.customStatement(
+                'UPDATE categories SET sort_order = (SELECT COUNT(*) FROM categories c2 WHERE c2.created_at <= categories.created_at) - 1',
+              );
+              logInfo('sortOrder column added successfully');
+            } else {
+              logInfo('sortOrder column already exists, skipping');
+            }
           } catch (e, stackTrace) {
-            logError(
-              'Failed to add sortOrder column',
-              error: e,
-              stackTrace: stackTrace,
-            );
-            rethrow;
+            // Check if it's a duplicate column error
+            if (e.toString().contains('duplicate column') || 
+                e.toString().contains('sort_order')) {
+              logWarning(
+                'sortOrder column already exists, continuing migration',
+                error: e,
+              );
+              // Continue migration - column already exists
+            } else {
+              logError(
+                'Failed to add sortOrder column',
+                error: e,
+                stackTrace: stackTrace,
+              );
+              rethrow;
+            }
           }
         }
         // Add Accounts table and accountId to Cards in version 8
         if (from < 8) {
           logInfo('Adding Accounts table and accountId to Cards in version 8');
           try {
-            // Create Accounts table
-            await m.createTable(accounts);
-            // Add accountId column to Cards table (nullable for backward compatibility)
-            await m.database.customStatement(
-              'ALTER TABLE cards ADD COLUMN account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL',
-            );
-            logInfo('Accounts table and accountId column added successfully');
+            // Create Accounts table (only if it doesn't exist)
+            try {
+              await m.createTable(accounts);
+              logInfo('Accounts table created');
+            } catch (e) {
+              if (e.toString().contains('already exists') || 
+                  e.toString().contains('duplicate')) {
+                logInfo('Accounts table already exists, skipping');
+              } else {
+                rethrow;
+              }
+            }
+            
+            // Check if account_id column already exists
+            try {
+              final result = await m.database.customSelect(
+                "PRAGMA table_info(cards)",
+              ).get();
+              final hasAccountId = result.any((row) => row.data['name'] == 'account_id');
+              
+              if (!hasAccountId) {
+                // Add accountId column to Cards table (nullable for backward compatibility)
+                await m.database.customStatement(
+                  'ALTER TABLE cards ADD COLUMN account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL',
+                );
+                logInfo('accountId column added successfully');
+              } else {
+                logInfo('accountId column already exists, skipping');
+              }
+            } catch (e) {
+              // Check if it's a duplicate column error
+              if (e.toString().contains('duplicate column') || 
+                  e.toString().contains('account_id')) {
+                logWarning('accountId column already exists, continuing migration');
+                // Continue migration - column already exists
+              } else {
+                rethrow;
+              }
+            }
+            
+            logInfo('Accounts table and accountId column migration completed');
           } catch (e, stackTrace) {
             logError(
               'Failed to add Accounts table',
+              error: e,
+              stackTrace: stackTrace,
+            );
+            rethrow;
+          }
+        }
+        // Add NotificationHistory table in version 9
+        if (from < 9) {
+          logInfo('Adding NotificationHistory table in version 9');
+          try {
+            await m.createTable(notificationHistory);
+            // Create index for faster queries
+            await m.database.customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_notification_history_created_at '
+              'ON notification_history(created_at)',
+            );
+            await m.database.customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_notification_history_type '
+              'ON notification_history(notification_type)',
+            );
+            logInfo('NotificationHistory table added successfully');
+          } catch (e, stackTrace) {
+            logError(
+              'Failed to add NotificationHistory table',
               error: e,
               stackTrace: stackTrace,
             );

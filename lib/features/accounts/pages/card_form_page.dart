@@ -78,7 +78,7 @@ class _CardFormPageState extends ConsumerState<CardFormPage> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<int?>(
-                        value: _selectedAccountId,
+                        initialValue: _selectedAccountId,
                         decoration: InputDecoration(
                           hintText: 'select_account_optional'.tr(),
                           border: const OutlineInputBorder(),
@@ -106,7 +106,7 @@ class _CardFormPageState extends ConsumerState<CardFormPage> {
                   );
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               ),
             // Card name
             EnhancedTextFormField(

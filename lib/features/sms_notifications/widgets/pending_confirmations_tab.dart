@@ -25,6 +25,9 @@ class PendingConfirmationsTab extends ConsumerStatefulWidget {
 
 class _PendingConfirmationsTabState
     extends ConsumerState<PendingConfirmationsTab> {
+  final Set<int> _selectedIds = {};
+  bool _isSelectionMode = false;
+
   @override
   Widget build(BuildContext context) {
     final database = ref.watch(databaseProvider);
@@ -34,7 +37,7 @@ class _PendingConfirmationsTabState
       future: pendingSmsDao.getNonExpiredConfirmations(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SkeletonList(itemCount: 3, itemHeight: 120);
+          return const SkeletonList(itemCount: 3, itemHeight: 160);
         }
 
         if (snapshot.hasError) {
@@ -57,25 +60,151 @@ class _PendingConfirmationsTabState
           );
         }
 
-        return ListView.builder(
-          itemCount: confirmations.length,
-          itemBuilder: (context, index) {
-            final confirmation = confirmations[index];
-            return _PendingConfirmationCard(
-              confirmation: confirmation,
-              onApprove: () => _approveConfirmation(confirmation),
-              onReject: () => _rejectConfirmation(confirmation),
-            );
-          },
+        return Column(
+          children: [
+            if (_isSelectionMode) _buildSelectionBar(confirmations),
+            Expanded(
+              child: ListView.builder(
+                itemCount: confirmations.length,
+                itemBuilder: (context, index) {
+                  final confirmation = confirmations[index];
+                  return _PendingConfirmationCard(
+                    confirmation: confirmation,
+                    isSelected: _selectedIds.contains(confirmation.id),
+                    isSelectionMode: _isSelectionMode,
+                    onApprove: () => _approveConfirmation(confirmation),
+                    onReject: () => _rejectConfirmation(confirmation),
+                    onEdit: () => _editConfirmation(confirmation),
+                    onViewSms: () => _viewSms(confirmation),
+                    onToggleSelection: () {
+                      setState(() {
+                        if (_selectedIds.contains(confirmation.id)) {
+                          _selectedIds.remove(confirmation.id);
+                        } else {
+                          _selectedIds.add(confirmation.id);
+                        }
+                        if (_selectedIds.isEmpty) {
+                          _isSelectionMode = false;
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
-  Future<void> _approveConfirmation(
-    db.PendingSmsConfirmation confirmation,
-  ) async {
+  Widget _buildSelectionBar(List<db.PendingSmsConfirmation> confirmations) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'selected_count'.tr(args: [_selectedIds.length.toString()]),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: _selectedIds.length == confirmations.length
+                ? () {
+                    setState(() {
+                      _selectedIds.clear();
+                    });
+                  }
+                : () {
+                    setState(() {
+                      _selectedIds.addAll(
+                        confirmations.map((c) => c.id).toSet(),
+                      );
+                    });
+                  },
+            icon: Icon(
+              _selectedIds.length == confirmations.length
+                  ? Icons.deselect
+                  : Icons.select_all,
+            ),
+            label: Text(
+              _selectedIds.length == confirmations.length
+                  ? 'deselect_all'.tr()
+                  : 'select_all'.tr(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.icon(
+            onPressed: _selectedIds.isEmpty
+                ? null
+                : () => _bulkApprove(),
+            icon: const Icon(Icons.check),
+            label: Text('approve_selected'.tr()),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              setState(() {
+                _isSelectionMode = false;
+                _selectedIds.clear();
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _bulkApprove() async {
+    if (_selectedIds.isEmpty) return;
+
     HapticFeedback.mediumImpact();
+    final database = ref.read(databaseProvider);
+    final pendingSmsDao = PendingSmsConfirmationDao(database);
+    final confirmations = await pendingSmsDao.getAllPendingConfirmations();
+    final toApprove = confirmations
+        .where((c) => _selectedIds.contains(c.id))
+        .toList();
+
+    int successCount = 0;
+    for (final confirmation in toApprove) {
+      try {
+        await _approveConfirmation(confirmation, silent: true);
+        successCount++;
+      } catch (e) {
+        // Continue with others
+      }
+    }
+
+    setState(() {
+      _selectedIds.clear();
+      _isSelectionMode = false;
+    });
+
+    if (!mounted || !context.mounted) return;
+    HapticFeedback.heavyImpact();
+    ErrorSnackbar.showSuccess(
+      context,
+      'bulk_approved'.tr(args: [successCount.toString()]),
+    );
+  }
+
+  Future<void> _approveConfirmation(
+    db.PendingSmsConfirmation confirmation, {
+    bool silent = false,
+  }) async {
+    if (!silent) HapticFeedback.mediumImpact();
     try {
       final database = ref.read(databaseProvider);
       final transactionDao = TransactionDao(database);
@@ -92,11 +221,13 @@ class _PendingConfirmationsTabState
 
       if (storeName == null || amount == null) {
         if (!mounted || !context.mounted) return;
-        HapticFeedback.heavyImpact();
-        ErrorSnackbar.show(
-          context,
-          'invalid_confirmation_data'.tr(),
-        );
+        if (!silent) {
+          HapticFeedback.heavyImpact();
+          ErrorSnackbar.show(
+            context,
+            'invalid_confirmation_data'.tr(),
+          );
+        }
         return;
       }
 
@@ -125,19 +256,25 @@ class _PendingConfirmationsTabState
       await pendingSmsDao.deleteConfirmation(confirmation.id);
 
       if (!mounted || !context.mounted) return;
-      HapticFeedback.heavyImpact();
-      ErrorSnackbar.showSuccess(
-        context,
-        'transaction_created'.tr(),
-      );
-      setState(() {}); // Refresh the list
+      if (!silent) {
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.showSuccess(
+          context,
+          'transaction_created'.tr(),
+        );
+        setState(() {}); // Refresh the list
+      }
     } catch (e) {
       if (!mounted || !context.mounted) return;
-      HapticFeedback.heavyImpact();
-      ErrorSnackbar.show(
-        context,
-        'approve_confirmation_failed'.tr(args: [e.toString()]),
-      );
+      if (!silent) {
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.show(
+          context,
+          'approve_confirmation_failed'.tr(args: [e.toString()]),
+        );
+      } else {
+        rethrow;
+      }
     }
   }
 
@@ -163,81 +300,385 @@ class _PendingConfirmationsTabState
       );
     }
   }
+
+  void _editConfirmation(db.PendingSmsConfirmation confirmation) {
+    // TODO: Implement edit dialog
+    HapticFeedback.lightImpact();
+    ErrorSnackbar.show(context, 'edit_feature_coming_soon'.tr());
+  }
+
+  void _viewSms(db.PendingSmsConfirmation confirmation) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _SmsViewSheet(confirmation: confirmation),
+    );
+  }
 }
 
-class _PendingConfirmationCard extends StatelessWidget {
+class _PendingConfirmationCard extends StatefulWidget {
   final db.PendingSmsConfirmation confirmation;
+  final bool isSelected;
+  final bool isSelectionMode;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+  final VoidCallback onEdit;
+  final VoidCallback onViewSms;
+  final VoidCallback onToggleSelection;
 
   const _PendingConfirmationCard({
     required this.confirmation,
+    required this.isSelected,
+    required this.isSelectionMode,
     required this.onApprove,
     required this.onReject,
+    required this.onEdit,
+    required this.onViewSms,
+    required this.onToggleSelection,
   });
+
+  @override
+  State<_PendingConfirmationCard> createState() =>
+      _PendingConfirmationCardState();
+}
+
+class _PendingConfirmationCardState extends State<_PendingConfirmationCard> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final parsedDataJson =
-        jsonDecode(confirmation.parsedData) as Map<String, dynamic>;
+        jsonDecode(widget.confirmation.parsedData) as Map<String, dynamic>;
     final storeName = parsedDataJson['store_name'] as String? ?? 'unknown'.tr();
     final amount = parsedDataJson['amount'] as double? ?? 0.0;
     final currency = parsedDataJson['currency'] as String? ?? 'USD';
     final confidence = parsedDataJson['confidence'] as double?;
+    final cardLast4 = parsedDataJson['card_last4'] as String?;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final confidenceColor = _getConfidenceColor(confidence, colorScheme);
+    final confidenceLevel = _getConfidenceLevel(confidence);
+
+    return Dismissible(
+      key: Key('confirmation_${widget.confirmation.id}'),
+      direction: DismissDirection.horizontal,
+      background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        color: colorScheme.errorContainer,
+        child: Row(
           children: [
+            Icon(Icons.close, color: colorScheme.onErrorContainer),
+            const SizedBox(width: 8),
             Text(
-              storeName,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              CurrencyFormatter.format(amount, currency),
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (confidence != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'confidence_label'.tr(args: [
-                  (confidence * 100).toStringAsFixed(0),
-                ]),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    onReject();
-                  },
-                  child: Text('reject'.tr()),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    onApprove();
-                  },
-                  child: Text('approve'.tr()),
-                ),
-              ],
+              'reject'.tr(),
+              style: TextStyle(color: colorScheme.onErrorContainer),
             ),
           ],
         ),
+      ),
+      secondaryBackground: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: colorScheme.primaryContainer,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'approve'.tr(),
+              style: TextStyle(color: colorScheme.onPrimaryContainer),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.check, color: colorScheme.onPrimaryContainer),
+          ],
+        ),
+      ),
+      onDismissed: (direction) {
+        if (direction == DismissDirection.startToEnd) {
+          widget.onReject();
+        } else {
+          widget.onApprove();
+        }
+      },
+      confirmDismiss: (direction) async {
+        HapticFeedback.mediumImpact();
+        return true;
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        color: widget.isSelected
+            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : null,
+        child: InkWell(
+          onTap: widget.isSelectionMode
+              ? widget.onToggleSelection
+              : () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (widget.isSelectionMode)
+                      Checkbox(
+                        value: widget.isSelected,
+                        onChanged: (_) => widget.onToggleSelection(),
+                      ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            storeName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            CurrencyFormatter.format(amount, currency),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (confidence != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: confidenceColor,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '${(confidence * 100).toStringAsFixed(0)}%',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              confidenceLevel,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                if (cardLast4 != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.credit_card,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'card_ending'.tr(args: [cardLast4]),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (_isExpanded) ...[
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: widget.onViewSms,
+                          icon: const Icon(Icons.sms),
+                          label: Text('view_sms'.tr()),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: widget.onEdit,
+                          icon: const Icon(Icons.edit),
+                          label: Text('edit'.tr()),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (!widget.isSelectionMode) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: widget.onReject,
+                        icon: const Icon(Icons.close),
+                        label: Text('reject'.tr()),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: widget.onApprove,
+                        icon: const Icon(Icons.check),
+                        label: Text('approve'.tr()),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getConfidenceColor(double? confidence, ColorScheme colorScheme) {
+    if (confidence == null) return colorScheme.surfaceContainerHighest;
+    if (confidence >= 0.7) return colorScheme.primary;
+    if (confidence >= 0.5) return colorScheme.secondary;
+    return colorScheme.error;
+  }
+
+  String _getConfidenceLevel(double? confidence) {
+    if (confidence == null) return '';
+    if (confidence >= 0.7) return 'high'.tr();
+    if (confidence >= 0.5) return 'medium'.tr();
+    return 'low'.tr();
+  }
+}
+
+class _SmsViewSheet extends StatelessWidget {
+  final db.PendingSmsConfirmation confirmation;
+
+  const _SmsViewSheet({required this.confirmation});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'original_sms'.tr(),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow(
+                      context,
+                      'sender'.tr(),
+                      confirmation.smsSender,
+                    ),
+                    _buildDetailRow(
+                      context,
+                      'date'.tr(),
+                      dateFormat.format(confirmation.createdAt),
+                    ),
+                    const Divider(),
+                    Text(
+                      'message'.tr(),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SelectableText(
+                        confirmation.smsBody,
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
       ),
     );
   }

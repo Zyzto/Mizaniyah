@@ -37,8 +37,8 @@ class SmsPatternGenerator {
     // Build regex pattern
     final pattern = _buildRegexPattern(smsText, sortedSelections);
 
-    // Build extraction rules
-    final extractionRules = _buildExtractionRules(sortedSelections);
+    // Build extraction rules (includes pattern)
+    final extractionRules = _buildExtractionRules(sortedSelections, pattern);
 
     return PatternGenerationResult(
       pattern: pattern,
@@ -118,6 +118,31 @@ class SmsPatternGenerator {
       return r'[A-Z$€£¥]+';
     }
 
+    // For date, use pattern for dates (various formats)
+    if (label == 'date') {
+      // Try to match common date formats
+      if (RegExp(r'^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$').hasMatch(selectedText)) {
+        return r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}';
+      }
+      if (RegExp(r'^\d{4}[/-]\d{1,2}[/-]\d{1,2}$').hasMatch(selectedText)) {
+        return r'\d{4}[/-]\d{1,2}[/-]\d{1,2}';
+      }
+      // Fallback to general date pattern
+      return r'[\d/\-\.\s]+';
+    }
+
+    // For intention (purchase, buy, transfer, refund, etc.)
+    if (label == 'intention') {
+      // Match common transaction intention words
+      return r'[A-Za-z]+';
+    }
+
+    // For purchase_source (internet, pos, atm, etc.)
+    if (label == 'purchase_source') {
+      // Match common source identifiers
+      return r'[A-Za-z]+';
+    }
+
     // For store_name and others, use a more general pattern
     // Match any characters except newlines (most SMS are single-line)
     return r'.+?';
@@ -145,12 +170,23 @@ class SmsPatternGenerator {
   }
 
   /// Build extraction rules JSON from selections
-  static String _buildExtractionRules(List<SmsTextSelection> selections) {
+  /// Includes all selected fields with their capture groups and the pattern
+  static String _buildExtractionRules(
+    List<SmsTextSelection> selections,
+    String pattern,
+  ) {
     final rules = <String, dynamic>{};
 
-    for (final selection in selections) {
-      // Use capture group number for extraction
-      rules[selection.label] = {'group': selection.captureGroup};
+    // Sort selections by capture group to ensure correct order
+    final sortedSelections = List<SmsTextSelection>.from(selections)
+      ..sort((a, b) => a.captureGroup.compareTo(b.captureGroup));
+
+    // Add all selected fields with their capture groups
+    for (final selection in sortedSelections) {
+      // Only include if capture group is valid (greater than 0)
+      if (selection.captureGroup > 0) {
+        rules[selection.label] = {'group': selection.captureGroup};
+      }
     }
 
     // If currency is not selected, add a default
@@ -158,6 +194,11 @@ class SmsPatternGenerator {
       rules['currency'] = 'USD'; // Default currency
     }
 
-    return jsonEncode(rules);
+    // Add the pattern at the end for reference
+    rules['pattern'] = pattern;
+
+    // Format JSON with proper indentation for readability
+    const encoder = JsonEncoder.withIndent('  ');
+    return encoder.convert(rules);
   }
 }
