@@ -17,8 +17,15 @@ import 'sms_template_builder_wizard.dart';
 
 class SmsTemplateFormPage extends ConsumerStatefulWidget {
   final db.SmsTemplate? template;
+  final String? initialSms;
+  final String? initialSender;
 
-  const SmsTemplateFormPage({super.key, this.template});
+  const SmsTemplateFormPage({
+    super.key,
+    this.template,
+    this.initialSms,
+    this.initialSender,
+  });
 
   @override
   ConsumerState<SmsTemplateFormPage> createState() =>
@@ -55,6 +62,14 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
     );
     _isActive = widget.template?.isActive ?? true;
 
+    // Pre-fill sender pattern with exact sender name if provided
+    if (widget.initialSender != null && widget.initialSender!.isNotEmpty) {
+      // Escape regex special characters for exact match
+      final escapedSender = widget.initialSender!
+          .replaceAllMapped(RegExp(r'[.*+?^${}()|[\]\\]'), (match) => '\\${match.group(0)}');
+      _senderPatternController.text = escapedSender;
+    }
+
     // Add listeners to rebuild when text changes (for pattern tester visibility)
     _patternController.addListener(() {
       setState(() {});
@@ -62,6 +77,15 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
     _extractionRulesController.addListener(() {
       setState(() {});
     });
+
+    // Auto-launch visual builder if initialSms is provided
+    if (widget.initialSms != null && widget.initialSms!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _launchPatternBuilder();
+        }
+      });
+    }
   }
 
   @override
@@ -86,7 +110,9 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
   Future<void> _launchPatternBuilder() async {
     HapticFeedback.lightImpact();
     final result = await context.push<TemplateBuilderResult>(
-      '/banks/sms-template-builder',
+      widget.initialSms != null && widget.initialSms!.isNotEmpty
+          ? '/banks/sms-template-builder?initialSms=${Uri.encodeComponent(widget.initialSms!)}'
+          : '/banks/sms-template-builder',
     );
 
     if (result != null && mounted && context.mounted) {

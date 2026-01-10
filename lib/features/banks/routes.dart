@@ -50,7 +50,39 @@ List<RouteBase> getBankRoutes() {
     ),
     GoRoute(
       path: RoutePaths.smsTemplateForm,
-      builder: (context, state) => const SmsTemplateFormPage(),
+      builder: (context, state) {
+        String? decodedSms;
+        String? decodedSender;
+        try {
+          final initialSms = state.uri.queryParameters['initialSms'];
+          if (initialSms != null) {
+            try {
+              decodedSms = Uri.decodeComponent(initialSms);
+            } on ArgumentError {
+              decodedSms = initialSms;
+            } catch (e) {
+              decodedSms = initialSms;
+            }
+          }
+          final initialSender = state.uri.queryParameters['initialSender'];
+          if (initialSender != null) {
+            try {
+              decodedSender = Uri.decodeComponent(initialSender);
+            } on ArgumentError {
+              decodedSender = initialSender;
+            } catch (e) {
+              decodedSender = initialSender;
+            }
+          }
+        } catch (e) {
+          decodedSms = null;
+          decodedSender = null;
+        }
+        return SmsTemplateFormPage(
+          initialSms: decodedSms,
+          initialSender: decodedSender,
+        );
+      },
     ),
     GoRoute(
       path: '/banks/sms-template/:id/edit',

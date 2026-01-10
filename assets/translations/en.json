@@ -342,6 +342,7 @@
   "generated_pattern_label": "Generated Pattern:",
   "generated_extraction_rules": "Generated Extraction Rules:",
   "preview": "Preview:",
+  "preview_not_available": "Preview not available - pattern may not match SMS text",
   "store": "Store",
   "card": "Card",
   "template_generated_successfully": "Template Generated Successfully!",

@@ -311,6 +311,7 @@
       "generated_pattern_label": "النمط المُنشأ:",
       "generated_extraction_rules": "قواعد الاستخراج المُنشأة:",
       "preview": "معاينة:",
+      "preview_not_available": "المعاينة غير متاحة - قد لا يطابق النمط نص الرسالة",
       "store": "المتجر",
       "template_generated_successfully": "تم إنشاء القالب بنجاح!",
       "template_generated_description": "تم إنشاء النمط وقواعد الاستخراج. يمكنك الآن استخدامها في نموذج القالب.",

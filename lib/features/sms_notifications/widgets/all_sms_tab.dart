@@ -333,8 +333,18 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab> {
   }
 
   void _createTemplateFromSms(SmsMessage sms) {
+    final queryParams = <String, String>{};
+    if (sms.body != null && sms.body!.isNotEmpty) {
+      queryParams['initialSms'] = Uri.encodeComponent(sms.body!);
+    }
+    if (sms.address != null && sms.address!.isNotEmpty) {
+      queryParams['initialSender'] = Uri.encodeComponent(sms.address!);
+    }
+    final queryString = queryParams.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('&');
     context.push(
-      '/banks/sms-template-builder?initialSms=${Uri.encodeComponent(sms.body ?? '')}',
+      '/banks/sms-template-form${queryString.isNotEmpty ? '?$queryString' : ''}',
     );
   }
 }

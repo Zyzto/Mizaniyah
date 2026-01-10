@@ -125,12 +125,19 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
   int? _selectionStart;
   int? _selectionEnd;
   SmsTextSelection? _editingSelection;
+  final ScrollController _scrollController = ScrollController();
 
 
   @override
   void initState() {
     super.initState();
     _updateCaptureGroups();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -321,18 +328,55 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
     _showLabelPicker(selection);
   }
 
-  Widget _buildRequiredFieldsIndicator(BuildContext context) {
+
+  Widget _buildCompactHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(
+            Icons.touch_app_outlined,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'step_2_selection_instructions'.tr(),
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          Tooltip(
+            message: 'step_2_selection_instructions'.tr(),
+            child: Icon(
+              Icons.help_outline,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequiredStatusBadge(BuildContext context) {
     final hasStoreName = widget.selections.any((s) => s.label == 'store_name');
     final hasAmount = widget.selections.any((s) => s.label == 'amount');
     final allRequired = hasStoreName && hasAmount;
-    
+    final count = (hasStoreName ? 1 : 0) + (hasAmount ? 1 : 0);
+
     return Container(
-      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: allRequired
             ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
             : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: allRequired
               ? Theme.of(context).colorScheme.primary
@@ -341,33 +385,24 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         ),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             allRequired ? Icons.check_circle : Icons.warning,
             size: 16,
             color: allRequired
-                ? Theme.of(context).colorScheme.onPrimaryContainer
-                : Theme.of(context).colorScheme.onErrorContainer,
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.error,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                _buildRequiredFieldChip(
-                  context,
-                  'label_store_name'.tr(),
-                  hasStoreName,
-                  allRequired,
-                ),
-                _buildRequiredFieldChip(
-                  context,
-                  'label_amount'.tr(),
-                  hasAmount,
-                  allRequired,
-                ),
-              ],
+          const SizedBox(width: 6),
+          Text(
+            '$count/2 Required',
+            style: TextStyle(
+              color: allRequired
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.error,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -375,53 +410,109 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
     );
   }
 
-  Widget _buildRequiredFieldChip(
-    BuildContext context,
-    String label,
-    bool isSelected,
-    bool allRequired,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? Theme.of(context).colorScheme.primaryContainer
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-          width: isSelected ? 2 : 1,
+  Widget _buildSelectionChip(SmsTextSelection selection) {
+    final displayNames = _getLabelDisplayNames();
+    final color = _labelColors[selection.label] ??
+        Theme.of(context).colorScheme.primary;
+    final selectedText = widget.text.substring(
+      selection.start,
+      selection.end > widget.text.length ? widget.text.length : selection.end,
+    );
+    // Truncate long text for preview
+    final previewText =
+        selectedText.length > 15 ? '${selectedText.substring(0, 15)}...' : selectedText;
+
+    return GestureDetector(
+      onTap: () => _editSelection(selection),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Chip(
+          label: Text(
+            '${displayNames[selection.label] ?? selection.label}: "$previewText" (${selection.captureGroup})',
+            style: const TextStyle(fontSize: 12),
+          ),
+          backgroundColor: color.withValues(alpha: 0.2),
+          side: BorderSide(color: color, width: 2),
+          deleteIcon: const Icon(Icons.close, size: 18),
+          onDeleted: () => _removeSelection(selection),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    );
+  }
+
+  Widget _buildChipBar(BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         children: [
-          if (isSelected)
-            Icon(
-              Icons.check,
-              size: 14,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            )
-          else
-            Icon(
-              Icons.radio_button_unchecked,
-              size: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.onPrimaryContainer
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
+          _buildRequiredStatusBadge(context),
+          ...widget.selections.map((s) => _buildSelectionChip(s)).toList(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTextArea() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          primary: false,
+          child: SelectableText.rich(
+            _buildTextSpan(),
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.5,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            onSelectionChanged: (selection, cause) {
+              if (selection.start >= 0 &&
+                  selection.end >= 0 &&
+                  selection.start <= widget.text.length &&
+                  selection.end <= widget.text.length &&
+                  selection.start != selection.end) {
+                setState(() {
+                  _selectionStart = selection.start;
+                  _selectionEnd = selection.end;
+                });
+              }
+            },
+            contextMenuBuilder: (context, editableTextState) {
+              return AdaptiveTextSelectionToolbar.buttonItems(
+                anchors: editableTextState.contextMenuAnchors,
+                buttonItems: [
+                  ContextMenuButtonItem(
+                    label: 'create_selection'.tr(),
+                    onPressed: () {
+                      final selection =
+                          editableTextState.currentTextEditingValue.selection;
+                      if (selection.start >= 0 &&
+                          selection.end >= 0 &&
+                          selection.start != selection.end) {
+                        _selectionStart = selection.start;
+                        _selectionEnd = selection.end;
+                        ContextMenuController.removeAny();
+                        _createSelection();
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -432,142 +523,17 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
       children: [
         Column(
           children: [
-        // Instructions and selection info - now fills available space
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
+            // Compact header
+            _buildCompactHeader(context),
+            // Horizontal scrollable chip bar
+            _buildChipBar(context),
+            const Divider(height: 16),
+            // Text area - fills remaining space
+            Expanded(
+              child: _buildTextArea(),
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'step_2_selection_instructions'.tr(),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Required fields indicator
-                  const SizedBox(height: 8),
-                  _buildRequiredFieldsIndicator(context),
-                  if (widget.selections.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: widget.selections.map((selection) {
-                        final displayNames = _getLabelDisplayNames();
-                        final color = _labelColors[selection.label] ?? Theme.of(context).colorScheme.primary;
-                        final selectedText = widget.text.substring(
-                          selection.start,
-                          selection.end > widget.text.length ? widget.text.length : selection.end,
-                        );
-                        // Truncate long text for preview
-                        final previewText = selectedText.length > 15 
-                            ? '${selectedText.substring(0, 15)}...' 
-                            : selectedText;
-                        return GestureDetector(
-                          onTap: () => _editSelection(selection),
-                          child: Container(
-                            constraints: const BoxConstraints(minHeight: 48), // Minimum touch target
-                            margin: const EdgeInsets.only(right: 8, bottom: 4),
-                            child: Chip(
-                              label: Text(
-                                '${displayNames[selection.label] ?? selection.label}: "$previewText" (${selection.captureGroup})',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              backgroundColor: color.withValues(alpha: 0.2),
-                              side: BorderSide(color: color, width: 2), // Color border matching highlight
-                              deleteIcon: const Icon(Icons.close, size: 18),
-                              onDeleted: () => _removeSelection(selection),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+          ],
         ),
-        const SizedBox(height: 16),
-        // Selectable text area - fills the background
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SelectableText.rich(
-              _buildTextSpan(),
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.5,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              // Better contrast and RTL support - auto-detect direction
-              onSelectionChanged: (selection, cause) {
-                if (selection.start >= 0 &&
-                    selection.end >= 0 &&
-                    selection.start <= widget.text.length &&
-                    selection.end <= widget.text.length &&
-                    selection.start != selection.end) {
-                  setState(() {
-                    _selectionStart = selection.start;
-                    _selectionEnd = selection.end;
-                  });
-                }
-              },
-              contextMenuBuilder: (context, editableTextState) {
-                return AdaptiveTextSelectionToolbar.buttonItems(
-                  anchors: editableTextState.contextMenuAnchors,
-                  buttonItems: [
-                    ContextMenuButtonItem(
-                      label: 'create_selection'.tr(),
-                      onPressed: () {
-                        final selection =
-                            editableTextState.currentTextEditingValue.selection;
-                        if (selection.start >= 0 &&
-                            selection.end >= 0 &&
-                            selection.start != selection.end) {
-                          _selectionStart = selection.start;
-                          _selectionEnd = selection.end;
-                          ContextMenuController.removeAny();
-                          _createSelection();
-                        }
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
-      ],
-    ),
         // Floating Create Selection button (FAB) - only show when text is actively selected
         if (_selectionStart != null &&
             _selectionEnd != null &&

@@ -45,6 +45,8 @@ class _SmsTemplateBuilderWizardState
   String? _generatedPattern;
   String? _generatedExtractionRules;
   ParsedSmsData? _previewData;
+  bool _isGenerating = false;
+  final ScrollController _step3ScrollController = ScrollController();
 
   @override
   void initState() {
@@ -66,6 +68,7 @@ class _SmsTemplateBuilderWizardState
   void dispose() {
     _smsController.dispose();
     _pageController.dispose();
+    _step3ScrollController.dispose();
     super.dispose();
   }
 
@@ -127,6 +130,16 @@ class _SmsTemplateBuilderWizardState
     if (_currentStep > 0) {
       setState(() {
         _currentStep--;
+        // Clear generated pattern when going back to step 2 (select parts)
+        // so it regenerates if user changes selections
+        if (_currentStep == 1) {
+          _generatedPattern = null;
+          _generatedExtractionRules = null;
+          _previewData = null;
+          Log.debug(
+            '[TemplateBuilder] Went back to step 2, cleared generated pattern',
+          );
+        }
       });
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -148,6 +161,14 @@ class _SmsTemplateBuilderWizardState
 
   Future<void> _generatePattern() async {
     Log.debug('[TemplateBuilder] _generatePattern() called');
+
+    // Set generating flag to true
+    if (mounted) {
+      setState(() {
+        _isGenerating = true;
+      });
+    }
+
     final smsText = _smsController.text.trim();
     Log.debug(
       '[TemplateBuilder] SMS text: "${smsText.substring(0, smsText.length > 50 ? 50 : smsText.length)}..."',
@@ -164,6 +185,13 @@ class _SmsTemplateBuilderWizardState
       Log.warning(
         '[TemplateBuilder] Cannot generate - SMS empty=${smsText.isEmpty}, Selections empty=${_selections.isEmpty}',
       );
+      // Reset generating flag
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+
       // Show error if trying to generate without required data
       if (mounted && context.mounted) {
         HapticFeedback.heavyImpact();
@@ -215,6 +243,7 @@ class _SmsTemplateBuilderWizardState
           _generatedPattern = result.pattern;
           _generatedExtractionRules = result.extractionRules;
           _previewData = previewData;
+          _isGenerating = false; // Generation complete
         });
         Log.info(
           '[TemplateBuilder] State updated. Pattern generated successfully (${_generatedPattern!.length} chars)',
@@ -249,6 +278,13 @@ class _SmsTemplateBuilderWizardState
         stackTrace: stackTrace,
       );
 
+      // Reset generating flag on error
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+
       if (!mounted || !context.mounted) {
         Log.warning('[TemplateBuilder] Widget not mounted, cannot show error');
         return;
@@ -264,6 +300,16 @@ class _SmsTemplateBuilderWizardState
   void _onSelectionsChanged(List<SmsTextSelection> selections) {
     setState(() {
       _selections = selections;
+      // Clear generated pattern when selections change, so it regenerates
+      // when user clicks next again
+      if (_generatedPattern != null) {
+        _generatedPattern = null;
+        _generatedExtractionRules = null;
+        _previewData = null;
+        Log.debug(
+          '[TemplateBuilder] Selections changed, cleared generated pattern',
+        );
+      }
     });
   }
 
@@ -555,156 +601,94 @@ class _SmsTemplateBuilderWizardState
           ),
           const SizedBox(height: 24),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_generatedPattern != null &&
-                      _generatedPattern!.isNotEmpty) ...[
-                    // Selected fields summary
-                    Text(
-                      'selected_fields_summary'.tr(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+            child: Scrollbar(
+              controller: _step3ScrollController,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _step3ScrollController,
+                primary: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_generatedPattern != null &&
+                        _generatedPattern!.isNotEmpty) ...[
+                      // Selected fields summary
+                      Text(
+                        'selected_fields_summary'.tr(),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _selections.map((selection) {
-                        final displayNames = {
-                          'store_name': 'label_store_name'.tr(),
-                          'amount': 'label_amount'.tr(),
-                          'currency': 'label_currency'.tr(),
-                          'card_last4': 'label_card_last4'.tr(),
-                          'intention': 'label_intention'.tr(),
-                          'date': 'label_date'.tr(),
-                          'purchase_source': 'label_purchase_source'.tr(),
-                        };
-                        final color =
-                            {
-                              'store_name': const Color(0xFFFF9800),
-                              'amount': const Color(0xFF9C27B0),
-                              'currency': const Color(0xFF2196F3),
-                              'card_last4': const Color(0xFFF44336),
-                              'intention': const Color(0xFF4CAF50),
-                              'date': const Color(0xFFFFC107),
-                              'purchase_source': const Color(0xFF00BCD4),
-                            }[selection.label] ??
-                            Theme.of(context).colorScheme.primary;
-                        return Chip(
-                          label: Text(
-                            displayNames[selection.label] ?? selection.label,
-                          ),
-                          backgroundColor: color.withValues(alpha: 0.2),
-                          side: BorderSide(color: color, width: 2),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    // Pattern explanation
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _selections.map((selection) {
+                          final displayNames = {
+                            'store_name': 'label_store_name'.tr(),
+                            'amount': 'label_amount'.tr(),
+                            'currency': 'label_currency'.tr(),
+                            'card_last4': 'label_card_last4'.tr(),
+                            'intention': 'label_intention'.tr(),
+                            'date': 'label_date'.tr(),
+                            'purchase_source': 'label_purchase_source'.tr(),
+                          };
+                          final color =
+                              {
+                                'store_name': const Color(0xFFFF9800),
+                                'amount': const Color(0xFF9C27B0),
+                                'currency': const Color(0xFF2196F3),
+                                'card_last4': const Color(0xFFF44336),
+                                'intention': const Color(0xFF4CAF50),
+                                'date': const Color(0xFFFFC107),
+                                'purchase_source': const Color(0xFF00BCD4),
+                              }[selection.label] ??
+                              Theme.of(context).colorScheme.primary;
+                          return Chip(
+                            label: Text(
+                              displayNames[selection.label] ?? selection.label,
+                            ),
+                            backgroundColor: color.withValues(alpha: 0.2),
+                            side: BorderSide(color: color, width: 2),
+                          );
+                        }).toList(),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onPrimaryContainer,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'pattern_explanation'.tr(),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
+                      const SizedBox(height: 24),
+                      // Pattern explanation
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'pattern_explanation'.tr(),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'generated_pattern_label'.tr(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.3),
+                          ],
                         ),
                       ),
-                      child: SelectableText(
-                        _generatedPattern!,
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Extraction rules in a more readable format
-                    Text(
-                      'generated_extraction_rules'.tr(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: SelectableText(
-                        _generatedExtractionRules ?? '',
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    if (_previewData != null) ...[
                       const SizedBox(height: 24),
                       Text(
-                        'preview'.tr(),
+                        'generated_pattern_label'.tr(),
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
@@ -713,34 +697,140 @@ class _SmsTemplateBuilderWizardState
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.3),
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildPreviewRow(
-                              'store'.tr(),
-                              _previewData!.storeName,
-                            ),
-                            _buildPreviewRow(
-                              'amount'.tr(),
-                              _previewData!.amount != null
-                                  ? '${_previewData!.amount!.toStringAsFixed(2)} ${_previewData!.currency ?? 'USD'}'
-                                  : null,
-                            ),
-                            if (_previewData!.cardLast4Digits != null)
-                              _buildPreviewRow(
-                                'card'.tr(),
-                                _previewData!.cardLast4Digits,
-                              ),
-                          ],
+                        child: SelectableText(
+                          _generatedPattern!,
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            height: 1.4,
+                          ),
                         ),
                       ),
-                    ],
-                  ] else
-                    const Center(child: CircularProgressIndicator()),
-                ],
+                      const SizedBox(height: 24),
+                      // Extraction rules in a more readable format
+                      Text(
+                        'generated_extraction_rules'.tr(),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: SelectableText(
+                          _generatedExtractionRules ?? '',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      if (_previewData != null) ...[
+                        const SizedBox(height: 24),
+                        Text(
+                          'preview'.tr(),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          key: ValueKey(
+                            'preview_${_generatedPattern}_${_selections.length}',
+                          ),
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildPreviewRow(
+                                'store'.tr(),
+                                _previewData!.storeName,
+                              ),
+                              _buildPreviewRow(
+                                'amount'.tr(),
+                                _previewData!.amount != null
+                                    ? '${_previewData!.amount!.toStringAsFixed(2)} ${_previewData!.currency ?? 'USD'}'
+                                    : null,
+                              ),
+                              if (_previewData!.cardLast4Digits != null)
+                                _buildPreviewRow(
+                                  'card'.tr(),
+                                  _previewData!.cardLast4Digits,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ] else if (_generatedPattern != null &&
+                          _generatedPattern!.isNotEmpty) ...[
+                        // Show message if pattern exists but preview couldn't be generated
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.errorContainer.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'preview_not_available'.tr(),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ] else
+                      const Center(child: CircularProgressIndicator()),
+                  ],
+                ),
               ),
             ),
           ),
@@ -924,10 +1014,7 @@ class _SmsTemplateBuilderWizardState
                     : _currentStep == 1
                     ? _canProceedToStep3()
                     : true;
-                final isGenerating =
-                    _currentStep == 1 &&
-                    _generatedPattern == null &&
-                    _selections.isNotEmpty;
+                final isGenerating = _isGenerating;
 
                 return Tooltip(
                   message: _currentStep == 1 && !canProceed
