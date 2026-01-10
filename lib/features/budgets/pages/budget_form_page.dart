@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
-import '../providers/budget_providers.dart';
 import '../../categories/providers/category_providers.dart';
+import '../../../core/database/providers/dao_providers.dart';
 import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/enhanced_text_form_field.dart';
+import '../../../core/widgets/enhanced_currency_field.dart';
+import '../../../core/widgets/enhanced_date_picker_field.dart';
+import '../../../core/widgets/loading_button.dart';
 
 class BudgetFormPage extends ConsumerStatefulWidget {
   final db.Budget? budget;
@@ -18,44 +25,48 @@ class BudgetFormPage extends ConsumerStatefulWidget {
 class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
   final _formKey = GlobalKey<FormState>();
   int? _selectedCategoryId;
-  final _amountController = TextEditingController();
+  double? _amount;
   bool _rolloverEnabled = false;
-  final _rolloverPercentageController = TextEditingController(text: '100.0');
-  DateTime _startDate = DateTime.now();
+  double _rolloverPercentage = 100.0;
+  DateTime? _startDate;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     if (widget.budget != null) {
       _selectedCategoryId = widget.budget!.categoryId;
-      _amountController.text = widget.budget!.amount.toString();
+      _amount = widget.budget!.amount;
       _rolloverEnabled = widget.budget!.rolloverEnabled;
-      _rolloverPercentageController.text = widget.budget!.rolloverPercentage
-          .toString();
+      _rolloverPercentage = widget.budget!.rolloverPercentage;
       _startDate = widget.budget!.startDate;
+    } else {
+      _startDate = DateTime.now();
     }
   }
 
   @override
-  void dispose() {
-    _amountController.dispose();
-    _rolloverPercentageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final categoriesAsync = ref.watch(activeCategoriesProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.budget == null ? 'Create Budget' : 'Edit Budget'),
+        title: Text(
+          widget.budget == null
+              ? 'create_budget_title'.tr()
+              : 'edit_budget_title'.tr(),
+        ),
         actions: widget.budget != null
             ? [
                 IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: _deleteBudget,
-                  tooltip: 'Delete Budget',
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    _deleteBudget();
+                  },
+                  tooltip: 'delete'.tr(),
+                  color: theme.colorScheme.error,
                 ),
               ]
             : null,
@@ -69,21 +80,36 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
             categoriesAsync.when(
               data: (categories) {
                 if (categories.isEmpty) {
-                  return const Card(
+                  return Card(
                     child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'No categories available. Please create a category first.',
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            'no_categories_available'.tr(),
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              // Navigate to add category - would need category form page
+                            },
+                            icon: const Icon(Icons.add),
+                            label: Text('add_category'.tr()),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 }
 
                 return DropdownButtonFormField<int>(
-                  value: _selectedCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
+                  initialValue: _selectedCategoryId,
+                  decoration: InputDecoration(
+                    labelText: 'select_category'.tr(),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.category_outlined),
                   ),
                   items: categories.map((category) {
                     return DropdownMenuItem<int>(
@@ -92,76 +118,93 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
                     );
                   }).toList(),
                   onChanged: (value) {
+                    HapticFeedback.selectionClick();
                     setState(() {
                       _selectedCategoryId = value;
                     });
                   },
                   validator: (value) {
                     if (value == null) {
-                      return 'Please select a category';
+                      return 'category_required'.tr();
                     }
                     return null;
                   },
                 );
               },
-              loading: () => const CircularProgressIndicator(),
-              error: (_, __) => const Text('Error loading categories'),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (_, _) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'error_loading_categories'.tr(),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             // Amount
-            TextFormField(
-              controller: _amountController,
-              decoration: const InputDecoration(
-                labelText: 'Budget Amount',
-                border: OutlineInputBorder(),
-                prefixText: '\$ ',
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter an amount';
+            EnhancedCurrencyField(
+              initialValue: _amount,
+              currencyCode: 'USD', // TODO: Get from user settings
+              labelText: 'budget_amount'.tr(),
+              hintText: '0.00',
+              semanticLabel: 'budget_amount'.tr(),
+              onChanged: (amount) {
+                setState(() {
+                  _amount = amount;
+                });
+              },
+              validator: (amount) {
+                if (amount == null) {
+                  return 'amount_required'.tr();
                 }
-                final amount = double.tryParse(value);
-                if (amount == null || amount <= 0) {
-                  return 'Please enter a valid amount';
+                if (amount <= 0) {
+                  return 'amount_positive'.tr();
                 }
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             // Period (fixed to monthly for now)
-            const Text('Period: Monthly'),
-            const SizedBox(height: 16),
+            Text(
+              '${'period'.tr()}: ${'monthly'.tr()}',
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 24),
             // Start date
-            ListTile(
-              title: const Text('Start Date'),
-              subtitle: Text(
-                '${_startDate.year}/${_startDate.month.toString().padLeft(2, '0')}/${_startDate.day.toString().padLeft(2, '0')}',
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _startDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2100),
-                );
-                if (date != null) {
-                  setState(() {
-                    _startDate = date;
-                  });
+            EnhancedDatePickerField(
+              labelText: 'start_date'.tr(),
+              hintText: 'select_date'.tr(),
+              initialDate: _startDate,
+              semanticLabel: 'start_date'.tr(),
+              onDateSelected: (date) {
+                setState(() {
+                  _startDate = date;
+                });
+              },
+              validator: (date) {
+                if (date == null) {
+                  return 'date_required'.tr();
                 }
+                return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             // Rollover enabled
             SwitchListTile(
-              title: const Text('Enable Rollover'),
-              subtitle: const Text('Carry over unused budget to next period'),
+              title: Text('enable_rollover'.tr()),
+              subtitle: Text('rollover_description'.tr()),
               value: _rolloverEnabled,
               onChanged: (value) {
+                HapticFeedback.lightImpact();
                 setState(() {
                   _rolloverEnabled = value;
                 });
@@ -169,38 +212,47 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
             ),
             // Rollover percentage
             if (_rolloverEnabled) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _rolloverPercentageController,
-                decoration: const InputDecoration(
-                  labelText: 'Rollover Percentage',
-                  border: OutlineInputBorder(),
-                  suffixText: '%',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
+              const SizedBox(height: 24),
+              EnhancedTextFormField(
+                labelText: 'rollover_percentage'.tr(),
+                hintText: '100.0',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.next,
+                semanticLabel: 'rollover_percentage'.tr(),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                ],
                 validator: (value) {
                   if (_rolloverEnabled) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a percentage';
+                      return 'percentage_required'.tr();
                     }
                     final percentage = double.tryParse(value);
-                    if (percentage == null ||
-                        percentage < 0 ||
-                        percentage > 100) {
-                      return 'Please enter a valid percentage (0-100)';
+                    if (percentage == null || percentage < 0 || percentage > 100) {
+                      return 'percentage_range'.tr();
                     }
+                    _rolloverPercentage = percentage;
                   }
                   return null;
+                },
+                onChanged: (value) {
+                  final percentage = double.tryParse(value);
+                  if (percentage != null) {
+                    setState(() {
+                      _rolloverPercentage = percentage;
+                    });
+                  }
                 },
               ),
             ],
             const SizedBox(height: 32),
             // Save button
-            FilledButton(
-              onPressed: _saveBudget,
-              child: const Text('Save Budget'),
+            LoadingButton(
+              onPressed: _isSaving ? null : _saveBudget,
+              text: 'save_budget'.tr(),
+              icon: Icons.save,
+              isLoading: _isSaving,
+              semanticLabel: 'save_budget'.tr(),
             ),
           ],
         ),
@@ -209,89 +261,114 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
   }
 
   Future<void> _saveBudget() async {
-    if (!_formKey.currentState!.validate()) {
+    final formState = _formKey.currentState;
+    if (formState == null || !formState.validate()) {
+      HapticFeedback.mediumImpact();
       return;
     }
 
     if (_selectedCategoryId == null) {
-      ErrorSnackbar.show(context, 'Please select a category');
+      ErrorSnackbar.show(context, 'category_required'.tr());
+      HapticFeedback.mediumImpact();
       return;
     }
 
+    if (_amount == null || _amount! <= 0) {
+      ErrorSnackbar.show(context, 'amount_required'.tr());
+      HapticFeedback.mediumImpact();
+      return;
+    }
+
+    if (_startDate == null) {
+      ErrorSnackbar.show(context, 'date_required'.tr());
+      HapticFeedback.mediumImpact();
+      return;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
     try {
-      final repository = ref.read(budgetRepositoryProvider);
-      final amount = double.parse(_amountController.text);
-      final rolloverPercentage = _rolloverEnabled
-          ? double.parse(_rolloverPercentageController.text)
-          : 100.0;
+      final dao = ref.read(budgetDaoProvider);
+      final rolloverPercentage = _rolloverEnabled ? _rolloverPercentage : 100.0;
 
       if (widget.budget == null) {
         // Create new budget
         final budget = db.BudgetsCompanion(
           categoryId: drift.Value(_selectedCategoryId!),
-          amount: drift.Value(amount),
+          amount: drift.Value(_amount!),
           period: const drift.Value('monthly'),
           rolloverEnabled: drift.Value(_rolloverEnabled),
           rolloverPercentage: drift.Value(rolloverPercentage),
-          startDate: drift.Value(_startDate),
+          startDate: drift.Value(_startDate!),
           isActive: const drift.Value(true),
         );
 
-        await repository.createBudget(budget);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Budget created successfully')),
-          );
-          Navigator.of(context).pop();
-        }
+        await dao.insertBudget(budget);
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.showSuccess(context, 'budget_created'.tr());
+        context.pop();
       } else {
         // Update existing budget
         final budget = db.BudgetsCompanion(
           id: drift.Value(widget.budget!.id),
           categoryId: drift.Value(_selectedCategoryId!),
-          amount: drift.Value(amount),
+          amount: drift.Value(_amount!),
           period: const drift.Value('monthly'),
           rolloverEnabled: drift.Value(_rolloverEnabled),
           rolloverPercentage: drift.Value(rolloverPercentage),
-          startDate: drift.Value(_startDate),
+          startDate: drift.Value(_startDate!),
         );
 
-        await repository.updateBudget(budget);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Budget updated successfully')),
-          );
-          Navigator.of(context).pop();
-        }
+        await dao.updateBudget(budget);
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.showSuccess(context, 'budget_updated'.tr());
+        context.pop();
       }
     } catch (e) {
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(context, 'budget_save_failed'.tr(args: [e.toString()]));
+    } finally {
       if (mounted) {
-        ErrorSnackbar.show(context, 'Error: $e');
+        setState(() {
+          _isSaving = false;
+        });
       }
     }
   }
 
   Future<void> _deleteBudget() async {
     if (widget.budget == null) return;
+    if (!mounted || !context.mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Budget'),
-        content: const Text(
-          'Are you sure you want to delete this budget? This action cannot be undone.',
-        ),
+        title: Text('delete_budget'.tr()),
+        content: Text('delete_budget_confirmation'.tr()),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop(false);
+            },
+            child: Text('cancel'.tr()),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.of(context).pop(true);
+            },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Delete'),
+            child: Text('delete'.tr()),
           ),
         ],
       ),
@@ -300,18 +377,16 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
     if (confirmed != true) return;
 
     try {
-      final repository = ref.read(budgetRepositoryProvider);
-      await repository.deleteBudget(widget.budget!.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Budget deleted successfully')),
-        );
-        Navigator.of(context).pop();
-      }
+      final dao = ref.read(budgetDaoProvider);
+      await dao.deleteBudget(widget.budget!.id);
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.showSuccess(context, 'budget_deleted'.tr());
+      Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) {
-        ErrorSnackbar.show(context, 'Error deleting budget: $e');
-      }
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(context, 'budget_delete_failed'.tr(args: [e.toString()]));
     }
   }
 }

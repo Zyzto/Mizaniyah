@@ -106,8 +106,8 @@ class _CurrencyInputFieldState extends State<CurrencyInputField> {
         if (amount == null) {
           return 'Please enter a valid number';
         }
-        if (amount < 0) {
-          return 'Amount cannot be negative';
+        if (amount <= 0) {
+          return 'Amount must be greater than 0';
         }
         return widget.validator?.call(amount);
       },

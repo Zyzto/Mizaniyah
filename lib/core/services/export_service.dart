@@ -2,18 +2,18 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
-import 'package:mizaniyah/features/transactions/transaction_repository.dart';
-import 'package:mizaniyah/features/budgets/budget_repository.dart';
+import 'package:mizaniyah/core/database/daos/transaction_dao.dart';
+import 'package:mizaniyah/core/database/daos/budget_dao.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 
 /// Export Service
 /// Handles exporting data to CSV format
 class ExportService with Loggable {
-  final TransactionRepository _transactionRepository;
-  final BudgetRepository _budgetRepository;
+  final TransactionDao _transactionDao;
+  final BudgetDao _budgetDao;
 
-  ExportService(this._transactionRepository, this._budgetRepository);
+  ExportService(this._transactionDao, this._budgetDao);
 
   /// Export transactions to CSV
   Future<String?> exportTransactionsToCsv({
@@ -22,7 +22,7 @@ class ExportService with Loggable {
   }) async {
     logInfo('Exporting transactions to CSV');
     try {
-      final transactions = await _transactionRepository.getAllTransactions();
+      final transactions = await _transactionDao.getAllTransactions();
 
       // Filter by date range if provided
       List<db.Transaction> filteredTransactions = transactions;
@@ -84,7 +84,7 @@ class ExportService with Loggable {
   Future<String?> exportBudgetsToCsv() async {
     logInfo('Exporting budgets to CSV');
     try {
-      final budgets = await _budgetRepository.getAllBudgets();
+      final budgets = await _budgetDao.getAllBudgets();
 
       // Build CSV content
       final csvBuffer = StringBuffer();

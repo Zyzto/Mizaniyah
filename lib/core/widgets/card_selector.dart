@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/banks/providers/bank_providers.dart';
+import '../../features/accounts/providers/card_providers.dart';
 
 /// A dropdown selector for choosing a card
 class CardSelector extends ConsumerWidget {
@@ -10,7 +10,6 @@ class CardSelector extends ConsumerWidget {
   final String? hint;
   final String? Function(int?)? validator;
   final bool enabled;
-  final int? bankId; // Optional: filter cards by bank
 
   const CardSelector({
     super.key,
@@ -20,7 +19,6 @@ class CardSelector extends ConsumerWidget {
     this.hint,
     this.validator,
     this.enabled = true,
-    this.bankId,
   });
 
   @override
@@ -29,12 +27,7 @@ class CardSelector extends ConsumerWidget {
 
     return cardsAsync.when(
       data: (cards) {
-        // Filter by bank if specified
-        final filteredCards = bankId != null
-            ? cards.where((c) => c.bankId == bankId).toList()
-            : cards;
-
-        if (filteredCards.isEmpty) {
+        if (cards.isEmpty) {
           return DropdownButtonFormField<int?>(
             initialValue: selectedCardId,
             decoration: InputDecoration(
@@ -56,7 +49,7 @@ class CardSelector extends ConsumerWidget {
           ),
           items: [
             const DropdownMenuItem<int?>(value: null, child: Text('None')),
-            ...filteredCards.map((card) {
+            ...cards.map((card) {
               return DropdownMenuItem<int?>(
                 value: card.id,
                 child: Text(

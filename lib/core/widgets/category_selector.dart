@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../features/categories/providers/category_providers.dart';
 
 /// A dropdown selector for choosing a category with icon and color display
@@ -35,8 +36,8 @@ class CategorySelector extends ConsumerWidget {
           return DropdownButtonFormField<int?>(
             initialValue: selectedCategoryId,
             decoration: InputDecoration(
-              labelText: label ?? 'Category',
-              hintText: hint ?? 'No categories available',
+              labelText: label ?? 'category'.tr(),
+              hintText: hint ?? 'no_categories_available'.tr(),
               errorText: validator?.call(selectedCategoryId),
             ),
             items: const [],
@@ -47,12 +48,12 @@ class CategorySelector extends ConsumerWidget {
         return DropdownButtonFormField<int?>(
           initialValue: selectedCategoryId,
           decoration: InputDecoration(
-            labelText: label ?? 'Category',
-            hintText: hint ?? 'Select a category',
+            labelText: label ?? 'category'.tr(),
+            hintText: hint ?? 'select_category'.tr(),
             errorText: validator?.call(selectedCategoryId),
           ),
           items: [
-            const DropdownMenuItem<int?>(value: null, child: Text('None')),
+            DropdownMenuItem<int?>(value: null, child: Text('none'.tr())),
             ...categories.map((category) {
               return DropdownMenuItem<int?>(
                 value: category.id,
@@ -86,8 +87,8 @@ class CategorySelector extends ConsumerWidget {
       loading: () => DropdownButtonFormField<int?>(
         initialValue: selectedCategoryId,
         decoration: InputDecoration(
-          labelText: label ?? 'Category',
-          hintText: 'Loading categories...',
+          labelText: label ?? 'category'.tr(),
+          hintText: 'loading_categories'.tr(),
         ),
         items: const [],
         onChanged: null,
@@ -95,9 +96,9 @@ class CategorySelector extends ConsumerWidget {
       error: (error, stack) => DropdownButtonFormField<int?>(
         initialValue: selectedCategoryId,
         decoration: InputDecoration(
-          labelText: label ?? 'Category',
-          hintText: 'Error loading categories',
-          errorText: 'Failed to load categories',
+          labelText: label ?? 'category'.tr(),
+          hintText: 'error_loading_categories'.tr(),
+          errorText: 'error_loading_categories'.tr(),
         ),
         items: const [],
         onChanged: null,

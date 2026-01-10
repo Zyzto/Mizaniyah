@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
+import '../../../core/utils/currency_formatter.dart';
 
 class AccountCard extends StatelessWidget {
   final db.Card card;
-  final db.Bank? bank;
   final int transactionCount;
   final double totalSpent;
   final VoidCallback? onTap;
@@ -11,7 +13,6 @@ class AccountCard extends StatelessWidget {
   const AccountCard({
     super.key,
     required this.card,
-    this.bank,
     required this.transactionCount,
     required this.totalSpent,
     this.onTap,
@@ -22,7 +23,10 @@ class AccountCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap?.call();
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -43,16 +47,6 @@ class AccountCard extends StatelessWidget {
                               : 'Card ${card.last4Digits}',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        if (bank != null)
-                          Text(
-                            bank!.name,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
                       ],
                     ),
                   ),
@@ -62,7 +56,7 @@ class AccountCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -70,13 +64,15 @@ class AccountCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$transactionCount transactions',
+                        '$transactionCount ${'transactions'.tr()}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      const SizedBox(height: 4),
                       Text(
-                        'Total: ${totalSpent.toStringAsFixed(2)}',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        '${'total_spent'.tr()}: ${CurrencyFormatter.formatCompact(totalSpent)}',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ],
                   ),

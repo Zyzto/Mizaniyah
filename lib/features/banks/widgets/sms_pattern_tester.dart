@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import '../../../core/services/sms_parsing_service.dart';
 
@@ -39,7 +41,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
     final testSms = _testSmsController.text.trim();
     if (testSms.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter an SMS message to test';
+        _errorMessage = 'enter_sms_to_test'.tr();
       });
       return;
     }
@@ -50,14 +52,14 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
       _patternMatches = patternRegex.hasMatch(testSms);
     } catch (e) {
       setState(() {
-        _errorMessage = 'Invalid pattern regex: $e';
+        _errorMessage = 'invalid_pattern_regex'.tr(args: [e.toString()]);
       });
       return;
     }
 
     if (!_patternMatches) {
       setState(() {
-        _errorMessage = 'SMS does not match the pattern';
+        _errorMessage = 'sms_no_match'.tr();
       });
       return;
     }
@@ -67,7 +69,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
       jsonDecode(widget.extractionRules);
     } catch (e) {
       setState(() {
-        _errorMessage = 'Invalid extraction rules JSON: $e';
+        _errorMessage = 'invalid_extraction_rules'.tr(args: [e.toString()]);
       });
       return;
     }
@@ -82,8 +84,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
 
       if (parsed == null) {
         setState(() {
-          _errorMessage =
-              'Failed to parse SMS. Check that required fields (store_name, amount) are extracted correctly.';
+          _errorMessage = 'parse_failed'.tr();
         });
       } else {
         setState(() {
@@ -92,7 +93,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error testing pattern: $e';
+        _errorMessage = 'test_pattern_error'.tr(args: [e.toString()]);
       });
     }
   }
@@ -111,7 +112,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                 const Icon(Icons.bug_report, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Test Pattern',
+                  'test_pattern'.tr(),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -121,20 +122,25 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
             const SizedBox(height: 16),
             TextField(
               controller: _testSmsController,
-              decoration: const InputDecoration(
-                labelText: 'Test SMS Message',
-                hintText: 'Paste an SMS message to test the pattern',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'test_sms_message'.tr(),
+                hintText: 'paste_sms_to_test'.tr(),
+                border: const OutlineInputBorder(),
               ),
               maxLines: 3,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _testPattern,
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  _testPattern();
+                },
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Test Pattern'),
+                label: Text('test_pattern'.tr()),
               ),
             ),
             if (_errorMessage != null) ...[
@@ -185,7 +191,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Pattern matched successfully!',
+                          'pattern_matched_successfully'.tr(),
                           style: TextStyle(
                             color: Theme.of(
                               context,
@@ -196,16 +202,16 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildParsedDataRow('Store Name', _parsedData!.storeName),
+                    _buildParsedDataRow('store_name'.tr(), _parsedData!.storeName),
                     _buildParsedDataRow(
-                      'Amount',
+                      'amount'.tr(),
                       _parsedData!.amount != null
                           ? '${_parsedData!.amount!.toStringAsFixed(2)} ${_parsedData!.currency ?? 'USD'}'
                           : null,
                     ),
                     if (_parsedData!.cardLast4Digits != null)
                       _buildParsedDataRow(
-                        'Card (Last 4)',
+                        'card_last4'.tr(),
                         _parsedData!.cardLast4Digits,
                       ),
                   ],
@@ -231,7 +237,7 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Pattern matches, but extraction failed. Check your extraction rules.',
+                        'pattern_match_extraction_failed'.tr(),
                         style: TextStyle(
                           color: Theme.of(
                             context,
@@ -265,7 +271,11 @@ class _SmsPatternTesterState extends State<SmsPatternTester> {
           Expanded(
             child: Text(
               value ?? 'N/A',
-              style: TextStyle(color: value != null ? null : Colors.grey),
+              style: TextStyle(
+                color: value != null
+                    ? null
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],

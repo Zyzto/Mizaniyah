@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
-import '../providers/bank_providers.dart';
+import 'package:easy_localization/easy_localization.dart';
+import '../../sms_templates/providers/sms_template_providers.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
-import 'sms_template_form_page.dart';
+import '../../../core/database/providers/dao_providers.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/loading_skeleton.dart';
+import '../../../core/widgets/error_state.dart';
+import '../widgets/sms_pattern_tester.dart';
 
+/// Standalone SMS Patterns page (for direct navigation)
+/// This is a simplified version that can be used as a full page
 class SmsPatternPage extends ConsumerStatefulWidget {
   const SmsPatternPage({super.key});
 
@@ -15,145 +24,208 @@ class SmsPatternPage extends ConsumerStatefulWidget {
 class _SmsPatternPageState extends ConsumerState<SmsPatternPage> {
   @override
   Widget build(BuildContext context) {
-    final banksAsync = ref.watch(banksProvider);
+    final templatesAsync = ref.watch(smsTemplatesProvider);
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('SMS Patterns'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Patterns', icon: Icon(Icons.pattern_outlined)),
-              Tab(text: 'Test Pattern', icon: Icon(Icons.bug_report_outlined)),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('sms_patterns'.tr()),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'add_template'.tr(),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _navigateToAddTemplate();
+            },
           ),
-        ),
-        body: TabBarView(
-          children: [
-            // Patterns List
-            banksAsync.when(
-              data: (banks) {
-                if (banks.isEmpty) {
-                  return const Center(
-                    child: Text('Add a bank first to create SMS patterns'),
-                  );
-                }
+        ],
+      ),
+      body: templatesAsync.when(
+        data: (templates) {
+          if (templates.isEmpty) {
+            return EmptyState(
+              icon: Icons.pattern_outlined,
+              title: 'no_sms_templates'.tr(),
+              subtitle: 'add_first_template'.tr(),
+              actionLabel: 'add_template'.tr(),
+              onAction: _navigateToAddTemplate,
+            );
+          }
 
-                // Show templates grouped by bank
-                return ListView.builder(
-                  itemCount: banks.length,
-                  itemBuilder: (context, index) {
-                    final bank = banks[index];
-                    return FutureBuilder<List<db.SmsTemplate>>(
-                      future: ref.read(smsTemplatesProvider(bank.id).future),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const ListTile(
-                            leading: CircularProgressIndicator(),
-                            title: Text('Loading templates...'),
-                          );
-                        }
-
-                        final templates = snapshot.data ?? [];
-                        if (templates.isEmpty) {
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: ListTile(
-                              leading: const Icon(Icons.message),
-                              title: Text(bank.name),
-                              subtitle: const Text('No templates configured'),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: () =>
-                                    _navigateToAddTemplate(bank.id),
-                              ),
-                            ),
-                          );
-                        }
-
-                        return ExpansionTile(
-                          leading: const Icon(Icons.account_balance),
-                          title: Text(bank.name),
-                          subtitle: Text('${templates.length} template(s)'),
-                          children: templates.map((template) {
-                            return ListTile(
-                              leading: const Icon(Icons.message),
-                              title: Text(
-                                template.pattern.length > 50
-                                    ? '${template.pattern.substring(0, 50)}...'
-                                    : template.pattern,
-                              ),
-                              subtitle: Text('Priority: ${template.priority}'),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Switch(
-                                    value: template.isActive,
-                                    onChanged: (value) =>
-                                        _toggleTemplateActive(template, value),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: () =>
-                                        _navigateToEditTemplate(template),
-                                  ),
-                                ],
-                              ),
-                              onTap: () => _navigateToEditTemplate(template),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(child: Text('Error: $error')),
-            ),
-            // Pattern Tester
-            const _PatternTesterPlaceholder(),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            final banksAsync = ref.read(banksProvider);
-            banksAsync.whenData((banks) {
-              if (banks.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Add a bank first')),
-                );
-                return;
-              }
-              // Navigate to first bank's template form, or show bank selector
-              _navigateToAddTemplate(banks.first.id);
-            });
-          },
-          child: const Icon(Icons.add),
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              // Section header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text(
+                  'sms_templates'.tr(),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+              // Template cards
+              ...templates.map((template) => _buildTemplateCard(context, template)),
+            ],
+          );
+        },
+        loading: () => const SkeletonList(itemCount: 3, itemHeight: 100),
+        error: (error, stack) => ErrorState(
+          title: 'error_loading_templates'.tr(),
+          message: error.toString(),
+          onRetry: () => ref.invalidate(smsTemplatesProvider),
         ),
       ),
     );
   }
 
-  void _navigateToAddTemplate(int bankId) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SmsTemplateFormPage(bankId: bankId),
+  Widget _buildTemplateCard(BuildContext context, db.SmsTemplate template) {
+    return Card(
+      margin: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.message),
+            title: Text(
+              template.pattern.length > 50
+                  ? '${template.pattern.substring(0, 50)}...'
+                  : template.pattern,
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (template.senderPattern != null &&
+                    template.senderPattern!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'sender_pattern'.tr() + ': ${template.senderPattern}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'priority_label'.tr(args: [template.priority.toString()]),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Switch(
+                  value: template.isActive,
+                  onChanged: (value) {
+                    HapticFeedback.lightImpact();
+                    _toggleTemplateActive(template, value);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  tooltip: 'edit'.tr(),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _navigateToEditTemplate(template);
+                  },
+                ),
+              ],
+            ),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _navigateToEditTemplate(template);
+            },
+          ),
+          // Test Pattern button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: OutlinedButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _showPatternTester(context, template);
+              },
+              icon: const Icon(Icons.bug_report_outlined),
+              label: Text('test_pattern'.tr()),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  void _showPatternTester(BuildContext context, db.SmsTemplate template) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'test_pattern'.tr(),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'close'.tr(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Pattern tester content
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(16),
+                child: SmsPatternTester(
+                  pattern: template.pattern,
+                  extractionRules: template.extractionRules,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToAddTemplate() {
+    context.push('/banks/sms-template-form');
   }
 
   void _navigateToEditTemplate(db.SmsTemplate template) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SmsTemplateFormPage(template: template),
-      ),
-    );
+    context.push('/banks/sms-template/${template.id}/edit');
   }
 
   Future<void> _toggleTemplateActive(
@@ -161,45 +233,15 @@ class _SmsPatternPageState extends ConsumerState<SmsPatternPage> {
     bool value,
   ) async {
     try {
-      final repository = ref.read(bankRepositoryProvider);
-      await repository.updateTemplate(
+      final dao = ref.read(smsTemplateDaoProvider);
+      await dao.updateTemplate(
         db.SmsTemplatesCompanion(
           id: drift.Value(template.id),
           isActive: drift.Value(value),
         ),
       );
     } catch (e) {
-      // Error handling is done by the repository
+      // Error handling is done by the DAO
     }
-  }
-}
-
-class _PatternTesterPlaceholder extends StatelessWidget {
-  const _PatternTesterPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.bug_report_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text('Pattern Tester', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text(
-            'Select a pattern from the Patterns tab to test it',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 }

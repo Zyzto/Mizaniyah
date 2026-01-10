@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
-import '../providers/transaction_providers.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
-import '../../../core/widgets/currency_input_field.dart';
-import '../../../core/widgets/date_picker_field.dart';
+import '../../../core/database/providers/dao_providers.dart';
+import '../../../core/widgets/enhanced_text_form_field.dart';
+import '../../../core/widgets/enhanced_currency_field.dart';
+import '../../../core/widgets/enhanced_date_picker_field.dart';
 import '../../../core/widgets/card_selector.dart';
 import '../../../core/widgets/category_selector.dart';
 import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/loading_button.dart';
 import '../../../core/services/currency_service.dart';
 
 class TransactionFormPage extends ConsumerStatefulWidget {
@@ -29,6 +34,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
   DateTime? _date;
   int? _cardId;
   int? _categoryId;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -54,56 +60,69 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) {
+    final formState = _formKey.currentState;
+    if (formState == null || !formState.validate()) {
+      HapticFeedback.mediumImpact();
       return;
     }
 
-    if (_amount == null) {
-      ErrorSnackbar.show(context, 'Please enter an amount');
+    final amount = _amount;
+    if (amount == null || amount <= 0) {
+      ErrorSnackbar.show(context, 'amount_required'.tr());
+      HapticFeedback.mediumImpact();
       return;
     }
 
-    if (_date == null) {
-      ErrorSnackbar.show(context, 'Please select a date');
+    final date = _date;
+    if (date == null) {
+      ErrorSnackbar.show(context, 'date_required'.tr());
+      HapticFeedback.mediumImpact();
       return;
     }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSaving = true;
+    });
 
     try {
-      final repository = ref.read(transactionRepositoryProvider);
+      final dao = ref.read(transactionDaoProvider);
+      final existingTransaction = widget.transaction;
 
-      if (widget.transaction == null) {
+      final transactionCompanion = db.TransactionsCompanion(
+        storeName: drift.Value(_storeNameController.text.trim()),
+        amount: drift.Value(amount),
+        currencyCode: drift.Value(_currencyCode),
+        date: drift.Value(date),
+        cardId: _cardId != null
+            ? drift.Value(_cardId!)
+            : const drift.Value.absent(),
+        categoryId: _categoryId != null
+            ? drift.Value(_categoryId!)
+            : const drift.Value.absent(),
+        notes: _notesController.text.trim().isNotEmpty
+            ? drift.Value(_notesController.text.trim())
+            : const drift.Value.absent(),
+        source: const drift.Value('manual'),
+      );
+
+      if (existingTransaction == null) {
         // Create new transaction
-        await repository.createTransaction(
-          db.TransactionsCompanion(
-            storeName: drift.Value(_storeNameController.text.trim()),
-            amount: drift.Value(_amount!),
-            currencyCode: drift.Value(_currencyCode),
-            date: drift.Value(_date!),
-            cardId: _cardId != null
-                ? drift.Value(_cardId!)
-                : const drift.Value.absent(),
-            categoryId: _categoryId != null
-                ? drift.Value(_categoryId!)
-                : const drift.Value.absent(),
-            notes: _notesController.text.trim().isNotEmpty
-                ? drift.Value(_notesController.text.trim())
-                : const drift.Value.absent(),
-            source: const drift.Value('manual'),
-          ),
-        );
-        if (mounted) {
-          ErrorSnackbar.showSuccess(context, 'Transaction created');
-          Navigator.of(context).pop();
-        }
+        await dao.insertTransaction(transactionCompanion);
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.showSuccess(context, 'transaction_created'.tr());
+        context.pop();
       } else {
         // Update existing transaction
-        await repository.updateTransaction(
+        await dao.updateTransaction(
           db.TransactionsCompanion(
-            id: drift.Value(widget.transaction!.id),
+            id: drift.Value(existingTransaction.id),
             storeName: drift.Value(_storeNameController.text.trim()),
-            amount: drift.Value(_amount!),
+            amount: drift.Value(amount),
             currencyCode: drift.Value(_currencyCode),
-            date: drift.Value(_date!),
+            date: drift.Value(date),
             cardId: _cardId != null
                 ? drift.Value(_cardId!)
                 : const drift.Value.absent(),
@@ -115,14 +134,23 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                 : const drift.Value.absent(),
           ),
         );
-        if (mounted) {
-          ErrorSnackbar.showSuccess(context, 'Transaction updated');
-          Navigator.of(context).pop();
-        }
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.showSuccess(context, 'transaction_updated'.tr());
+        context.pop();
       }
     } catch (e) {
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(
+        context,
+        'transaction_save_failed'.tr(),
+      );
+    } finally {
       if (mounted) {
-        ErrorSnackbar.show(context, 'Failed to save transaction: $e');
+        setState(() {
+          _isSaving = false;
+        });
       }
     }
   }
@@ -134,27 +162,35 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.transaction == null ? 'New Transaction' : 'Edit Transaction',
+          widget.transaction == null
+              ? 'new_transaction'.tr()
+              : 'edit_transaction'.tr(),
         ),
-        actions: [IconButton(icon: const Icon(Icons.save), onPressed: _save)],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
+            EnhancedTextFormField(
               controller: _storeNameController,
-              decoration: const InputDecoration(
-                labelText: 'Store Name',
-                hintText: 'Enter store or merchant name',
-              ),
+              labelText: 'store_name'.tr(),
+              hintText: 'enter_store_name'.tr(),
+              textInputAction: TextInputAction.next,
+              maxLength: 200,
+              showCharacterCount: true,
+              semanticLabel: 'store_name'.tr(),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'[a-zA-Z0-9\s\-_.,()&@#]+'),
+                ),
+              ],
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Store name is required';
+                  return 'store_name_required'.tr();
                 }
                 if (value.trim().length > 200) {
-                  return 'Store name must be 200 characters or less';
+                  return 'store_name_too_long'.tr();
                 }
                 return null;
               },
@@ -164,9 +200,12 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
               children: [
                 Expanded(
                   flex: 2,
-                  child: CurrencyInputField(
+                  child: EnhancedCurrencyField(
                     initialValue: _amount,
                     currencyCode: _currencyCode,
+                    labelText: 'amount'.tr(),
+                    hintText: '0.00',
+                    semanticLabel: 'amount'.tr(),
                     onChanged: (amount) {
                       setState(() {
                         _amount = amount;
@@ -174,7 +213,10 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                     },
                     validator: (amount) {
                       if (amount == null) {
-                        return 'Amount is required';
+                        return 'amount_required'.tr();
+                      }
+                      if (amount <= 0) {
+                        return 'amount_positive'.tr();
                       }
                       return null;
                     },
@@ -184,7 +226,10 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     initialValue: _currencyCode,
-                    decoration: const InputDecoration(labelText: 'Currency'),
+                    decoration: InputDecoration(
+                      labelText: 'currency'.tr(),
+                      border: const OutlineInputBorder(),
+                    ),
                     items: currencies.map((currency) {
                       return DropdownMenuItem<String>(
                         value: currency.code,
@@ -192,7 +237,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                       );
                     }).toList(),
                     onChanged: (value) {
-                      if (value != null) {
+                      if (value != null && mounted) {
                         setState(() {
                           _currencyCode = value;
                         });
@@ -203,17 +248,21 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
               ],
             ),
             const SizedBox(height: 24),
-            DatePickerField(
-              label: 'Date',
+            EnhancedDatePickerField(
+              labelText: 'date'.tr(),
+              hintText: 'select_date'.tr(),
               initialDate: _date,
+              semanticLabel: 'date'.tr(),
               onDateSelected: (date) {
-                setState(() {
-                  _date = date;
-                });
+                if (mounted) {
+                  setState(() {
+                    _date = date;
+                  });
+                }
               },
               validator: (date) {
                 if (date == null) {
-                  return 'Date is required';
+                  return 'date_required'.tr();
                 }
                 return null;
               },
@@ -222,28 +271,47 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
             CardSelector(
               selectedCardId: _cardId,
               onCardSelected: (cardId) {
-                setState(() {
-                  _cardId = cardId;
-                });
+                if (mounted) {
+                  setState(() {
+                    _cardId = cardId;
+                  });
+                }
               },
             ),
             const SizedBox(height: 24),
             CategorySelector(
               selectedCategoryId: _categoryId,
               onCategorySelected: (categoryId) {
-                setState(() {
-                  _categoryId = categoryId;
-                });
+                if (mounted) {
+                  setState(() {
+                    _categoryId = categoryId;
+                  });
+                }
               },
             ),
             const SizedBox(height: 24),
-            TextFormField(
+            EnhancedTextFormField(
               controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (Optional)',
-                hintText: 'Add any additional notes',
-              ),
+              labelText: 'notes_optional'.tr(),
+              hintText: 'add_notes'.tr(),
+              textInputAction: TextInputAction.done,
+              maxLength: 500,
               maxLines: 3,
+              showCharacterCount: true,
+              semanticLabel: 'notes_optional'.tr(),
+              keyboardType: TextInputType.multiline,
+            ),
+            const SizedBox(height: 32),
+            LoadingButton(
+              onPressed: _isSaving ? null : _save,
+              text: widget.transaction == null
+                  ? 'create_transaction'.tr()
+                  : 'update_transaction'.tr(),
+              icon: Icons.save,
+              isLoading: _isSaving,
+              semanticLabel: widget.transaction == null
+                  ? 'create_transaction'.tr()
+                  : 'update_transaction'.tr(),
             ),
           ],
         ),

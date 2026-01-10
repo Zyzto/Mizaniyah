@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ColorPickerDialog extends StatelessWidget {
   final int selectedColor;
@@ -35,18 +37,25 @@ class ColorPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Dialog(
       child: Container(
         constraints: const BoxConstraints(maxHeight: 400),
         child: Column(
           children: [
             AppBar(
-              title: const Text('Select Color'),
+              title: Text('select_color'.tr()),
               automaticallyImplyLeading: false,
               actions: [
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
+                  tooltip: 'close'.tr(),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop();
+                  },
                 ),
               ],
             ),
@@ -55,8 +64,8 @@ class ColorPickerDialog extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 5,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
                 ),
                 itemCount: predefinedColors.length,
                 itemBuilder: (context, index) {
@@ -71,6 +80,7 @@ class ColorPickerDialog extends StatelessWidget {
 
                   return InkWell(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       // Convert Color to int (ARGB32 format)
                       final r = (color.r * 255.0).round().clamp(0, 255);
                       final g = (color.g * 255.0).round().clamp(0, 255);
@@ -80,11 +90,14 @@ class ColorPickerDialog extends StatelessWidget {
                       onColorSelected(colorValue);
                       Navigator.of(context).pop();
                     },
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
                       decoration: BoxDecoration(
                         color: color,
                         border: Border.all(
-                          color: isSelected ? Colors.black : Colors.grey,
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.outline,
                           width: isSelected ? 3 : 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -99,7 +112,12 @@ class ColorPickerDialog extends StatelessWidget {
                             : null,
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white)
+                          ? Icon(
+                              Icons.check,
+                              color: color.computeLuminance() > 0.5
+                                  ? Colors.black
+                                  : Colors.white,
+                            )
                           : null,
                     ),
                   );

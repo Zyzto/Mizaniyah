@@ -1,85 +1,27 @@
 import 'package:mizaniyah/core/database/app_database.dart' as db;
-import 'package:mizaniyah/features/budgets/budget_repository.dart';
-import 'package:mizaniyah/features/transactions/transaction_repository.dart';
+import 'package:mizaniyah/core/database/daos/budget_dao.dart';
+import 'package:mizaniyah/core/database/daos/transaction_dao.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
+import 'package:mizaniyah/core/services/budget/budget_period_calculator.dart';
+import 'package:mizaniyah/core/services/budget/budget_status_calculator.dart';
 
 /// Budget Service
 /// Handles budget calculations, remaining amounts, and rollover logic
 class BudgetService with Loggable {
-  final BudgetRepository _budgetRepository;
-  final TransactionRepository _transactionRepository;
+  final BudgetDao _budgetDao;
+  final TransactionDao _transactionDao;
+  final BudgetPeriodCalculator _periodCalculator;
+  final BudgetStatusCalculator _statusCalculator;
 
-  BudgetService(this._budgetRepository, this._transactionRepository);
+  BudgetService(
+    this._budgetDao,
+    this._transactionDao,
+  )   : _periodCalculator = BudgetPeriodCalculator(),
+        _statusCalculator = BudgetStatusCalculator();
 
   /// Get the current period start and end dates for a budget
   (DateTime start, DateTime end) getBudgetPeriodDates(db.Budget budget) {
-    final now = DateTime.now();
-    final startDate = budget.startDate;
-
-    // Calculate current period based on start date
-    DateTime periodStart;
-    DateTime periodEnd;
-
-    switch (budget.period) {
-      case 'monthly':
-        // Find the current month period based on start date
-        final monthsSinceStart =
-            (now.year - startDate.year) * 12 + (now.month - startDate.month);
-        periodStart = DateTime(startDate.year, startDate.month, startDate.day);
-        for (int i = 0; i < monthsSinceStart; i++) {
-          periodStart = DateTime(
-            periodStart.year,
-            periodStart.month + 1,
-            periodStart.day,
-          );
-        }
-        // Ensure we're in the correct period
-        if (now.day < startDate.day) {
-          periodStart = DateTime(
-            periodStart.year,
-            periodStart.month - 1,
-            periodStart.day,
-          );
-        }
-        periodEnd = DateTime(
-          periodStart.year,
-          periodStart.month + 1,
-          periodStart.day,
-        ).subtract(const Duration(days: 1));
-        break;
-      case 'weekly':
-        final daysSinceStart = now.difference(startDate).inDays;
-        final weeksSinceStart = daysSinceStart ~/ 7;
-        periodStart = startDate.add(Duration(days: weeksSinceStart * 7));
-        periodEnd = periodStart.add(const Duration(days: 6));
-        break;
-      case 'yearly':
-        periodStart = DateTime(startDate.year, startDate.month, startDate.day);
-        if (now.month < startDate.month ||
-            (now.month == startDate.month && now.day < startDate.day)) {
-          periodStart = DateTime(
-            periodStart.year - 1,
-            periodStart.month,
-            periodStart.day,
-          );
-        }
-        periodEnd = DateTime(
-          periodStart.year + 1,
-          periodStart.month,
-          periodStart.day,
-        ).subtract(const Duration(days: 1));
-        break;
-      default:
-        // Default to monthly
-        periodStart = DateTime(now.year, now.month, startDate.day);
-        periodEnd = DateTime(
-          periodStart.year,
-          periodStart.month + 1,
-          periodStart.day,
-        ).subtract(const Duration(days: 1));
-    }
-
-    return (periodStart, periodEnd);
+    return _periodCalculator.getBudgetPeriodDates(budget);
   }
 
   /// Calculate total spent for a budget in the current period
@@ -88,20 +30,20 @@ class BudgetService with Loggable {
     try {
       final (periodStart, periodEnd) = getBudgetPeriodDates(budget);
 
-      // Get all transactions for this category in the period
-      final transactions = await _transactionRepository
-          .getTransactionsByDateRange(periodStart, periodEnd);
+      // Get transactions filtered by date range AND category in SQL (optimized)
+      final transactions = await _transactionDao
+          .getTransactionsByDateRangeAndCategory(
+            periodStart,
+            periodEnd,
+            budget.categoryId,
+          );
 
-      // Filter by category
-      final categoryTransactions = transactions
-          .where((t) => t.categoryId == budget.categoryId)
-          .toList();
-
-      // Sum amounts (assuming same currency for now)
-      double total = 0.0;
-      for (final transaction in categoryTransactions) {
-        total += transaction.amount;
-      }
+      // Sum amounts using fold (optimized - single pass)
+      // TODO: Add currency conversion support
+      final total = transactions.fold<double>(
+        0.0,
+        (sum, transaction) => sum + transaction.amount,
+      );
 
       logInfo(
         'calculateSpentAmount() returned total=$total for budget ${budget.id}',
@@ -144,25 +86,19 @@ class BudgetService with Loggable {
     logDebug('getBudgetStatusColor(budgetId=${budget.id})');
     try {
       final remaining = await calculateRemainingBudget(budget);
-      final percentageUsed = (budget.amount - remaining) / budget.amount;
+      final statusColor = _statusCalculator.getBudgetStatusColor(
+        budgetAmount: budget.amount,
+        remainingAmount: remaining,
+      );
 
-      if (remaining < 0) {
-        // Over budget - red
-        return 2;
-      } else if (percentageUsed >= 0.8) {
-        // 80% or more used - yellow
-        return 1;
-      } else {
-        // Less than 80% used - green
-        return 0;
-      }
+      return statusColor.value;
     } catch (e, stackTrace) {
       logError(
         'getBudgetStatusColor() failed',
         error: e,
         stackTrace: stackTrace,
       );
-      return 0; // Default to green on error
+      return BudgetStatusColor.green.value; // Default to green on error
     }
   }
 
@@ -170,7 +106,7 @@ class BudgetService with Loggable {
   Future<double?> getRemainingBudgetForCategory(int categoryId) async {
     logDebug('getRemainingBudgetForCategory(categoryId=$categoryId)');
     try {
-      final budgets = await _budgetRepository.getBudgetsByCategory(categoryId);
+      final budgets = await _budgetDao.getBudgetsByCategory(categoryId);
       if (budgets.isEmpty) {
         logDebug('No active budget found for category $categoryId');
         return null;
@@ -198,7 +134,7 @@ class BudgetService with Loggable {
   Future<int?> getBudgetStatusColorForCategory(int categoryId) async {
     logDebug('getBudgetStatusColorForCategory(categoryId=$categoryId)');
     try {
-      final budgets = await _budgetRepository.getBudgetsByCategory(categoryId);
+      final budgets = await _budgetDao.getBudgetsByCategory(categoryId);
       if (budgets.isEmpty) {
         return null;
       }

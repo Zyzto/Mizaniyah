@@ -8,13 +8,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:easy_localization/easy_localization.dart';
 import 'package:mizaniyah/app.dart';
+import 'package:mizaniyah/features/settings/providers/settings_framework_providers.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: App()));
+    // Initialize EasyLocalization for testing
+    await EasyLocalization.ensureInitialized();
+
+    // Create mock settings providers using in-memory storage
+    final mockSettingsProviders = await initializeMizaniyahSettings();
+
+    // Build our app with proper providers
+    await tester.pumpWidget(
+      EasyLocalization(
+        supportedLocales: const [Locale('en'), Locale('ar')],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('en'),
+        child: ProviderScope(
+          overrides: [
+            mizaniyahSettingsControllerProvider.overrideWithValue(
+              mockSettingsProviders.controller,
+            ),
+            mizaniyahSettingsSearchIndexProvider.overrideWithValue(
+              mockSettingsProviders.searchIndex,
+            ),
+            mizaniyahSettingsProvider.overrideWithValue(mockSettingsProviders),
+          ],
+          child: const App(),
+        ),
+      ),
+    );
+
+    // Wait for async initialization
+    await tester.pumpAndSettle();
 
     // Verify that the app builds without errors
     expect(find.byType(MaterialApp), findsOneWidget);

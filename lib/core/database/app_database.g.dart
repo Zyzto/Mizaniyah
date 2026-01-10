@@ -3,11 +3,11 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
+class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $BanksTable(this.attachedDatabase, [this._alias]);
+  $AccountsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -33,17 +33,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
     ),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-  );
-  static const VerificationMeta _smsSenderPatternMeta = const VerificationMeta(
-    'smsSenderPattern',
-  );
-  @override
-  late final GeneratedColumn<String> smsSenderPattern = GeneratedColumn<String>(
-    'sms_sender_pattern',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
   );
   static const VerificationMeta _isActiveMeta = const VerificationMeta(
     'isActive',
@@ -73,21 +62,15 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
     defaultValue: currentDateAndTime,
   );
   @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    name,
-    smsSenderPattern,
-    isActive,
-    createdAt,
-  ];
+  List<GeneratedColumn> get $columns => [id, name, isActive, createdAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'banks';
+  static const String $name = 'accounts';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Bank> instance, {
+    Insertable<Account> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -102,15 +85,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
-    }
-    if (data.containsKey('sms_sender_pattern')) {
-      context.handle(
-        _smsSenderPatternMeta,
-        smsSenderPattern.isAcceptableOrUnknown(
-          data['sms_sender_pattern']!,
-          _smsSenderPatternMeta,
-        ),
-      );
     }
     if (data.containsKey('is_active')) {
       context.handle(
@@ -130,9 +104,9 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Bank map(Map<String, dynamic> data, {String? tablePrefix}) {
+  Account map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Bank(
+    return Account(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -141,10 +115,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
-      smsSenderPattern: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sms_sender_pattern'],
-      ),
       isActive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
@@ -157,21 +127,19 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
   }
 
   @override
-  $BanksTable createAlias(String alias) {
-    return $BanksTable(attachedDatabase, alias);
+  $AccountsTable createAlias(String alias) {
+    return $AccountsTable(attachedDatabase, alias);
   }
 }
 
-class Bank extends DataClass implements Insertable<Bank> {
+class Account extends DataClass implements Insertable<Account> {
   final int id;
   final String name;
-  final String? smsSenderPattern;
   final bool isActive;
   final DateTime createdAt;
-  const Bank({
+  const Account({
     required this.id,
     required this.name,
-    this.smsSenderPattern,
     required this.isActive,
     required this.createdAt,
   });
@@ -180,35 +148,28 @@ class Bank extends DataClass implements Insertable<Bank> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
-    if (!nullToAbsent || smsSenderPattern != null) {
-      map['sms_sender_pattern'] = Variable<String>(smsSenderPattern);
-    }
     map['is_active'] = Variable<bool>(isActive);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
 
-  BanksCompanion toCompanion(bool nullToAbsent) {
-    return BanksCompanion(
+  AccountsCompanion toCompanion(bool nullToAbsent) {
+    return AccountsCompanion(
       id: Value(id),
       name: Value(name),
-      smsSenderPattern: smsSenderPattern == null && nullToAbsent
-          ? const Value.absent()
-          : Value(smsSenderPattern),
       isActive: Value(isActive),
       createdAt: Value(createdAt),
     );
   }
 
-  factory Bank.fromJson(
+  factory Account.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Bank(
+    return Account(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      smsSenderPattern: serializer.fromJson<String?>(json['smsSenderPattern']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -219,34 +180,26 @@ class Bank extends DataClass implements Insertable<Bank> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
-      'smsSenderPattern': serializer.toJson<String?>(smsSenderPattern),
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
-  Bank copyWith({
+  Account copyWith({
     int? id,
     String? name,
-    Value<String?> smsSenderPattern = const Value.absent(),
     bool? isActive,
     DateTime? createdAt,
-  }) => Bank(
+  }) => Account(
     id: id ?? this.id,
     name: name ?? this.name,
-    smsSenderPattern: smsSenderPattern.present
-        ? smsSenderPattern.value
-        : this.smsSenderPattern,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt ?? this.createdAt,
   );
-  Bank copyWithCompanion(BanksCompanion data) {
-    return Bank(
+  Account copyWithCompanion(AccountsCompanion data) {
+    return Account(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
-      smsSenderPattern: data.smsSenderPattern.present
-          ? data.smsSenderPattern.value
-          : this.smsSenderPattern,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -254,10 +207,9 @@ class Bank extends DataClass implements Insertable<Bank> {
 
   @override
   String toString() {
-    return (StringBuffer('Bank(')
+    return (StringBuffer('Account(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('smsSenderPattern: $smsSenderPattern, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -265,66 +217,57 @@ class Bank extends DataClass implements Insertable<Bank> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, smsSenderPattern, isActive, createdAt);
+  int get hashCode => Object.hash(id, name, isActive, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Bank &&
+      (other is Account &&
           other.id == this.id &&
           other.name == this.name &&
-          other.smsSenderPattern == this.smsSenderPattern &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt);
 }
 
-class BanksCompanion extends UpdateCompanion<Bank> {
+class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<int> id;
   final Value<String> name;
-  final Value<String?> smsSenderPattern;
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
-  const BanksCompanion({
+  const AccountsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
-    this.smsSenderPattern = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
-  BanksCompanion.insert({
+  AccountsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
-    this.smsSenderPattern = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : name = Value(name);
-  static Insertable<Bank> custom({
+  static Insertable<Account> custom({
     Expression<int>? id,
     Expression<String>? name,
-    Expression<String>? smsSenderPattern,
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
-      if (smsSenderPattern != null) 'sms_sender_pattern': smsSenderPattern,
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
 
-  BanksCompanion copyWith({
+  AccountsCompanion copyWith({
     Value<int>? id,
     Value<String>? name,
-    Value<String?>? smsSenderPattern,
     Value<bool>? isActive,
     Value<DateTime>? createdAt,
   }) {
-    return BanksCompanion(
+    return AccountsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
-      smsSenderPattern: smsSenderPattern ?? this.smsSenderPattern,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -339,9 +282,6 @@ class BanksCompanion extends UpdateCompanion<Bank> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
-    if (smsSenderPattern.present) {
-      map['sms_sender_pattern'] = Variable<String>(smsSenderPattern.value);
-    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -353,10 +293,9 @@ class BanksCompanion extends UpdateCompanion<Bank> {
 
   @override
   String toString() {
-    return (StringBuffer('BanksCompanion(')
+    return (StringBuffer('AccountsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('smsSenderPattern: $smsSenderPattern, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -382,16 +321,18 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, Card> {
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
-  static const VerificationMeta _bankIdMeta = const VerificationMeta('bankId');
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
   @override
-  late final GeneratedColumn<int> bankId = GeneratedColumn<int>(
-    'bank_id',
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+    'account_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES banks (id) ON DELETE CASCADE',
+      'REFERENCES accounts (id) ON DELETE SET NULL',
     ),
   );
   static const VerificationMeta _last4DigitsMeta = const VerificationMeta(
@@ -454,7 +395,7 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, Card> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    bankId,
+    accountId,
     last4Digits,
     cardName,
     isActive,
@@ -475,13 +416,11 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, Card> {
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('bank_id')) {
+    if (data.containsKey('account_id')) {
       context.handle(
-        _bankIdMeta,
-        bankId.isAcceptableOrUnknown(data['bank_id']!, _bankIdMeta),
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_bankIdMeta);
     }
     if (data.containsKey('last4_digits')) {
       context.handle(
@@ -527,10 +466,10 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, Card> {
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      bankId: attachedDatabase.typeMapping.read(
+      accountId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}bank_id'],
-      )!,
+        data['${effectivePrefix}account_id'],
+      ),
       last4Digits: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}last4_digits'],
@@ -558,14 +497,14 @@ class $CardsTable extends Cards with TableInfo<$CardsTable, Card> {
 
 class Card extends DataClass implements Insertable<Card> {
   final int id;
-  final int bankId;
+  final int? accountId;
   final String last4Digits;
   final String cardName;
   final bool isActive;
   final DateTime createdAt;
   const Card({
     required this.id,
-    required this.bankId,
+    this.accountId,
     required this.last4Digits,
     required this.cardName,
     required this.isActive,
@@ -575,7 +514,9 @@ class Card extends DataClass implements Insertable<Card> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['bank_id'] = Variable<int>(bankId);
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
+    }
     map['last4_digits'] = Variable<String>(last4Digits);
     map['card_name'] = Variable<String>(cardName);
     map['is_active'] = Variable<bool>(isActive);
@@ -586,7 +527,9 @@ class Card extends DataClass implements Insertable<Card> {
   CardsCompanion toCompanion(bool nullToAbsent) {
     return CardsCompanion(
       id: Value(id),
-      bankId: Value(bankId),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       last4Digits: Value(last4Digits),
       cardName: Value(cardName),
       isActive: Value(isActive),
@@ -601,7 +544,7 @@ class Card extends DataClass implements Insertable<Card> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Card(
       id: serializer.fromJson<int>(json['id']),
-      bankId: serializer.fromJson<int>(json['bankId']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       last4Digits: serializer.fromJson<String>(json['last4Digits']),
       cardName: serializer.fromJson<String>(json['cardName']),
       isActive: serializer.fromJson<bool>(json['isActive']),
@@ -613,7 +556,7 @@ class Card extends DataClass implements Insertable<Card> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'bankId': serializer.toJson<int>(bankId),
+      'accountId': serializer.toJson<int?>(accountId),
       'last4Digits': serializer.toJson<String>(last4Digits),
       'cardName': serializer.toJson<String>(cardName),
       'isActive': serializer.toJson<bool>(isActive),
@@ -623,14 +566,14 @@ class Card extends DataClass implements Insertable<Card> {
 
   Card copyWith({
     int? id,
-    int? bankId,
+    Value<int?> accountId = const Value.absent(),
     String? last4Digits,
     String? cardName,
     bool? isActive,
     DateTime? createdAt,
   }) => Card(
     id: id ?? this.id,
-    bankId: bankId ?? this.bankId,
+    accountId: accountId.present ? accountId.value : this.accountId,
     last4Digits: last4Digits ?? this.last4Digits,
     cardName: cardName ?? this.cardName,
     isActive: isActive ?? this.isActive,
@@ -639,7 +582,7 @@ class Card extends DataClass implements Insertable<Card> {
   Card copyWithCompanion(CardsCompanion data) {
     return Card(
       id: data.id.present ? data.id.value : this.id,
-      bankId: data.bankId.present ? data.bankId.value : this.bankId,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       last4Digits: data.last4Digits.present
           ? data.last4Digits.value
           : this.last4Digits,
@@ -653,7 +596,7 @@ class Card extends DataClass implements Insertable<Card> {
   String toString() {
     return (StringBuffer('Card(')
           ..write('id: $id, ')
-          ..write('bankId: $bankId, ')
+          ..write('accountId: $accountId, ')
           ..write('last4Digits: $last4Digits, ')
           ..write('cardName: $cardName, ')
           ..write('isActive: $isActive, ')
@@ -664,13 +607,13 @@ class Card extends DataClass implements Insertable<Card> {
 
   @override
   int get hashCode =>
-      Object.hash(id, bankId, last4Digits, cardName, isActive, createdAt);
+      Object.hash(id, accountId, last4Digits, cardName, isActive, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Card &&
           other.id == this.id &&
-          other.bankId == this.bankId &&
+          other.accountId == this.accountId &&
           other.last4Digits == this.last4Digits &&
           other.cardName == this.cardName &&
           other.isActive == this.isActive &&
@@ -679,14 +622,14 @@ class Card extends DataClass implements Insertable<Card> {
 
 class CardsCompanion extends UpdateCompanion<Card> {
   final Value<int> id;
-  final Value<int> bankId;
+  final Value<int?> accountId;
   final Value<String> last4Digits;
   final Value<String> cardName;
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
   const CardsCompanion({
     this.id = const Value.absent(),
-    this.bankId = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.last4Digits = const Value.absent(),
     this.cardName = const Value.absent(),
     this.isActive = const Value.absent(),
@@ -694,17 +637,16 @@ class CardsCompanion extends UpdateCompanion<Card> {
   });
   CardsCompanion.insert({
     this.id = const Value.absent(),
-    required int bankId,
+    this.accountId = const Value.absent(),
     required String last4Digits,
     required String cardName,
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
-  }) : bankId = Value(bankId),
-       last4Digits = Value(last4Digits),
+  }) : last4Digits = Value(last4Digits),
        cardName = Value(cardName);
   static Insertable<Card> custom({
     Expression<int>? id,
-    Expression<int>? bankId,
+    Expression<int>? accountId,
     Expression<String>? last4Digits,
     Expression<String>? cardName,
     Expression<bool>? isActive,
@@ -712,7 +654,7 @@ class CardsCompanion extends UpdateCompanion<Card> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (bankId != null) 'bank_id': bankId,
+      if (accountId != null) 'account_id': accountId,
       if (last4Digits != null) 'last4_digits': last4Digits,
       if (cardName != null) 'card_name': cardName,
       if (isActive != null) 'is_active': isActive,
@@ -722,7 +664,7 @@ class CardsCompanion extends UpdateCompanion<Card> {
 
   CardsCompanion copyWith({
     Value<int>? id,
-    Value<int>? bankId,
+    Value<int?>? accountId,
     Value<String>? last4Digits,
     Value<String>? cardName,
     Value<bool>? isActive,
@@ -730,7 +672,7 @@ class CardsCompanion extends UpdateCompanion<Card> {
   }) {
     return CardsCompanion(
       id: id ?? this.id,
-      bankId: bankId ?? this.bankId,
+      accountId: accountId ?? this.accountId,
       last4Digits: last4Digits ?? this.last4Digits,
       cardName: cardName ?? this.cardName,
       isActive: isActive ?? this.isActive,
@@ -744,8 +686,8 @@ class CardsCompanion extends UpdateCompanion<Card> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (bankId.present) {
-      map['bank_id'] = Variable<int>(bankId.value);
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
     }
     if (last4Digits.present) {
       map['last4_digits'] = Variable<String>(last4Digits.value);
@@ -766,7 +708,7 @@ class CardsCompanion extends UpdateCompanion<Card> {
   String toString() {
     return (StringBuffer('CardsCompanion(')
           ..write('id: $id, ')
-          ..write('bankId: $bankId, ')
+          ..write('accountId: $accountId, ')
           ..write('last4Digits: $last4Digits, ')
           ..write('cardName: $cardName, ')
           ..write('isActive: $isActive, ')
@@ -856,6 +798,18 @@ class $CategoriesTable extends Categories
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -876,6 +830,7 @@ class $CategoriesTable extends Categories
     color,
     isPredefined,
     isActive,
+    sortOrder,
     createdAt,
   ];
   @override
@@ -930,6 +885,12 @@ class $CategoriesTable extends Categories
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -969,6 +930,10 @@ class $CategoriesTable extends Categories
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -989,6 +954,7 @@ class Category extends DataClass implements Insertable<Category> {
   final int color;
   final bool isPredefined;
   final bool isActive;
+  final int sortOrder;
   final DateTime createdAt;
   const Category({
     required this.id,
@@ -997,6 +963,7 @@ class Category extends DataClass implements Insertable<Category> {
     required this.color,
     required this.isPredefined,
     required this.isActive,
+    required this.sortOrder,
     required this.createdAt,
   });
   @override
@@ -1010,6 +977,7 @@ class Category extends DataClass implements Insertable<Category> {
     map['color'] = Variable<int>(color);
     map['is_predefined'] = Variable<bool>(isPredefined);
     map['is_active'] = Variable<bool>(isActive);
+    map['sort_order'] = Variable<int>(sortOrder);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -1022,6 +990,7 @@ class Category extends DataClass implements Insertable<Category> {
       color: Value(color),
       isPredefined: Value(isPredefined),
       isActive: Value(isActive),
+      sortOrder: Value(sortOrder),
       createdAt: Value(createdAt),
     );
   }
@@ -1038,6 +1007,7 @@ class Category extends DataClass implements Insertable<Category> {
       color: serializer.fromJson<int>(json['color']),
       isPredefined: serializer.fromJson<bool>(json['isPredefined']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1051,6 +1021,7 @@ class Category extends DataClass implements Insertable<Category> {
       'color': serializer.toJson<int>(color),
       'isPredefined': serializer.toJson<bool>(isPredefined),
       'isActive': serializer.toJson<bool>(isActive),
+      'sortOrder': serializer.toJson<int>(sortOrder),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1062,6 +1033,7 @@ class Category extends DataClass implements Insertable<Category> {
     int? color,
     bool? isPredefined,
     bool? isActive,
+    int? sortOrder,
     DateTime? createdAt,
   }) => Category(
     id: id ?? this.id,
@@ -1070,6 +1042,7 @@ class Category extends DataClass implements Insertable<Category> {
     color: color ?? this.color,
     isPredefined: isPredefined ?? this.isPredefined,
     isActive: isActive ?? this.isActive,
+    sortOrder: sortOrder ?? this.sortOrder,
     createdAt: createdAt ?? this.createdAt,
   );
   Category copyWithCompanion(CategoriesCompanion data) {
@@ -1082,6 +1055,7 @@ class Category extends DataClass implements Insertable<Category> {
           ? data.isPredefined.value
           : this.isPredefined,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1095,14 +1069,23 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('color: $color, ')
           ..write('isPredefined: $isPredefined, ')
           ..write('isActive: $isActive, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, icon, color, isPredefined, isActive, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    icon,
+    color,
+    isPredefined,
+    isActive,
+    sortOrder,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1113,6 +1096,7 @@ class Category extends DataClass implements Insertable<Category> {
           other.color == this.color &&
           other.isPredefined == this.isPredefined &&
           other.isActive == this.isActive &&
+          other.sortOrder == this.sortOrder &&
           other.createdAt == this.createdAt);
 }
 
@@ -1123,6 +1107,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<int> color;
   final Value<bool> isPredefined;
   final Value<bool> isActive;
+  final Value<int> sortOrder;
   final Value<DateTime> createdAt;
   const CategoriesCompanion({
     this.id = const Value.absent(),
@@ -1131,6 +1116,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.color = const Value.absent(),
     this.isPredefined = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   CategoriesCompanion.insert({
@@ -1140,6 +1126,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     required int color,
     this.isPredefined = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : name = Value(name),
        color = Value(color);
@@ -1150,6 +1137,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<int>? color,
     Expression<bool>? isPredefined,
     Expression<bool>? isActive,
+    Expression<int>? sortOrder,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -1159,6 +1147,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (color != null) 'color': color,
       if (isPredefined != null) 'is_predefined': isPredefined,
       if (isActive != null) 'is_active': isActive,
+      if (sortOrder != null) 'sort_order': sortOrder,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -1170,6 +1159,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Value<int>? color,
     Value<bool>? isPredefined,
     Value<bool>? isActive,
+    Value<int>? sortOrder,
     Value<DateTime>? createdAt,
   }) {
     return CategoriesCompanion(
@@ -1179,6 +1169,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       color: color ?? this.color,
       isPredefined: isPredefined ?? this.isPredefined,
       isActive: isActive ?? this.isActive,
+      sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -1204,6 +1195,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1219,6 +1213,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('color: $color, ')
           ..write('isPredefined: $isPredefined, ')
           ..write('isActive: $isActive, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -2554,17 +2549,16 @@ class $SmsTemplatesTable extends SmsTemplates
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
-  static const VerificationMeta _bankIdMeta = const VerificationMeta('bankId');
+  static const VerificationMeta _senderPatternMeta = const VerificationMeta(
+    'senderPattern',
+  );
   @override
-  late final GeneratedColumn<int> bankId = GeneratedColumn<int>(
-    'bank_id',
+  late final GeneratedColumn<String> senderPattern = GeneratedColumn<String>(
+    'sender_pattern',
     aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES banks (id) ON DELETE CASCADE',
-    ),
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _patternMeta = const VerificationMeta(
     'pattern',
@@ -2630,7 +2624,7 @@ class $SmsTemplatesTable extends SmsTemplates
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    bankId,
+    senderPattern,
     pattern,
     extractionRules,
     priority,
@@ -2652,13 +2646,14 @@ class $SmsTemplatesTable extends SmsTemplates
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('bank_id')) {
+    if (data.containsKey('sender_pattern')) {
       context.handle(
-        _bankIdMeta,
-        bankId.isAcceptableOrUnknown(data['bank_id']!, _bankIdMeta),
+        _senderPatternMeta,
+        senderPattern.isAcceptableOrUnknown(
+          data['sender_pattern']!,
+          _senderPatternMeta,
+        ),
       );
-    } else if (isInserting) {
-      context.missing(_bankIdMeta);
     }
     if (data.containsKey('pattern')) {
       context.handle(
@@ -2710,10 +2705,10 @@ class $SmsTemplatesTable extends SmsTemplates
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      bankId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}bank_id'],
-      )!,
+      senderPattern: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_pattern'],
+      ),
       pattern: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}pattern'],
@@ -2745,7 +2740,7 @@ class $SmsTemplatesTable extends SmsTemplates
 
 class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
   final int id;
-  final int bankId;
+  final String? senderPattern;
   final String pattern;
   final String extractionRules;
   final int priority;
@@ -2753,7 +2748,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
   final DateTime createdAt;
   const SmsTemplate({
     required this.id,
-    required this.bankId,
+    this.senderPattern,
     required this.pattern,
     required this.extractionRules,
     required this.priority,
@@ -2764,7 +2759,9 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['bank_id'] = Variable<int>(bankId);
+    if (!nullToAbsent || senderPattern != null) {
+      map['sender_pattern'] = Variable<String>(senderPattern);
+    }
     map['pattern'] = Variable<String>(pattern);
     map['extraction_rules'] = Variable<String>(extractionRules);
     map['priority'] = Variable<int>(priority);
@@ -2776,7 +2773,9 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
   SmsTemplatesCompanion toCompanion(bool nullToAbsent) {
     return SmsTemplatesCompanion(
       id: Value(id),
-      bankId: Value(bankId),
+      senderPattern: senderPattern == null && nullToAbsent
+          ? const Value.absent()
+          : Value(senderPattern),
       pattern: Value(pattern),
       extractionRules: Value(extractionRules),
       priority: Value(priority),
@@ -2792,7 +2791,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SmsTemplate(
       id: serializer.fromJson<int>(json['id']),
-      bankId: serializer.fromJson<int>(json['bankId']),
+      senderPattern: serializer.fromJson<String?>(json['senderPattern']),
       pattern: serializer.fromJson<String>(json['pattern']),
       extractionRules: serializer.fromJson<String>(json['extractionRules']),
       priority: serializer.fromJson<int>(json['priority']),
@@ -2805,7 +2804,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'bankId': serializer.toJson<int>(bankId),
+      'senderPattern': serializer.toJson<String?>(senderPattern),
       'pattern': serializer.toJson<String>(pattern),
       'extractionRules': serializer.toJson<String>(extractionRules),
       'priority': serializer.toJson<int>(priority),
@@ -2816,7 +2815,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
 
   SmsTemplate copyWith({
     int? id,
-    int? bankId,
+    Value<String?> senderPattern = const Value.absent(),
     String? pattern,
     String? extractionRules,
     int? priority,
@@ -2824,7 +2823,9 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
     DateTime? createdAt,
   }) => SmsTemplate(
     id: id ?? this.id,
-    bankId: bankId ?? this.bankId,
+    senderPattern: senderPattern.present
+        ? senderPattern.value
+        : this.senderPattern,
     pattern: pattern ?? this.pattern,
     extractionRules: extractionRules ?? this.extractionRules,
     priority: priority ?? this.priority,
@@ -2834,7 +2835,9 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
   SmsTemplate copyWithCompanion(SmsTemplatesCompanion data) {
     return SmsTemplate(
       id: data.id.present ? data.id.value : this.id,
-      bankId: data.bankId.present ? data.bankId.value : this.bankId,
+      senderPattern: data.senderPattern.present
+          ? data.senderPattern.value
+          : this.senderPattern,
       pattern: data.pattern.present ? data.pattern.value : this.pattern,
       extractionRules: data.extractionRules.present
           ? data.extractionRules.value
@@ -2849,7 +2852,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
   String toString() {
     return (StringBuffer('SmsTemplate(')
           ..write('id: $id, ')
-          ..write('bankId: $bankId, ')
+          ..write('senderPattern: $senderPattern, ')
           ..write('pattern: $pattern, ')
           ..write('extractionRules: $extractionRules, ')
           ..write('priority: $priority, ')
@@ -2862,7 +2865,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
   @override
   int get hashCode => Object.hash(
     id,
-    bankId,
+    senderPattern,
     pattern,
     extractionRules,
     priority,
@@ -2874,7 +2877,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
       identical(this, other) ||
       (other is SmsTemplate &&
           other.id == this.id &&
-          other.bankId == this.bankId &&
+          other.senderPattern == this.senderPattern &&
           other.pattern == this.pattern &&
           other.extractionRules == this.extractionRules &&
           other.priority == this.priority &&
@@ -2884,7 +2887,7 @@ class SmsTemplate extends DataClass implements Insertable<SmsTemplate> {
 
 class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
   final Value<int> id;
-  final Value<int> bankId;
+  final Value<String?> senderPattern;
   final Value<String> pattern;
   final Value<String> extractionRules;
   final Value<int> priority;
@@ -2892,7 +2895,7 @@ class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
   final Value<DateTime> createdAt;
   const SmsTemplatesCompanion({
     this.id = const Value.absent(),
-    this.bankId = const Value.absent(),
+    this.senderPattern = const Value.absent(),
     this.pattern = const Value.absent(),
     this.extractionRules = const Value.absent(),
     this.priority = const Value.absent(),
@@ -2901,18 +2904,17 @@ class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
   });
   SmsTemplatesCompanion.insert({
     this.id = const Value.absent(),
-    required int bankId,
+    this.senderPattern = const Value.absent(),
     required String pattern,
     required String extractionRules,
     this.priority = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
-  }) : bankId = Value(bankId),
-       pattern = Value(pattern),
+  }) : pattern = Value(pattern),
        extractionRules = Value(extractionRules);
   static Insertable<SmsTemplate> custom({
     Expression<int>? id,
-    Expression<int>? bankId,
+    Expression<String>? senderPattern,
     Expression<String>? pattern,
     Expression<String>? extractionRules,
     Expression<int>? priority,
@@ -2921,7 +2923,7 @@ class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (bankId != null) 'bank_id': bankId,
+      if (senderPattern != null) 'sender_pattern': senderPattern,
       if (pattern != null) 'pattern': pattern,
       if (extractionRules != null) 'extraction_rules': extractionRules,
       if (priority != null) 'priority': priority,
@@ -2932,7 +2934,7 @@ class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
 
   SmsTemplatesCompanion copyWith({
     Value<int>? id,
-    Value<int>? bankId,
+    Value<String?>? senderPattern,
     Value<String>? pattern,
     Value<String>? extractionRules,
     Value<int>? priority,
@@ -2941,7 +2943,7 @@ class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
   }) {
     return SmsTemplatesCompanion(
       id: id ?? this.id,
-      bankId: bankId ?? this.bankId,
+      senderPattern: senderPattern ?? this.senderPattern,
       pattern: pattern ?? this.pattern,
       extractionRules: extractionRules ?? this.extractionRules,
       priority: priority ?? this.priority,
@@ -2956,8 +2958,8 @@ class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (bankId.present) {
-      map['bank_id'] = Variable<int>(bankId.value);
+    if (senderPattern.present) {
+      map['sender_pattern'] = Variable<String>(senderPattern.value);
     }
     if (pattern.present) {
       map['pattern'] = Variable<String>(pattern.value);
@@ -2981,7 +2983,7 @@ class SmsTemplatesCompanion extends UpdateCompanion<SmsTemplate> {
   String toString() {
     return (StringBuffer('SmsTemplatesCompanion(')
           ..write('id: $id, ')
-          ..write('bankId: $bankId, ')
+          ..write('senderPattern: $senderPattern, ')
           ..write('pattern: $pattern, ')
           ..write('extractionRules: $extractionRules, ')
           ..write('priority: $priority, ')
@@ -3033,18 +3035,6 @@ class $PendingSmsConfirmationsTable extends PendingSmsConfirmations
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _bankIdMeta = const VerificationMeta('bankId');
-  @override
-  late final GeneratedColumn<int> bankId = GeneratedColumn<int>(
-    'bank_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES banks (id) ON DELETE SET NULL',
-    ),
-  );
   static const VerificationMeta _parsedDataMeta = const VerificationMeta(
     'parsedData',
   );
@@ -3084,7 +3074,6 @@ class $PendingSmsConfirmationsTable extends PendingSmsConfirmations
     id,
     smsBody,
     smsSender,
-    bankId,
     parsedData,
     createdAt,
     expiresAt,
@@ -3119,12 +3108,6 @@ class $PendingSmsConfirmationsTable extends PendingSmsConfirmations
       );
     } else if (isInserting) {
       context.missing(_smsSenderMeta);
-    }
-    if (data.containsKey('bank_id')) {
-      context.handle(
-        _bankIdMeta,
-        bankId.isAcceptableOrUnknown(data['bank_id']!, _bankIdMeta),
-      );
     }
     if (data.containsKey('parsed_data')) {
       context.handle(
@@ -3169,10 +3152,6 @@ class $PendingSmsConfirmationsTable extends PendingSmsConfirmations
         DriftSqlType.string,
         data['${effectivePrefix}sms_sender'],
       )!,
-      bankId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}bank_id'],
-      ),
       parsedData: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}parsed_data'],
@@ -3199,7 +3178,6 @@ class PendingSmsConfirmation extends DataClass
   final int id;
   final String smsBody;
   final String smsSender;
-  final int? bankId;
   final String parsedData;
   final DateTime createdAt;
   final DateTime expiresAt;
@@ -3207,7 +3185,6 @@ class PendingSmsConfirmation extends DataClass
     required this.id,
     required this.smsBody,
     required this.smsSender,
-    this.bankId,
     required this.parsedData,
     required this.createdAt,
     required this.expiresAt,
@@ -3218,9 +3195,6 @@ class PendingSmsConfirmation extends DataClass
     map['id'] = Variable<int>(id);
     map['sms_body'] = Variable<String>(smsBody);
     map['sms_sender'] = Variable<String>(smsSender);
-    if (!nullToAbsent || bankId != null) {
-      map['bank_id'] = Variable<int>(bankId);
-    }
     map['parsed_data'] = Variable<String>(parsedData);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['expires_at'] = Variable<DateTime>(expiresAt);
@@ -3232,9 +3206,6 @@ class PendingSmsConfirmation extends DataClass
       id: Value(id),
       smsBody: Value(smsBody),
       smsSender: Value(smsSender),
-      bankId: bankId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(bankId),
       parsedData: Value(parsedData),
       createdAt: Value(createdAt),
       expiresAt: Value(expiresAt),
@@ -3250,7 +3221,6 @@ class PendingSmsConfirmation extends DataClass
       id: serializer.fromJson<int>(json['id']),
       smsBody: serializer.fromJson<String>(json['smsBody']),
       smsSender: serializer.fromJson<String>(json['smsSender']),
-      bankId: serializer.fromJson<int?>(json['bankId']),
       parsedData: serializer.fromJson<String>(json['parsedData']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       expiresAt: serializer.fromJson<DateTime>(json['expiresAt']),
@@ -3263,7 +3233,6 @@ class PendingSmsConfirmation extends DataClass
       'id': serializer.toJson<int>(id),
       'smsBody': serializer.toJson<String>(smsBody),
       'smsSender': serializer.toJson<String>(smsSender),
-      'bankId': serializer.toJson<int?>(bankId),
       'parsedData': serializer.toJson<String>(parsedData),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'expiresAt': serializer.toJson<DateTime>(expiresAt),
@@ -3274,7 +3243,6 @@ class PendingSmsConfirmation extends DataClass
     int? id,
     String? smsBody,
     String? smsSender,
-    Value<int?> bankId = const Value.absent(),
     String? parsedData,
     DateTime? createdAt,
     DateTime? expiresAt,
@@ -3282,7 +3250,6 @@ class PendingSmsConfirmation extends DataClass
     id: id ?? this.id,
     smsBody: smsBody ?? this.smsBody,
     smsSender: smsSender ?? this.smsSender,
-    bankId: bankId.present ? bankId.value : this.bankId,
     parsedData: parsedData ?? this.parsedData,
     createdAt: createdAt ?? this.createdAt,
     expiresAt: expiresAt ?? this.expiresAt,
@@ -3294,7 +3261,6 @@ class PendingSmsConfirmation extends DataClass
       id: data.id.present ? data.id.value : this.id,
       smsBody: data.smsBody.present ? data.smsBody.value : this.smsBody,
       smsSender: data.smsSender.present ? data.smsSender.value : this.smsSender,
-      bankId: data.bankId.present ? data.bankId.value : this.bankId,
       parsedData: data.parsedData.present
           ? data.parsedData.value
           : this.parsedData,
@@ -3309,7 +3275,6 @@ class PendingSmsConfirmation extends DataClass
           ..write('id: $id, ')
           ..write('smsBody: $smsBody, ')
           ..write('smsSender: $smsSender, ')
-          ..write('bankId: $bankId, ')
           ..write('parsedData: $parsedData, ')
           ..write('createdAt: $createdAt, ')
           ..write('expiresAt: $expiresAt')
@@ -3318,15 +3283,8 @@ class PendingSmsConfirmation extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    smsBody,
-    smsSender,
-    bankId,
-    parsedData,
-    createdAt,
-    expiresAt,
-  );
+  int get hashCode =>
+      Object.hash(id, smsBody, smsSender, parsedData, createdAt, expiresAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3334,7 +3292,6 @@ class PendingSmsConfirmation extends DataClass
           other.id == this.id &&
           other.smsBody == this.smsBody &&
           other.smsSender == this.smsSender &&
-          other.bankId == this.bankId &&
           other.parsedData == this.parsedData &&
           other.createdAt == this.createdAt &&
           other.expiresAt == this.expiresAt);
@@ -3345,7 +3302,6 @@ class PendingSmsConfirmationsCompanion
   final Value<int> id;
   final Value<String> smsBody;
   final Value<String> smsSender;
-  final Value<int?> bankId;
   final Value<String> parsedData;
   final Value<DateTime> createdAt;
   final Value<DateTime> expiresAt;
@@ -3353,7 +3309,6 @@ class PendingSmsConfirmationsCompanion
     this.id = const Value.absent(),
     this.smsBody = const Value.absent(),
     this.smsSender = const Value.absent(),
-    this.bankId = const Value.absent(),
     this.parsedData = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.expiresAt = const Value.absent(),
@@ -3362,7 +3317,6 @@ class PendingSmsConfirmationsCompanion
     this.id = const Value.absent(),
     required String smsBody,
     required String smsSender,
-    this.bankId = const Value.absent(),
     required String parsedData,
     this.createdAt = const Value.absent(),
     required DateTime expiresAt,
@@ -3374,7 +3328,6 @@ class PendingSmsConfirmationsCompanion
     Expression<int>? id,
     Expression<String>? smsBody,
     Expression<String>? smsSender,
-    Expression<int>? bankId,
     Expression<String>? parsedData,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? expiresAt,
@@ -3383,7 +3336,6 @@ class PendingSmsConfirmationsCompanion
       if (id != null) 'id': id,
       if (smsBody != null) 'sms_body': smsBody,
       if (smsSender != null) 'sms_sender': smsSender,
-      if (bankId != null) 'bank_id': bankId,
       if (parsedData != null) 'parsed_data': parsedData,
       if (createdAt != null) 'created_at': createdAt,
       if (expiresAt != null) 'expires_at': expiresAt,
@@ -3394,7 +3346,6 @@ class PendingSmsConfirmationsCompanion
     Value<int>? id,
     Value<String>? smsBody,
     Value<String>? smsSender,
-    Value<int?>? bankId,
     Value<String>? parsedData,
     Value<DateTime>? createdAt,
     Value<DateTime>? expiresAt,
@@ -3403,7 +3354,6 @@ class PendingSmsConfirmationsCompanion
       id: id ?? this.id,
       smsBody: smsBody ?? this.smsBody,
       smsSender: smsSender ?? this.smsSender,
-      bankId: bankId ?? this.bankId,
       parsedData: parsedData ?? this.parsedData,
       createdAt: createdAt ?? this.createdAt,
       expiresAt: expiresAt ?? this.expiresAt,
@@ -3421,9 +3371,6 @@ class PendingSmsConfirmationsCompanion
     }
     if (smsSender.present) {
       map['sms_sender'] = Variable<String>(smsSender.value);
-    }
-    if (bankId.present) {
-      map['bank_id'] = Variable<int>(bankId.value);
     }
     if (parsedData.present) {
       map['parsed_data'] = Variable<String>(parsedData.value);
@@ -3443,7 +3390,6 @@ class PendingSmsConfirmationsCompanion
           ..write('id: $id, ')
           ..write('smsBody: $smsBody, ')
           ..write('smsSender: $smsSender, ')
-          ..write('bankId: $bankId, ')
           ..write('parsedData: $parsedData, ')
           ..write('createdAt: $createdAt, ')
           ..write('expiresAt: $expiresAt')
@@ -3455,7 +3401,7 @@ class PendingSmsConfirmationsCompanion
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $BanksTable banks = $BanksTable(this);
+  late final $AccountsTable accounts = $AccountsTable(this);
   late final $CardsTable cards = $CardsTable(this);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $BudgetsTable budgets = $BudgetsTable(this);
@@ -3468,7 +3414,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    banks,
+    accounts,
     cards,
     categories,
     budgets,
@@ -3480,10 +3426,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
     WritePropagation(
       on: TableUpdateQuery.onTableName(
-        'banks',
+        'accounts',
         limitUpdateKind: UpdateKind.delete,
       ),
-      result: [TableUpdate('cards', kind: UpdateKind.delete)],
+      result: [TableUpdate('cards', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -3513,114 +3459,51 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [TableUpdate('transactions', kind: UpdateKind.update)],
     ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'banks',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('sms_templates', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'banks',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [
-        TableUpdate('pending_sms_confirmations', kind: UpdateKind.update),
-      ],
-    ),
   ]);
 }
 
-typedef $$BanksTableCreateCompanionBuilder =
-    BanksCompanion Function({
+typedef $$AccountsTableCreateCompanionBuilder =
+    AccountsCompanion Function({
       Value<int> id,
       required String name,
-      Value<String?> smsSenderPattern,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
-typedef $$BanksTableUpdateCompanionBuilder =
-    BanksCompanion Function({
+typedef $$AccountsTableUpdateCompanionBuilder =
+    AccountsCompanion Function({
       Value<int> id,
       Value<String> name,
-      Value<String?> smsSenderPattern,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
 
-final class $$BanksTableReferences
-    extends BaseReferences<_$AppDatabase, $BanksTable, Bank> {
-  $$BanksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$AccountsTableReferences
+    extends BaseReferences<_$AppDatabase, $AccountsTable, Account> {
+  $$AccountsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$CardsTable, List<Card>> _cardsRefsTable(
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.cards,
-    aliasName: $_aliasNameGenerator(db.banks.id, db.cards.bankId),
+    aliasName: $_aliasNameGenerator(db.accounts.id, db.cards.accountId),
   );
 
   $$CardsTableProcessedTableManager get cardsRefs {
     final manager = $$CardsTableTableManager(
       $_db,
       $_db.cards,
-    ).filter((f) => f.bankId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.accountId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_cardsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
-
-  static MultiTypedResultKey<$SmsTemplatesTable, List<SmsTemplate>>
-  _smsTemplatesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.smsTemplates,
-    aliasName: $_aliasNameGenerator(db.banks.id, db.smsTemplates.bankId),
-  );
-
-  $$SmsTemplatesTableProcessedTableManager get smsTemplatesRefs {
-    final manager = $$SmsTemplatesTableTableManager(
-      $_db,
-      $_db.smsTemplates,
-    ).filter((f) => f.bankId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_smsTemplatesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<
-    $PendingSmsConfirmationsTable,
-    List<PendingSmsConfirmation>
-  >
-  _pendingSmsConfirmationsRefsTable(_$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.pendingSmsConfirmations,
-        aliasName: $_aliasNameGenerator(
-          db.banks.id,
-          db.pendingSmsConfirmations.bankId,
-        ),
-      );
-
-  $$PendingSmsConfirmationsTableProcessedTableManager
-  get pendingSmsConfirmationsRefs {
-    final manager = $$PendingSmsConfirmationsTableTableManager(
-      $_db,
-      $_db.pendingSmsConfirmations,
-    ).filter((f) => f.bankId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _pendingSmsConfirmationsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
 }
 
-class $$BanksTableFilterComposer extends Composer<_$AppDatabase, $BanksTable> {
-  $$BanksTableFilterComposer({
+class $$AccountsTableFilterComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -3634,11 +3517,6 @@ class $$BanksTableFilterComposer extends Composer<_$AppDatabase, $BanksTable> {
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get smsSenderPattern => $composableBuilder(
-    column: $table.smsSenderPattern,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3659,7 +3537,7 @@ class $$BanksTableFilterComposer extends Composer<_$AppDatabase, $BanksTable> {
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.cards,
-      getReferencedColumn: (t) => t.bankId,
+      getReferencedColumn: (t) => t.accountId,
       builder:
           (
             joinBuilder, {
@@ -3676,62 +3554,11 @@ class $$BanksTableFilterComposer extends Composer<_$AppDatabase, $BanksTable> {
     );
     return f(composer);
   }
-
-  Expression<bool> smsTemplatesRefs(
-    Expression<bool> Function($$SmsTemplatesTableFilterComposer f) f,
-  ) {
-    final $$SmsTemplatesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.smsTemplates,
-      getReferencedColumn: (t) => t.bankId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SmsTemplatesTableFilterComposer(
-            $db: $db,
-            $table: $db.smsTemplates,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> pendingSmsConfirmationsRefs(
-    Expression<bool> Function($$PendingSmsConfirmationsTableFilterComposer f) f,
-  ) {
-    final $$PendingSmsConfirmationsTableFilterComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.pendingSmsConfirmations,
-          getReferencedColumn: (t) => t.bankId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$PendingSmsConfirmationsTableFilterComposer(
-                $db: $db,
-                $table: $db.pendingSmsConfirmations,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
 }
 
-class $$BanksTableOrderingComposer
-    extends Composer<_$AppDatabase, $BanksTable> {
-  $$BanksTableOrderingComposer({
+class $$AccountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -3748,11 +3575,6 @@ class $$BanksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get smsSenderPattern => $composableBuilder(
-    column: $table.smsSenderPattern,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
@@ -3764,9 +3586,9 @@ class $$BanksTableOrderingComposer
   );
 }
 
-class $$BanksTableAnnotationComposer
-    extends Composer<_$AppDatabase, $BanksTable> {
-  $$BanksTableAnnotationComposer({
+class $$AccountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AccountsTable> {
+  $$AccountsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -3778,11 +3600,6 @@ class $$BanksTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get smsSenderPattern => $composableBuilder(
-    column: $table.smsSenderPattern,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
@@ -3797,7 +3614,7 @@ class $$BanksTableAnnotationComposer
       composer: this,
       getCurrentColumn: (t) => t.id,
       referencedTable: $db.cards,
-      getReferencedColumn: (t) => t.bankId,
+      getReferencedColumn: (t) => t.accountId,
       builder:
           (
             joinBuilder, {
@@ -3814,101 +3631,43 @@ class $$BanksTableAnnotationComposer
     );
     return f(composer);
   }
-
-  Expression<T> smsTemplatesRefs<T extends Object>(
-    Expression<T> Function($$SmsTemplatesTableAnnotationComposer a) f,
-  ) {
-    final $$SmsTemplatesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.smsTemplates,
-      getReferencedColumn: (t) => t.bankId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SmsTemplatesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.smsTemplates,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> pendingSmsConfirmationsRefs<T extends Object>(
-    Expression<T> Function($$PendingSmsConfirmationsTableAnnotationComposer a)
-    f,
-  ) {
-    final $$PendingSmsConfirmationsTableAnnotationComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.pendingSmsConfirmations,
-          getReferencedColumn: (t) => t.bankId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$PendingSmsConfirmationsTableAnnotationComposer(
-                $db: $db,
-                $table: $db.pendingSmsConfirmations,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
 }
 
-class $$BanksTableTableManager
+class $$AccountsTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $BanksTable,
-          Bank,
-          $$BanksTableFilterComposer,
-          $$BanksTableOrderingComposer,
-          $$BanksTableAnnotationComposer,
-          $$BanksTableCreateCompanionBuilder,
-          $$BanksTableUpdateCompanionBuilder,
-          (Bank, $$BanksTableReferences),
-          Bank,
-          PrefetchHooks Function({
-            bool cardsRefs,
-            bool smsTemplatesRefs,
-            bool pendingSmsConfirmationsRefs,
-          })
+          $AccountsTable,
+          Account,
+          $$AccountsTableFilterComposer,
+          $$AccountsTableOrderingComposer,
+          $$AccountsTableAnnotationComposer,
+          $$AccountsTableCreateCompanionBuilder,
+          $$AccountsTableUpdateCompanionBuilder,
+          (Account, $$AccountsTableReferences),
+          Account,
+          PrefetchHooks Function({bool cardsRefs})
         > {
-  $$BanksTableTableManager(_$AppDatabase db, $BanksTable table)
+  $$AccountsTableTableManager(_$AppDatabase db, $AccountsTable table)
     : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$BanksTableFilterComposer($db: db, $table: table),
+              $$AccountsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$BanksTableOrderingComposer($db: db, $table: table),
+              $$AccountsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$BanksTableAnnotationComposer($db: db, $table: table),
+              $$AccountsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<String?> smsSenderPattern = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
-              }) => BanksCompanion(
+              }) => AccountsCompanion(
                 id: id,
                 name: name,
-                smsSenderPattern: smsSenderPattern,
                 isActive: isActive,
                 createdAt: createdAt,
               ),
@@ -3916,123 +3675,66 @@ class $$BanksTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String name,
-                Value<String?> smsSenderPattern = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
-              }) => BanksCompanion.insert(
+              }) => AccountsCompanion.insert(
                 id: id,
                 name: name,
-                smsSenderPattern: smsSenderPattern,
                 isActive: isActive,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$BanksTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable(table),
+                  $$AccountsTableReferences(db, table, e),
+                ),
               )
               .toList(),
-          prefetchHooksCallback:
-              ({
-                cardsRefs = false,
-                smsTemplatesRefs = false,
-                pendingSmsConfirmationsRefs = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (cardsRefs) db.cards,
-                    if (smsTemplatesRefs) db.smsTemplates,
-                    if (pendingSmsConfirmationsRefs) db.pendingSmsConfirmations,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (cardsRefs)
-                        await $_getPrefetchedData<Bank, $BanksTable, Card>(
-                          currentTable: table,
-                          referencedTable: $$BanksTableReferences
-                              ._cardsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$BanksTableReferences(db, table, p0).cardsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.bankId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (smsTemplatesRefs)
-                        await $_getPrefetchedData<
-                          Bank,
-                          $BanksTable,
-                          SmsTemplate
-                        >(
-                          currentTable: table,
-                          referencedTable: $$BanksTableReferences
-                              ._smsTemplatesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$BanksTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).smsTemplatesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.bankId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (pendingSmsConfirmationsRefs)
-                        await $_getPrefetchedData<
-                          Bank,
-                          $BanksTable,
-                          PendingSmsConfirmation
-                        >(
-                          currentTable: table,
-                          referencedTable: $$BanksTableReferences
-                              ._pendingSmsConfirmationsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$BanksTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).pendingSmsConfirmationsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.bankId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
+          prefetchHooksCallback: ({cardsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (cardsRefs) db.cards],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (cardsRefs)
+                    await $_getPrefetchedData<Account, $AccountsTable, Card>(
+                      currentTable: table,
+                      referencedTable: $$AccountsTableReferences
+                          ._cardsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$AccountsTableReferences(db, table, p0).cardsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.accountId == item.id),
+                      typedResults: items,
+                    ),
+                ];
               },
+            );
+          },
         ),
       );
 }
 
-typedef $$BanksTableProcessedTableManager =
+typedef $$AccountsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $BanksTable,
-      Bank,
-      $$BanksTableFilterComposer,
-      $$BanksTableOrderingComposer,
-      $$BanksTableAnnotationComposer,
-      $$BanksTableCreateCompanionBuilder,
-      $$BanksTableUpdateCompanionBuilder,
-      (Bank, $$BanksTableReferences),
-      Bank,
-      PrefetchHooks Function({
-        bool cardsRefs,
-        bool smsTemplatesRefs,
-        bool pendingSmsConfirmationsRefs,
-      })
+      $AccountsTable,
+      Account,
+      $$AccountsTableFilterComposer,
+      $$AccountsTableOrderingComposer,
+      $$AccountsTableAnnotationComposer,
+      $$AccountsTableCreateCompanionBuilder,
+      $$AccountsTableUpdateCompanionBuilder,
+      (Account, $$AccountsTableReferences),
+      Account,
+      PrefetchHooks Function({bool cardsRefs})
     >;
 typedef $$CardsTableCreateCompanionBuilder =
     CardsCompanion Function({
       Value<int> id,
-      required int bankId,
+      Value<int?> accountId,
       required String last4Digits,
       required String cardName,
       Value<bool> isActive,
@@ -4041,7 +3743,7 @@ typedef $$CardsTableCreateCompanionBuilder =
 typedef $$CardsTableUpdateCompanionBuilder =
     CardsCompanion Function({
       Value<int> id,
-      Value<int> bankId,
+      Value<int?> accountId,
       Value<String> last4Digits,
       Value<String> cardName,
       Value<bool> isActive,
@@ -4052,17 +3754,17 @@ final class $$CardsTableReferences
     extends BaseReferences<_$AppDatabase, $CardsTable, Card> {
   $$CardsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $BanksTable _bankIdTable(_$AppDatabase db) =>
-      db.banks.createAlias($_aliasNameGenerator(db.cards.bankId, db.banks.id));
+  static $AccountsTable _accountIdTable(_$AppDatabase db) => db.accounts
+      .createAlias($_aliasNameGenerator(db.cards.accountId, db.accounts.id));
 
-  $$BanksTableProcessedTableManager get bankId {
-    final $_column = $_itemColumn<int>('bank_id')!;
-
-    final manager = $$BanksTableTableManager(
+  $$AccountsTableProcessedTableManager? get accountId {
+    final $_column = $_itemColumn<int>('account_id');
+    if ($_column == null) return null;
+    final manager = $$AccountsTableTableManager(
       $_db,
-      $_db.banks,
+      $_db.accounts,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_bankIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_accountIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -4121,20 +3823,20 @@ class $$CardsTableFilterComposer extends Composer<_$AppDatabase, $CardsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  $$BanksTableFilterComposer get bankId {
-    final $$BanksTableFilterComposer composer = $composerBuilder(
+  $$AccountsTableFilterComposer get accountId {
+    final $$AccountsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableFilterComposer(
+          }) => $$AccountsTableFilterComposer(
             $db: $db,
-            $table: $db.banks,
+            $table: $db.accounts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4204,20 +3906,20 @@ class $$CardsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$BanksTableOrderingComposer get bankId {
-    final $$BanksTableOrderingComposer composer = $composerBuilder(
+  $$AccountsTableOrderingComposer get accountId {
+    final $$AccountsTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableOrderingComposer(
+          }) => $$AccountsTableOrderingComposer(
             $db: $db,
-            $table: $db.banks,
+            $table: $db.accounts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4254,20 +3956,20 @@ class $$CardsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  $$BanksTableAnnotationComposer get bankId {
-    final $$BanksTableAnnotationComposer composer = $composerBuilder(
+  $$AccountsTableAnnotationComposer get accountId {
+    final $$AccountsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
+      getCurrentColumn: (t) => t.accountId,
+      referencedTable: $db.accounts,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableAnnotationComposer(
+          }) => $$AccountsTableAnnotationComposer(
             $db: $db,
-            $table: $db.banks,
+            $table: $db.accounts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4316,7 +4018,7 @@ class $$CardsTableTableManager
           $$CardsTableUpdateCompanionBuilder,
           (Card, $$CardsTableReferences),
           Card,
-          PrefetchHooks Function({bool bankId, bool transactionsRefs})
+          PrefetchHooks Function({bool accountId, bool transactionsRefs})
         > {
   $$CardsTableTableManager(_$AppDatabase db, $CardsTable table)
     : super(
@@ -4332,14 +4034,14 @@ class $$CardsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> bankId = const Value.absent(),
+                Value<int?> accountId = const Value.absent(),
                 Value<String> last4Digits = const Value.absent(),
                 Value<String> cardName = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CardsCompanion(
                 id: id,
-                bankId: bankId,
+                accountId: accountId,
                 last4Digits: last4Digits,
                 cardName: cardName,
                 isActive: isActive,
@@ -4348,14 +4050,14 @@ class $$CardsTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int bankId,
+                Value<int?> accountId = const Value.absent(),
                 required String last4Digits,
                 required String cardName,
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CardsCompanion.insert(
                 id: id,
-                bankId: bankId,
+                accountId: accountId,
                 last4Digits: last4Digits,
                 cardName: cardName,
                 isActive: isActive,
@@ -4367,62 +4069,72 @@ class $$CardsTableTableManager
                     (e.readTable(table), $$CardsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({bankId = false, transactionsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (transactionsRefs) db.transactions],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (bankId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.bankId,
-                                referencedTable: $$CardsTableReferences
-                                    ._bankIdTable(db),
-                                referencedColumn: $$CardsTableReferences
-                                    ._bankIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({accountId = false, transactionsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (transactionsRefs) db.transactions,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (accountId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.accountId,
+                                    referencedTable: $$CardsTableReferences
+                                        ._accountIdTable(db),
+                                    referencedColumn: $$CardsTableReferences
+                                        ._accountIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (transactionsRefs)
+                        await $_getPrefetchedData<
+                          Card,
+                          $CardsTable,
+                          Transaction
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CardsTableReferences
+                              ._transactionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CardsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).transactionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.cardId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (transactionsRefs)
-                    await $_getPrefetchedData<Card, $CardsTable, Transaction>(
-                      currentTable: table,
-                      referencedTable: $$CardsTableReferences
-                          ._transactionsRefsTable(db),
-                      managerFromTypedResult: (p0) => $$CardsTableReferences(
-                        db,
-                        table,
-                        p0,
-                      ).transactionsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.cardId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -4439,7 +4151,7 @@ typedef $$CardsTableProcessedTableManager =
       $$CardsTableUpdateCompanionBuilder,
       (Card, $$CardsTableReferences),
       Card,
-      PrefetchHooks Function({bool bankId, bool transactionsRefs})
+      PrefetchHooks Function({bool accountId, bool transactionsRefs})
     >;
 typedef $$CategoriesTableCreateCompanionBuilder =
     CategoriesCompanion Function({
@@ -4449,6 +4161,7 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       required int color,
       Value<bool> isPredefined,
       Value<bool> isActive,
+      Value<int> sortOrder,
       Value<DateTime> createdAt,
     });
 typedef $$CategoriesTableUpdateCompanionBuilder =
@@ -4459,6 +4172,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<int> color,
       Value<bool> isPredefined,
       Value<bool> isActive,
+      Value<int> sortOrder,
       Value<DateTime> createdAt,
     });
 
@@ -4543,6 +4257,11 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4641,6 +4360,11 @@ class $$CategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -4675,6 +4399,9 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -4764,6 +4491,7 @@ class $$CategoriesTableTableManager
                 Value<int> color = const Value.absent(),
                 Value<bool> isPredefined = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
@@ -4772,6 +4500,7 @@ class $$CategoriesTableTableManager
                 color: color,
                 isPredefined: isPredefined,
                 isActive: isActive,
+                sortOrder: sortOrder,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -4782,6 +4511,7 @@ class $$CategoriesTableTableManager
                 required int color,
                 Value<bool> isPredefined = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
@@ -4790,6 +4520,7 @@ class $$CategoriesTableTableManager
                 color: color,
                 isPredefined: isPredefined,
                 isActive: isActive,
+                sortOrder: sortOrder,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -6013,7 +5744,7 @@ typedef $$TransactionsTableProcessedTableManager =
 typedef $$SmsTemplatesTableCreateCompanionBuilder =
     SmsTemplatesCompanion Function({
       Value<int> id,
-      required int bankId,
+      Value<String?> senderPattern,
       required String pattern,
       required String extractionRules,
       Value<int> priority,
@@ -6023,36 +5754,13 @@ typedef $$SmsTemplatesTableCreateCompanionBuilder =
 typedef $$SmsTemplatesTableUpdateCompanionBuilder =
     SmsTemplatesCompanion Function({
       Value<int> id,
-      Value<int> bankId,
+      Value<String?> senderPattern,
       Value<String> pattern,
       Value<String> extractionRules,
       Value<int> priority,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
-
-final class $$SmsTemplatesTableReferences
-    extends BaseReferences<_$AppDatabase, $SmsTemplatesTable, SmsTemplate> {
-  $$SmsTemplatesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $BanksTable _bankIdTable(_$AppDatabase db) => db.banks.createAlias(
-    $_aliasNameGenerator(db.smsTemplates.bankId, db.banks.id),
-  );
-
-  $$BanksTableProcessedTableManager get bankId {
-    final $_column = $_itemColumn<int>('bank_id')!;
-
-    final manager = $$BanksTableTableManager(
-      $_db,
-      $_db.banks,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_bankIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
 
 class $$SmsTemplatesTableFilterComposer
     extends Composer<_$AppDatabase, $SmsTemplatesTable> {
@@ -6065,6 +5773,11 @@ class $$SmsTemplatesTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderPattern => $composableBuilder(
+    column: $table.senderPattern,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6092,29 +5805,6 @@ class $$SmsTemplatesTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$BanksTableFilterComposer get bankId {
-    final $$BanksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableFilterComposer(
-            $db: $db,
-            $table: $db.banks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$SmsTemplatesTableOrderingComposer
@@ -6128,6 +5818,11 @@ class $$SmsTemplatesTableOrderingComposer
   });
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderPattern => $composableBuilder(
+    column: $table.senderPattern,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6155,29 +5850,6 @@ class $$SmsTemplatesTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$BanksTableOrderingComposer get bankId {
-    final $$BanksTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableOrderingComposer(
-            $db: $db,
-            $table: $db.banks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$SmsTemplatesTableAnnotationComposer
@@ -6191,6 +5863,11 @@ class $$SmsTemplatesTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get senderPattern => $composableBuilder(
+    column: $table.senderPattern,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get pattern =>
       $composableBuilder(column: $table.pattern, builder: (column) => column);
@@ -6208,29 +5885,6 @@ class $$SmsTemplatesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  $$BanksTableAnnotationComposer get bankId {
-    final $$BanksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.banks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$SmsTemplatesTableTableManager
@@ -6244,9 +5898,12 @@ class $$SmsTemplatesTableTableManager
           $$SmsTemplatesTableAnnotationComposer,
           $$SmsTemplatesTableCreateCompanionBuilder,
           $$SmsTemplatesTableUpdateCompanionBuilder,
-          (SmsTemplate, $$SmsTemplatesTableReferences),
+          (
+            SmsTemplate,
+            BaseReferences<_$AppDatabase, $SmsTemplatesTable, SmsTemplate>,
+          ),
           SmsTemplate,
-          PrefetchHooks Function({bool bankId})
+          PrefetchHooks Function()
         > {
   $$SmsTemplatesTableTableManager(_$AppDatabase db, $SmsTemplatesTable table)
     : super(
@@ -6262,7 +5919,7 @@ class $$SmsTemplatesTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> bankId = const Value.absent(),
+                Value<String?> senderPattern = const Value.absent(),
                 Value<String> pattern = const Value.absent(),
                 Value<String> extractionRules = const Value.absent(),
                 Value<int> priority = const Value.absent(),
@@ -6270,7 +5927,7 @@ class $$SmsTemplatesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
               }) => SmsTemplatesCompanion(
                 id: id,
-                bankId: bankId,
+                senderPattern: senderPattern,
                 pattern: pattern,
                 extractionRules: extractionRules,
                 priority: priority,
@@ -6280,7 +5937,7 @@ class $$SmsTemplatesTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int bankId,
+                Value<String?> senderPattern = const Value.absent(),
                 required String pattern,
                 required String extractionRules,
                 Value<int> priority = const Value.absent(),
@@ -6288,7 +5945,7 @@ class $$SmsTemplatesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
               }) => SmsTemplatesCompanion.insert(
                 id: id,
-                bankId: bankId,
+                senderPattern: senderPattern,
                 pattern: pattern,
                 extractionRules: extractionRules,
                 priority: priority,
@@ -6296,54 +5953,9 @@ class $$SmsTemplatesTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$SmsTemplatesTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({bankId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (bankId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.bankId,
-                                referencedTable: $$SmsTemplatesTableReferences
-                                    ._bankIdTable(db),
-                                referencedColumn: $$SmsTemplatesTableReferences
-                                    ._bankIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -6358,16 +5970,18 @@ typedef $$SmsTemplatesTableProcessedTableManager =
       $$SmsTemplatesTableAnnotationComposer,
       $$SmsTemplatesTableCreateCompanionBuilder,
       $$SmsTemplatesTableUpdateCompanionBuilder,
-      (SmsTemplate, $$SmsTemplatesTableReferences),
+      (
+        SmsTemplate,
+        BaseReferences<_$AppDatabase, $SmsTemplatesTable, SmsTemplate>,
+      ),
       SmsTemplate,
-      PrefetchHooks Function({bool bankId})
+      PrefetchHooks Function()
     >;
 typedef $$PendingSmsConfirmationsTableCreateCompanionBuilder =
     PendingSmsConfirmationsCompanion Function({
       Value<int> id,
       required String smsBody,
       required String smsSender,
-      Value<int?> bankId,
       required String parsedData,
       Value<DateTime> createdAt,
       required DateTime expiresAt,
@@ -6377,43 +5991,10 @@ typedef $$PendingSmsConfirmationsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> smsBody,
       Value<String> smsSender,
-      Value<int?> bankId,
       Value<String> parsedData,
       Value<DateTime> createdAt,
       Value<DateTime> expiresAt,
     });
-
-final class $$PendingSmsConfirmationsTableReferences
-    extends
-        BaseReferences<
-          _$AppDatabase,
-          $PendingSmsConfirmationsTable,
-          PendingSmsConfirmation
-        > {
-  $$PendingSmsConfirmationsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $BanksTable _bankIdTable(_$AppDatabase db) => db.banks.createAlias(
-    $_aliasNameGenerator(db.pendingSmsConfirmations.bankId, db.banks.id),
-  );
-
-  $$BanksTableProcessedTableManager? get bankId {
-    final $_column = $_itemColumn<int>('bank_id');
-    if ($_column == null) return null;
-    final manager = $$BanksTableTableManager(
-      $_db,
-      $_db.banks,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_bankIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
 
 class $$PendingSmsConfirmationsTableFilterComposer
     extends Composer<_$AppDatabase, $PendingSmsConfirmationsTable> {
@@ -6453,29 +6034,6 @@ class $$PendingSmsConfirmationsTableFilterComposer
     column: $table.expiresAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$BanksTableFilterComposer get bankId {
-    final $$BanksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableFilterComposer(
-            $db: $db,
-            $table: $db.banks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$PendingSmsConfirmationsTableOrderingComposer
@@ -6516,29 +6074,6 @@ class $$PendingSmsConfirmationsTableOrderingComposer
     column: $table.expiresAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$BanksTableOrderingComposer get bankId {
-    final $$BanksTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableOrderingComposer(
-            $db: $db,
-            $table: $db.banks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$PendingSmsConfirmationsTableAnnotationComposer
@@ -6569,29 +6104,6 @@ class $$PendingSmsConfirmationsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get expiresAt =>
       $composableBuilder(column: $table.expiresAt, builder: (column) => column);
-
-  $$BanksTableAnnotationComposer get bankId {
-    final $$BanksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.bankId,
-      referencedTable: $db.banks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BanksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.banks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$PendingSmsConfirmationsTableTableManager
@@ -6605,9 +6117,16 @@ class $$PendingSmsConfirmationsTableTableManager
           $$PendingSmsConfirmationsTableAnnotationComposer,
           $$PendingSmsConfirmationsTableCreateCompanionBuilder,
           $$PendingSmsConfirmationsTableUpdateCompanionBuilder,
-          (PendingSmsConfirmation, $$PendingSmsConfirmationsTableReferences),
+          (
+            PendingSmsConfirmation,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingSmsConfirmationsTable,
+              PendingSmsConfirmation
+            >,
+          ),
           PendingSmsConfirmation,
-          PrefetchHooks Function({bool bankId})
+          PrefetchHooks Function()
         > {
   $$PendingSmsConfirmationsTableTableManager(
     _$AppDatabase db,
@@ -6636,7 +6155,6 @@ class $$PendingSmsConfirmationsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> smsBody = const Value.absent(),
                 Value<String> smsSender = const Value.absent(),
-                Value<int?> bankId = const Value.absent(),
                 Value<String> parsedData = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> expiresAt = const Value.absent(),
@@ -6644,7 +6162,6 @@ class $$PendingSmsConfirmationsTableTableManager
                 id: id,
                 smsBody: smsBody,
                 smsSender: smsSender,
-                bankId: bankId,
                 parsedData: parsedData,
                 createdAt: createdAt,
                 expiresAt: expiresAt,
@@ -6654,7 +6171,6 @@ class $$PendingSmsConfirmationsTableTableManager
                 Value<int> id = const Value.absent(),
                 required String smsBody,
                 required String smsSender,
-                Value<int?> bankId = const Value.absent(),
                 required String parsedData,
                 Value<DateTime> createdAt = const Value.absent(),
                 required DateTime expiresAt,
@@ -6662,62 +6178,14 @@ class $$PendingSmsConfirmationsTableTableManager
                 id: id,
                 smsBody: smsBody,
                 smsSender: smsSender,
-                bankId: bankId,
                 parsedData: parsedData,
                 createdAt: createdAt,
                 expiresAt: expiresAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$PendingSmsConfirmationsTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({bankId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (bankId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.bankId,
-                                referencedTable:
-                                    $$PendingSmsConfirmationsTableReferences
-                                        ._bankIdTable(db),
-                                referencedColumn:
-                                    $$PendingSmsConfirmationsTableReferences
-                                        ._bankIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -6732,16 +6200,23 @@ typedef $$PendingSmsConfirmationsTableProcessedTableManager =
       $$PendingSmsConfirmationsTableAnnotationComposer,
       $$PendingSmsConfirmationsTableCreateCompanionBuilder,
       $$PendingSmsConfirmationsTableUpdateCompanionBuilder,
-      (PendingSmsConfirmation, $$PendingSmsConfirmationsTableReferences),
+      (
+        PendingSmsConfirmation,
+        BaseReferences<
+          _$AppDatabase,
+          $PendingSmsConfirmationsTable,
+          PendingSmsConfirmation
+        >,
+      ),
       PendingSmsConfirmation,
-      PrefetchHooks Function({bool bankId})
+      PrefetchHooks Function()
     >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$BanksTableTableManager get banks =>
-      $$BanksTableTableManager(_db, _db.banks);
+  $$AccountsTableTableManager get accounts =>
+      $$AccountsTableTableManager(_db, _db.accounts);
   $$CardsTableTableManager get cards =>
       $$CardsTableTableManager(_db, _db.cards);
   $$CategoriesTableTableManager get categories =>

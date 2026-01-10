@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/transaction_providers.dart';
 import '../widgets/transaction_card.dart';
 import '../widgets/category_filter.dart';
-import '../../../core/services/providers/export_providers.dart';
-import '../../statistics/pages/statistics_page.dart';
-import 'transaction_form_page.dart';
-import 'transaction_detail_page.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/loading_skeleton.dart';
+import '../../../core/widgets/error_state.dart';
+import '../../../core/utils/debouncer.dart';
 import '../../../core/database/app_database.dart' as db;
 
 class TransactionsListPage extends ConsumerStatefulWidget {
@@ -19,288 +20,118 @@ class TransactionsListPage extends ConsumerStatefulWidget {
 }
 
 class _TransactionsListPageState extends ConsumerState<TransactionsListPage> {
-  String _searchQuery = '';
+  String _debouncedSearchQuery = '';
   int? _selectedCategoryId;
+  late final Debouncer _searchDebouncer;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 500));
+  }
+
+  @override
+  void dispose() {
+    _searchDebouncer.dispose();
+    super.dispose();
+  }
+
+  // Memoize filter object to prevent unnecessary provider rebuilds
+  TransactionFilters _getFilters(String searchQuery) => TransactionFilters(
+        categoryId: _selectedCategoryId,
+        searchQuery: searchQuery.isEmpty ? null : searchQuery,
+      );
 
   @override
   Widget build(BuildContext context) {
-    final transactionsAsync = ref.watch(transactionsProvider);
+    // Watch search query from provider and debounce it
+    final searchQuery = ref.watch(transactionSearchQueryProvider);
+    if (searchQuery != _debouncedSearchQuery) {
+      _searchDebouncer.call(() {
+        if (mounted) {
+          setState(() {
+            _debouncedSearchQuery = searchQuery;
+          });
+        }
+      });
+    }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.analytics_outlined),
-            tooltip: 'Statistics',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const StatisticsPage()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showSearch(
-                context: context,
-                delegate: _TransactionSearchDelegate(
-                  onQueryChanged: (query) {
-                    setState(() {
-                      _searchQuery = query;
-                    });
-                  },
-                ),
-              );
-            },
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'export_transactions') {
-                _exportTransactions();
-              } else if (value == 'export_all') {
-                _exportAll();
+    // Use filtered provider instead of loading all transactions
+    final transactionsAsync = ref.watch(
+      filteredTransactionsProvider(_getFilters(_debouncedSearchQuery)),
+    );
+
+    return Column(
+      children: [
+        // Category filter
+        CategoryFilter(
+          selectedCategoryId: _selectedCategoryId,
+          onCategorySelected: (categoryId) {
+            setState(() {
+              _selectedCategoryId = categoryId;
+            });
+          },
+        ),
+        // Transactions list
+        Expanded(
+          child: transactionsAsync.when(
+            data: (transactions) {
+              // Transactions are already filtered and sorted by the database query
+              if (transactions.isEmpty) {
+                // Determine if filters are active
+                final hasFilters = _selectedCategoryId != null ||
+                    (_debouncedSearchQuery.isNotEmpty);
+                return EmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: hasFilters
+                      ? 'no_transactions_filtered'.tr()
+                      : 'no_transactions'.tr(),
+                  subtitle: hasFilters
+                      ? null
+                      : 'add_first_transaction'.tr(),
+                  actionLabel: hasFilters
+                      ? null
+                      : 'add_transaction'.tr(),
+                  onAction: hasFilters
+                      ? null
+                      : _navigateToAdd,
+                );
               }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'export_transactions',
-                child: Row(
-                  children: [
-                    Icon(Icons.file_download),
-                    SizedBox(width: 8),
-                    Text('Export Transactions'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'export_all',
-                child: Row(
-                  children: [
-                    Icon(Icons.download),
-                    SizedBox(width: 8),
-                    Text('Export All Data'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Category filter
-          CategoryFilter(
-            selectedCategoryId: _selectedCategoryId,
-            onCategorySelected: (categoryId) {
-              setState(() {
-                _selectedCategoryId = categoryId;
-              });
-            },
-          ),
-          // Transactions list
-          Expanded(
-            child: transactionsAsync.when(
-              data: (transactions) {
-                // Filter transactions
-                var filteredTransactions = transactions;
 
-                // Filter by category
-                if (_selectedCategoryId != null) {
-                  filteredTransactions = filteredTransactions
-                      .where((t) => t.categoryId == _selectedCategoryId)
-                      .toList();
-                }
-
-                // Filter by search query
-                if (_searchQuery.isNotEmpty) {
-                  final query = _searchQuery.toLowerCase();
-                  filteredTransactions = filteredTransactions
-                      .where((t) => t.storeName.toLowerCase().contains(query))
-                      .toList();
-                }
-
-                // Sort by date (newest first)
-                filteredTransactions.sort((a, b) => b.date.compareTo(a.date));
-
-                if (filteredTransactions.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.receipt_long_outlined,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          transactions.isEmpty
-                              ? 'No transactions yet'
-                              : 'No transactions match your filters',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        if (transactions.isEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Add your first transaction to get started',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
+              return ListView.builder(
+                itemCount: transactions.length,
+                itemBuilder: (context, index) {
+                  final transaction = transactions[index];
+                  return TransactionCard(
+                    transaction: transaction,
+                    onTap: () => _navigateToDetail(transaction),
                   );
-                }
-
-                return ListView.builder(
-                  itemCount: filteredTransactions.length,
-                  itemBuilder: (context, index) {
-                    final transaction = filteredTransactions[index];
-                    return TransactionCard(
-                      transaction: transaction,
-                      onTap: () => _navigateToDetail(transaction),
-                    );
-                  },
+                },
+              );
+            },
+            loading: () => const SkeletonList(itemCount: 5, itemHeight: 100),
+            error: (error, stack) => ErrorState(
+              title: 'error_loading_transactions'.tr(),
+              message: error.toString(),
+              onRetry: () {
+                // Force provider refresh
+                ref.invalidate(
+                  filteredTransactionsProvider(_getFilters(_debouncedSearchQuery)),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(child: Text('Error: $error')),
             ),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAdd,
-        child: const Icon(Icons.add),
-      ),
+        ),
+      ],
     );
   }
 
   void _navigateToAdd() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const TransactionFormPage()),
-    );
+    context.push('/transactions/add');
   }
 
   void _navigateToDetail(db.Transaction transaction) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => TransactionDetailPage(transaction: transaction),
-      ),
-    );
+    context.push('/transactions/${transaction.id}');
   }
 
-  Future<void> _exportTransactions() async {
-    try {
-      final exportService = ref.read(exportServiceProvider);
-      final filePath = await exportService.exportTransactionsToCsv();
-
-      if (mounted && filePath != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Transactions exported to: $filePath'),
-            action: SnackBarAction(
-              label: 'Copy Path',
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: filePath));
-              },
-            ),
-          ),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to export transactions')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-
-  Future<void> _exportAll() async {
-    try {
-      final exportService = ref.read(exportServiceProvider);
-      final results = await exportService.exportAll();
-
-      if (mounted) {
-        final transactionsPath = results['transactions'];
-        final budgetsPath = results['budgets'];
-
-        final message = StringBuffer();
-        if (transactionsPath != null) {
-          message.writeln('Transactions: $transactionsPath');
-        }
-        if (budgetsPath != null) {
-          message.writeln('Budgets: $budgetsPath');
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              message.toString().isEmpty
-                  ? 'Export failed'
-                  : 'Data exported successfully',
-            ),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-}
-
-class _TransactionSearchDelegate extends SearchDelegate {
-  final ValueChanged<String> onQueryChanged;
-
-  _TransactionSearchDelegate({required this.onQueryChanged});
-
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
-      ),
-    ];
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    onQueryChanged(query);
-    close(context, query);
-    return const SizedBox.shrink();
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return const SizedBox.shrink();
-  }
 }

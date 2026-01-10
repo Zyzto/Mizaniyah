@@ -237,15 +237,19 @@ class SmsParsingService with Loggable {
 
       // Higher confidence if all fields are extracted successfully
       int extractedFields = 0;
-      if (parsedData.storeName != null && parsedData.storeName!.isNotEmpty)
+      if (parsedData.storeName != null && parsedData.storeName!.isNotEmpty) {
         extractedFields++;
-      if (parsedData.amount != null && parsedData.amount! > 0)
+      }
+      if (parsedData.amount != null && parsedData.amount! > 0) {
         extractedFields++;
-      if (parsedData.currency != null && parsedData.currency!.isNotEmpty)
+      }
+      if (parsedData.currency != null && parsedData.currency!.isNotEmpty) {
         extractedFields++;
+      }
       if (parsedData.cardLast4Digits != null &&
-          parsedData.cardLast4Digits!.isNotEmpty)
+          parsedData.cardLast4Digits!.isNotEmpty) {
         extractedFields++;
+      }
 
       confidence +=
           (extractedFields / 4.0) *

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:another_telephony/telephony.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../core/services/sms_reader_service.dart';
-import '../providers/bank_providers.dart';
+import '../../../core/database/providers/dao_providers.dart';
 import '../widgets/sms_list_item.dart';
-import 'sms_pattern_page.dart';
 import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/empty_state.dart';
 
 class SmsReaderPage extends ConsumerStatefulWidget {
   const SmsReaderPage({super.key});
@@ -61,9 +64,9 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
       List<SmsMessage> sms;
 
       if (_showBankSmsOnly) {
-        final bankRepository = ref.read(bankRepositoryProvider);
-        sms = await _smsReaderService.filterBankSms(
-          bankRepository,
+        final smsTemplateDao = ref.read(smsTemplateDaoProvider);
+        sms = await _smsReaderService.filterSmsByTemplates(
+          smsTemplateDao,
           limit: _pageSize,
           offset: _loadedCount,
         );
@@ -84,9 +87,9 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
       setState(() {
         _isLoading = false;
       });
-      if (mounted) {
-        ErrorSnackbar.show(context, 'Failed to load SMS: $e');
-      }
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(context, 'sms_load_failed'.tr(args: [e.toString()]));
     }
   }
 
@@ -116,17 +119,19 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
       children: [
         // Search and filter bar
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               TextField(
                 decoration: InputDecoration(
-                  hintText: 'Search SMS by sender or content...',
+                  hintText: 'search_sms_hint'.tr(),
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear),
+                          tooltip: 'clear_search'.tr(),
                           onPressed: () {
+                            HapticFeedback.lightImpact();
                             setState(() {
                               _searchQuery = '';
                             });
@@ -134,18 +139,20 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
                         )
                       : null,
                 ),
+                textInputAction: TextInputAction.search,
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value;
                   });
                 },
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Checkbox(
                     value: _showBankSmsOnly,
                     onChanged: (value) {
+                      HapticFeedback.lightImpact();
                       setState(() {
                         _showBankSmsOnly = value ?? false;
                         _loadedCount = 0;
@@ -154,12 +161,15 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
                       _loadSms(refresh: true);
                     },
                   ),
-                  const Text('Show bank SMS only'),
+                  Text('show_bank_sms_only'.tr()),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.refresh),
-                    onPressed: () => _loadSms(refresh: true),
-                    tooltip: 'Refresh',
+                    tooltip: 'refresh'.tr(),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _loadSms(refresh: true);
+                    },
                   ),
                 ],
               ),
@@ -171,27 +181,14 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
           child: _isLoading && _smsList.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : filteredSms.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.sms_outlined,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _searchQuery.isNotEmpty
-                            ? 'No SMS found matching "$_searchQuery"'
-                            : 'No SMS messages found',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
+              ? EmptyState(
+                  icon: Icons.sms_outlined,
+                  title: _searchQuery.isNotEmpty
+                      ? 'no_sms_matching'.tr(args: [_searchQuery])
+                      : 'no_sms_messages'.tr(),
+                  subtitle: _searchQuery.isNotEmpty
+                      ? null
+                      : 'no_sms_messages_description'.tr(),
                 )
               : RefreshIndicator(
                   onRefresh: () => _loadSms(refresh: true),
@@ -212,12 +209,9 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
                       return SmsListItem(
                         sms: sms,
                         onTap: () {
+                          HapticFeedback.lightImpact();
                           // Navigate to SMS Pattern page
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const SmsPatternPage(),
-                            ),
-                          );
+                          context.push('/banks/sms-pattern');
                         },
                       );
                     },

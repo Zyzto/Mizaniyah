@@ -1,27 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../budget_repository.dart';
 import '../../../core/services/budget_service.dart';
 import '../../../core/database/app_database.dart' as db;
-import '../../transactions/providers/transaction_providers.dart';
-import '../../banks/providers/bank_providers.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
-
-final budgetRepositoryProvider = Provider<BudgetRepository>((ref) {
-  final database = ref.watch(databaseProvider);
-  return BudgetRepository(database);
-});
+import '../../../core/database/providers/dao_providers.dart';
 
 final budgetServiceProvider = Provider<BudgetService>((ref) {
-  final budgetRepository = ref.watch(budgetRepositoryProvider);
-  final transactionRepository = ref.watch(transactionRepositoryProvider);
-  return BudgetService(budgetRepository, transactionRepository);
+  final budgetDao = ref.watch(budgetDaoProvider);
+  final transactionDao = ref.watch(transactionDaoProvider);
+  return BudgetService(budgetDao, transactionDao);
 });
 
 final budgetsProvider = StreamProvider<List<db.Budget>>((ref) async* {
   ref.keepAlive();
-  final repository = ref.watch(budgetRepositoryProvider);
+  final dao = ref.watch(budgetDaoProvider);
   try {
-    await for (final budgets in repository.watchAllBudgets()) {
+    await for (final budgets in dao.watchAllBudgets()) {
       yield budgets;
     }
   } catch (e, stackTrace) {
@@ -35,9 +28,9 @@ final budgetsProvider = StreamProvider<List<db.Budget>>((ref) async* {
 });
 
 final activeBudgetsProvider = FutureProvider<List<db.Budget>>((ref) async {
-  final repository = ref.watch(budgetRepositoryProvider);
+  final dao = ref.watch(budgetDaoProvider);
   try {
-    return await repository.getActiveBudgets();
+    return await dao.getActiveBudgets();
   } catch (e, stackTrace) {
     Log.error(
       'Error in activeBudgetsProvider',
@@ -52,9 +45,9 @@ final budgetsByCategoryProvider = FutureProvider.family<List<db.Budget>, int>((
   ref,
   categoryId,
 ) async {
-  final repository = ref.watch(budgetRepositoryProvider);
+  final dao = ref.watch(budgetDaoProvider);
   try {
-    return await repository.getBudgetsByCategory(categoryId);
+    return await dao.getBudgetsByCategory(categoryId);
   } catch (e, stackTrace) {
     Log.error(
       'Error in budgetsByCategoryProvider for categoryId=$categoryId',
@@ -66,9 +59,9 @@ final budgetsByCategoryProvider = FutureProvider.family<List<db.Budget>, int>((
 });
 
 final budgetProvider = FutureProvider.family<db.Budget?, int>((ref, id) async {
-  final repository = ref.watch(budgetRepositoryProvider);
+  final dao = ref.watch(budgetDaoProvider);
   try {
-    return await repository.getBudgetById(id);
+    return await dao.getBudgetById(id);
   } catch (e, stackTrace) {
     Log.error(
       'Error in budgetProvider for id=$id',

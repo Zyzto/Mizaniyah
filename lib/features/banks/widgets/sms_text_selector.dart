@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Represents a text selection with a label
 class SmsTextSelection {
@@ -138,9 +138,13 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
       if (existing.overlapsWith(newSelection) &&
           existing != _editingSelection) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Selection overlaps with existing selection'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('selection_overlaps'.tr()),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         );
         return;
@@ -205,7 +209,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -261,9 +265,11 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
             ),
             child: SelectableText.rich(
               _buildTextSpan(),
@@ -284,7 +290,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
                   anchors: editableTextState.contextMenuAnchors,
                   buttonItems: [
                     ContextMenuButtonItem(
-                      label: 'Create Selection',
+                      label: 'create_selection'.tr(),
                       onPressed: () {
                         final selection =
                             editableTextState.currentTextEditingValue.selection;
@@ -313,7 +319,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
             child: ElevatedButton.icon(
               onPressed: _createSelection,
               icon: const Icon(Icons.add),
-              label: const Text('Create Selection'),
+              label: Text('create_selection'.tr()),
             ),
           ),
       ],
@@ -338,7 +344,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         spans.add(
           TextSpan(
             text: widget.text.substring(currentIndex, selection.start),
-            style: const TextStyle(color: Colors.black87),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
         );
       }
@@ -348,7 +354,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         selection.start,
         selection.end,
       );
-      final color = _labelColors[selection.label] ?? Colors.blue;
+      final color = _labelColors[selection.label] ?? Theme.of(context).colorScheme.primary;
       spans.add(
         TextSpan(
           text: selectedText,

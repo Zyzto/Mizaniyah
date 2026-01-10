@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/database/app_database.dart' as db;
+import '../../../core/utils/currency_formatter.dart';
 import '../../budgets/providers/budget_providers.dart';
 
 class TransactionCard extends ConsumerWidget {
@@ -10,16 +12,17 @@ class TransactionCard extends ConsumerWidget {
 
   const TransactionCard({super.key, required this.transaction, this.onTap});
 
-  Color _getBudgetColor(int? statusColor) {
+  Color _getBudgetColor(BuildContext context, int? statusColor) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (statusColor) {
       case 0: // Green - good
-        return Colors.green;
+        return colorScheme.primary;
       case 1: // Yellow - warning
-        return Colors.orange;
+        return colorScheme.tertiary;
       case 2: // Red - over budget
-        return Colors.red;
+        return colorScheme.error;
       default:
-        return Colors.grey;
+        return colorScheme.outline;
     }
   }
 
@@ -36,10 +39,16 @@ class TransactionCard extends ConsumerWidget {
         ? ref.watch(budgetStatusColorProvider(transaction.categoryId!))
         : null;
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap?.call();
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -53,29 +62,33 @@ class TransactionCard extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       transaction.storeName,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(
                     formattedDate,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               // Cost and Budget row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Cost
                   Text(
-                    '${transaction.amount.toStringAsFixed(2)} ${transaction.currencyCode}',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    CurrencyFormatter.format(
+                      transaction.amount,
+                      transaction.currencyCode,
+                    ),
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   // Remaining Budget
@@ -85,35 +98,41 @@ class TransactionCard extends ConsumerWidget {
                             return const SizedBox.shrink();
                           }
                           final statusColor = budgetStatusColorAsync?.value;
-                          final color = _getBudgetColor(statusColor);
+                          final color = _getBudgetColor(context, statusColor);
                           return Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
-                              vertical: 6,
+                              vertical: 8,
                             ),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: color.withValues(alpha: 0.3),
+                                width: 1,
                               ),
                             ),
                             child: Text(
-                              '${remaining.toStringAsFixed(2)} ${transaction.currencyCode}',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: color,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              CurrencyFormatter.format(
+                                remaining,
+                                transaction.currencyCode,
+                              ),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           );
                         },
-                        loading: () => const SizedBox(
+                        loading: () => SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.primary,
+                          ),
                         ),
-                        error: (_, __) => const SizedBox.shrink(),
+                        error: (_, _) => const SizedBox.shrink(),
                       ) ??
                       const SizedBox.shrink(),
                 ],

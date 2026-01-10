@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../widgets/sms_text_selector.dart';
 import '../../../core/services/sms_pattern_generator.dart';
 import '../../../core/services/sms_parsing_service.dart';
+import '../../../core/widgets/error_snackbar.dart';
 
 /// Result returned from the wizard
 class PatternBuilderResult {
@@ -109,11 +113,12 @@ class _SmsPatternBuilderWizardState
         _generatedExtractionRules!,
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error generating pattern: $e')));
-      }
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(
+        context,
+        'pattern_generation_error'.tr(args: [e.toString()]),
+      );
     }
   }
 
@@ -125,14 +130,14 @@ class _SmsPatternBuilderWizardState
 
   void _returnToForm() {
     if (_generatedPattern != null && _generatedExtractionRules != null) {
-      Navigator.of(context).pop(
+      context.pop(
         PatternBuilderResult(
           pattern: _generatedPattern!,
           extractionRules: _generatedExtractionRules!,
         ),
       );
     } else {
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 
@@ -140,10 +145,14 @@ class _SmsPatternBuilderWizardState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Visual Pattern Builder'),
+        title: Text('visual_pattern_builder'.tr()),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'close'.tr(),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            context.pop();
+          },
         ),
       ),
       body: Column(
@@ -175,10 +184,10 @@ class _SmsPatternBuilderWizardState
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          _buildStepIndicatorItem(0, 'SMS Input'),
-          _buildStepIndicatorItem(1, 'Select Parts'),
-          _buildStepIndicatorItem(2, 'Review'),
-          _buildStepIndicatorItem(3, 'Complete'),
+          _buildStepIndicatorItem(0, 'sms_input'.tr()),
+          _buildStepIndicatorItem(1, 'select_parts'.tr()),
+          _buildStepIndicatorItem(2, 'review'.tr()),
+          _buildStepIndicatorItem(3, 'complete'.tr()),
         ],
       ),
     );
@@ -201,7 +210,7 @@ class _SmsPatternBuilderWizardState
                       ? Theme.of(context).colorScheme.primary
                       : isCompleted
                       ? Theme.of(context).colorScheme.primaryContainer
-                      : Colors.grey[300],
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
                 child: Center(
                   child: isCompleted
@@ -217,7 +226,7 @@ class _SmsPatternBuilderWizardState
                           style: TextStyle(
                             color: isActive
                                 ? Theme.of(context).colorScheme.onPrimary
-                                : Colors.grey[600],
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -229,7 +238,7 @@ class _SmsPatternBuilderWizardState
                     height: 2,
                     color: isCompleted
                         ? Theme.of(context).colorScheme.primaryContainer
-                        : Colors.grey[300],
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                 ),
             ],
@@ -241,7 +250,7 @@ class _SmsPatternBuilderWizardState
               fontSize: 12,
               color: isActive
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.grey[600],
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -251,35 +260,39 @@ class _SmsPatternBuilderWizardState
   }
 
   Widget _buildStep1() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Step 1: Enter SMS Message',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Paste or type a sample SMS message that you want to create a pattern for.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _smsController,
-            decoration: const InputDecoration(
-              labelText: 'SMS Message',
-              hintText: 'Paste your SMS message here...',
-              border: OutlineInputBorder(),
-              helperText: 'This will be used to visually build the pattern',
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'step_1_enter_sms'.tr(),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
-            maxLines: 8,
-            onChanged: (_) => setState(() {}),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'step_1_description'.tr(),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _smsController,
+              decoration: InputDecoration(
+                labelText: 'sms_message'.tr(),
+                hintText: 'paste_sms_message'.tr(),
+                border: const OutlineInputBorder(),
+                helperText: 'step_1_helper'.tr(),
+              ),
+              maxLines: 8,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -291,15 +304,15 @@ class _SmsPatternBuilderWizardState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Step 2: Select and Label Parts',
+            'step_2_select_parts'.tr(),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap and drag to select parts of the SMS, then assign a label to each selection.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            'step_2_description'.tr(),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -328,15 +341,15 @@ class _SmsPatternBuilderWizardState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Step 3: Review Generated Pattern',
+            'step_3_review'.tr(),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
-            'Review the automatically generated pattern and extraction rules.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            'step_3_description'.tr(),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -346,7 +359,7 @@ class _SmsPatternBuilderWizardState
                 children: [
                   if (_generatedPattern != null) ...[
                     Text(
-                      'Generated Pattern:',
+                      'generated_pattern_label'.tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -356,9 +369,11 @@ class _SmsPatternBuilderWizardState
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: SelectableText(
                         _generatedPattern!,
@@ -370,7 +385,7 @@ class _SmsPatternBuilderWizardState
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Generated Extraction Rules:',
+                      'generated_extraction_rules'.tr(),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -380,9 +395,11 @@ class _SmsPatternBuilderWizardState
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: SelectableText(
                         _generatedExtractionRules ?? '',
@@ -395,7 +412,7 @@ class _SmsPatternBuilderWizardState
                     if (_previewData != null) ...[
                       const SizedBox(height: 24),
                       Text(
-                        'Preview:',
+                        'preview'.tr(),
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
@@ -410,16 +427,16 @@ class _SmsPatternBuilderWizardState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildPreviewRow('Store', _previewData!.storeName),
+                            _buildPreviewRow('store'.tr(), _previewData!.storeName),
                             _buildPreviewRow(
-                              'Amount',
+                              'amount'.tr(),
                               _previewData!.amount != null
                                   ? '${_previewData!.amount!.toStringAsFixed(2)} ${_previewData!.currency ?? 'USD'}'
                                   : null,
                             ),
                             if (_previewData!.cardLast4Digits != null)
                               _buildPreviewRow(
-                                'Card',
+                                'card'.tr(),
                                 _previewData!.cardLast4Digits,
                               ),
                           ],
@@ -469,16 +486,16 @@ class _SmsPatternBuilderWizardState
           ),
           const SizedBox(height: 24),
           Text(
-            'Pattern Generated Successfully!',
+            'pattern_generated_successfully'.tr(),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
           Text(
-            'The pattern and extraction rules have been generated. You can now use them in the template form.',
+            'pattern_generated_description'.tr(),
             textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
         ],
       ),
@@ -492,7 +509,7 @@ class _SmsPatternBuilderWizardState
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -503,15 +520,19 @@ class _SmsPatternBuilderWizardState
         children: [
           if (_currentStep > 0)
             TextButton.icon(
-              onPressed: _previousStep,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _previousStep();
+              },
               icon: const Icon(Icons.arrow_back),
-              label: const Text('Previous'),
+              label: Text('previous'.tr()),
             )
           else
             const SizedBox.shrink(),
           if (_currentStep < 3)
             ElevatedButton.icon(
               onPressed: () {
+                HapticFeedback.lightImpact();
                 if (_currentStep == 0 && _canProceedToStep2()) {
                   _nextStep();
                 } else if (_currentStep == 1 && _canProceedToStep3()) {
@@ -521,13 +542,16 @@ class _SmsPatternBuilderWizardState
                 }
               },
               icon: const Icon(Icons.arrow_forward),
-              label: const Text('Next'),
+              label: Text('next'.tr()),
             )
           else
             ElevatedButton.icon(
-              onPressed: _returnToForm,
+              onPressed: () {
+                HapticFeedback.heavyImpact();
+                _returnToForm();
+              },
               icon: const Icon(Icons.check),
-              label: const Text('Use This Pattern'),
+              label: Text('use_this_pattern'.tr()),
             ),
         ],
       ),

@@ -1,6 +1,6 @@
 import 'package:workmanager/workmanager.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
-import 'package:mizaniyah/features/pending_sms/pending_sms_repository.dart';
+import 'package:mizaniyah/core/database/daos/pending_sms_confirmation_dao.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 
 /// WorkManager callback dispatcher
@@ -11,14 +11,14 @@ void callbackDispatcher() {
     Log.info('WorkManager task started: $task');
 
     try {
-      // Initialize database and repository in background context
-      Log.debug('WorkManager: Initializing database and repository');
+      // Initialize database and DAO in background context
+      Log.debug('WorkManager: Initializing database and DAO');
       final appDatabase = db.AppDatabase();
-      final pendingSmsRepository = PendingSmsRepository(appDatabase);
+      final pendingSmsDao = PendingSmsConfirmationDao(appDatabase);
 
       // Clean up expired pending SMS confirmations
       Log.debug('WorkManager: Cleaning up expired confirmations');
-      await pendingSmsRepository.deleteExpiredConfirmations();
+      await pendingSmsDao.deleteExpiredConfirmations();
       Log.debug('WorkManager: Completed cleanup');
 
       Log.info('WorkManager task completed successfully: $task');

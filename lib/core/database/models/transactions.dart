@@ -5,7 +5,7 @@ import 'budgets.dart';
 
 class Transactions extends Table {
   IntColumn get id => integer().autoIncrement()();
-  RealColumn get amount => real()();
+  RealColumn get amount => real()(); // Amount validation enforced at DAO level
   TextColumn get currencyCode =>
       text().withLength(min: 3, max: 3)(); // ISO 4217
   TextColumn get storeName => text().withLength(min: 1, max: 200)();
@@ -27,7 +27,7 @@ class Transactions extends Table {
   DateTimeColumn get date => dateTime()();
   TextColumn get notes => text().nullable()();
   TextColumn get source =>
-      text().withDefault(const Constant('manual'))(); // 'manual' or 'sms'
+      text().withDefault(const Constant('manual'))(); // 'manual' or 'sms' (validated at DAO level)
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }

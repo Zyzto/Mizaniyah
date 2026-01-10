@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// A floating navigation bar with rounded top corners and elevation
 class FloatingNavBar extends StatelessWidget {
@@ -33,15 +34,16 @@ class FloatingNavBar extends StatelessWidget {
 
     return SafeArea(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: background,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.shadow.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: theme.colorScheme.shadow.withValues(alpha: 0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+              spreadRadius: 0,
             ),
           ],
         ),
@@ -56,76 +58,86 @@ class FloatingNavBar extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => onDestinationSelected(index),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onDestinationSelected(index);
+                  },
                   borderRadius: BorderRadius.circular(12),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: Icon(
-                                isSelected
-                                    ? destination.selectedIcon
-                                    : destination.icon,
-                                key: ValueKey(
-                                  '${destination.icon.codePoint}_$isSelected',
+                  // Ensure minimum touch target of 44x44
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: 44,
+                      minWidth: 44,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: Icon(
+                                  isSelected
+                                      ? destination.selectedIcon
+                                      : destination.icon,
+                                  key: ValueKey(
+                                    '${destination.icon.codePoint}_$isSelected',
+                                  ),
+                                  color: color,
+                                  size: 24,
                                 ),
-                                color: color,
-                                size: 24,
                               ),
-                            ),
-                            if (destination.badgeCount != null &&
-                                destination.badgeCount! > 0)
-                              Positioned(
-                                right: -8,
-                                top: -8,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.error,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 16,
-                                    minHeight: 16,
-                                  ),
-                                  child: Text(
-                                    destination.badgeCount! > 99
-                                        ? '99+'
-                                        : '${destination.badgeCount}',
-                                    style: TextStyle(
-                                      color: theme.colorScheme.onError,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                              if (destination.badgeCount != null &&
+                                  destination.badgeCount! > 0)
+                                Positioned(
+                                  right: -8,
+                                  top: -8,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.error,
+                                      shape: BoxShape.circle,
                                     ),
-                                    textAlign: TextAlign.center,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    child: Text(
+                                      destination.badgeCount! > 99
+                                          ? '99+'
+                                          : '${destination.badgeCount}',
+                                      style: TextStyle(
+                                        color: theme.colorScheme.onError,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                        if (destination.label != null) ...[
-                          const SizedBox(height: 4),
-                          AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 200),
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 12,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                            ),
-                            child: Text(destination.label!),
+                            ],
                           ),
+                          if (destination.label != null) ...[
+                            const SizedBox(height: 4),
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                              child: Text(destination.label!),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
-import 'package:mizaniyah/features/categories/category_repository.dart';
+import 'package:mizaniyah/core/database/daos/category_dao.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:drift/drift.dart' as drift;
 
 /// Service to seed predefined categories
 class CategorySeeder with Loggable {
-  final CategoryRepository _categoryRepository;
+  final CategoryDao _categoryDao;
 
-  CategorySeeder(this._categoryRepository);
+  CategorySeeder(this._categoryDao);
 
   /// Seed predefined categories if they don't exist
   Future<void> seedPredefinedCategories() async {
     logInfo('Seeding predefined categories');
 
     try {
-      final existingCategories = await _categoryRepository.getAllCategories();
+      final existingCategories = await _categoryDao.getAllCategories();
       final existingNames = existingCategories
           .map((c) => c.name.toLowerCase())
           .toSet();
@@ -46,7 +46,7 @@ class CategorySeeder with Loggable {
             isActive: const drift.Value(true),
           );
 
-          await _categoryRepository.createCategory(category);
+          await _categoryDao.insertCategory(category);
           created++;
           logInfo('Created predefined category: ${categoryData.name}');
         }

@@ -1,18 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mizaniyah/core/services/budget_service.dart';
-import 'package:mizaniyah/features/budgets/budget_repository.dart';
-import 'package:mizaniyah/features/transactions/transaction_repository.dart';
-import 'package:mizaniyah/features/categories/category_repository.dart';
+import 'package:mizaniyah/core/database/daos/budget_dao.dart';
+import 'package:mizaniyah/core/database/daos/transaction_dao.dart';
+import 'package:mizaniyah/core/database/daos/category_dao.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
+import 'package:drift/drift.dart' hide isNotNull;
 
 void main() {
   group('BudgetService', () {
     late BudgetService budgetService;
-    late BudgetRepository budgetRepository;
-    late TransactionRepository transactionRepository;
-    late CategoryRepository categoryRepository;
+    late BudgetDao budgetDao;
+    late TransactionDao transactionDao;
+    late CategoryDao categoryDao;
     late db.AppDatabase database;
 
     setUp(() {
@@ -22,10 +23,10 @@ void main() {
           return NativeDatabase.memory();
         }),
       );
-      budgetRepository = BudgetRepository(database);
-      transactionRepository = TransactionRepository(database);
-      categoryRepository = CategoryRepository(database);
-      budgetService = BudgetService(budgetRepository, transactionRepository);
+      budgetDao = BudgetDao(database);
+      transactionDao = TransactionDao(database);
+      categoryDao = CategoryDao(database);
+      budgetService = BudgetService(budgetDao, transactionDao);
     });
 
     tearDown(() async {
@@ -34,7 +35,7 @@ void main() {
 
     test('calculateRemainingBudget returns correct remaining amount', () async {
       // Create a category
-      final categoryId = await categoryRepository.createCategory(
+      final categoryId = await categoryDao.insertCategory(
         db.CategoriesCompanion(
           name: drift.Value('Test Category'),
           color: drift.Value(0xFF000000),
@@ -42,7 +43,7 @@ void main() {
       );
 
       // Create a budget
-      final budgetId = await budgetRepository.createBudget(
+      final budgetId = await budgetDao.insertBudget(
         db.BudgetsCompanion(
           categoryId: drift.Value(categoryId),
           amount: drift.Value(1000.0),
@@ -51,8 +52,8 @@ void main() {
         ),
       );
 
-      final budgetObj = await budgetRepository.getBudgetById(budgetId);
-      expect(budgetObj, isNotNull);
+      final budgetObj = await budgetDao.getBudgetById(budgetId);
+      expect(budgetObj, isNot(null));
 
       // Calculate remaining (should be full amount with no transactions)
       final remaining = await budgetService.calculateRemainingBudget(
@@ -65,7 +66,7 @@ void main() {
       'getBudgetStatusColor returns correct color for different percentages',
       () async {
         // Create a category
-        final categoryId = await categoryRepository.createCategory(
+        final categoryId = await categoryDao.insertCategory(
           db.CategoriesCompanion(
             name: drift.Value('Test Category'),
             color: drift.Value(0xFF000000),
@@ -73,7 +74,7 @@ void main() {
         );
 
         // Create a budget
-        final budgetId = await budgetRepository.createBudget(
+        final budgetId = await budgetDao.insertBudget(
           db.BudgetsCompanion(
             categoryId: drift.Value(categoryId),
             amount: drift.Value(1000.0),
@@ -82,15 +83,15 @@ void main() {
           ),
         );
 
-        final budgetObj = await budgetRepository.getBudgetById(budgetId);
-        expect(budgetObj, isNotNull);
+        final budgetObj = await budgetDao.getBudgetById(budgetId);
+        expect(budgetObj, isNot(null));
 
         // No spending - should be green (0)
         final color1 = await budgetService.getBudgetStatusColor(budgetObj!);
         expect(color1, equals(0));
 
         // Add transaction that uses 50% of budget
-        await transactionRepository.createTransaction(
+        await transactionDao.insertTransaction(
           db.TransactionsCompanion(
             amount: drift.Value(500.0),
             currencyCode: const drift.Value('USD'),
@@ -105,7 +106,7 @@ void main() {
         expect(color2, equals(0));
 
         // Add more to reach 80%
-        await transactionRepository.createTransaction(
+        await transactionDao.insertTransaction(
           db.TransactionsCompanion(
             amount: drift.Value(300.0),
             currencyCode: const drift.Value('USD'),
@@ -120,7 +121,7 @@ void main() {
         expect(color3, equals(1));
 
         // Add more to exceed budget
-        await transactionRepository.createTransaction(
+        await transactionDao.insertTransaction(
           db.TransactionsCompanion(
             amount: drift.Value(300.0),
             currencyCode: const drift.Value('USD'),

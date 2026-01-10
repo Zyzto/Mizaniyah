@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:another_telephony/telephony.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
-import '../../features/banks/bank_repository.dart';
+import '../../core/database/daos/sms_template_dao.dart';
 
 /// Service for reading SMS messages from device inbox
 /// Android only - iOS support is on hold
@@ -114,41 +114,59 @@ class SmsReaderService with Loggable {
     return _applyPagination(filtered, limit: limit, offset: offset);
   }
 
-  /// Filter SMS messages that match bank sender patterns
-  Future<List<SmsMessage>> filterBankSms(
-    BankRepository bankRepository, {
+  /// Filter SMS messages that match template sender patterns
+  Future<List<SmsMessage>> filterSmsByTemplates(
+    SmsTemplateDao smsTemplateDao, {
     int? limit,
     int offset = 0,
   }) async {
     try {
-      final banks = await bankRepository.getActiveBanks();
+      final templates = await smsTemplateDao.getActiveTemplates();
       final allSms = await getInboxSms(forceRefresh: false);
 
-      final bankSms = <SmsMessage>[];
+      // Get unique sender patterns from templates
+      final senderPatterns = <String>{};
+      for (final template in templates) {
+        if (template.senderPattern != null &&
+            template.senderPattern!.isNotEmpty) {
+          senderPatterns.add(template.senderPattern!);
+        }
+      }
+
+      // If no templates have sender patterns, return all SMS
+      if (senderPatterns.isEmpty) {
+        logInfo('No sender patterns in templates, returning all SMS');
+        return _applyPagination(allSms, limit: limit, offset: offset);
+      }
+
+      final matchedSms = <SmsMessage>[];
       for (final sms in allSms) {
         if (sms.address == null) continue;
 
-        for (final bank in banks) {
-          if (bank.smsSenderPattern != null &&
-              bank.smsSenderPattern!.isNotEmpty) {
-            final pattern = RegExp(
-              bank.smsSenderPattern!,
-              caseSensitive: false,
-            );
+        // Check if SMS sender matches any template sender pattern
+        for (final patternStr in senderPatterns) {
+          try {
+            final pattern = RegExp(patternStr, caseSensitive: false);
             if (pattern.hasMatch(sms.address!)) {
-              bankSms.add(sms);
+              matchedSms.add(sms);
               break; // Don't add same SMS multiple times
             }
+          } catch (e) {
+            logWarning('Invalid sender pattern regex: $patternStr');
           }
         }
       }
 
       logInfo(
-        'Filtered ${bankSms.length} bank SMS from ${allSms.length} total SMS',
+        'Filtered ${matchedSms.length} SMS from ${allSms.length} total SMS',
       );
-      return _applyPagination(bankSms, limit: limit, offset: offset);
+      return _applyPagination(matchedSms, limit: limit, offset: offset);
     } catch (e, stackTrace) {
-      logError('Failed to filter bank SMS', error: e, stackTrace: stackTrace);
+      logError(
+        'Failed to filter SMS by templates',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return [];
     }
   }

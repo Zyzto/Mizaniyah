@@ -7,14 +7,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:mizaniyah/core/services/notification_service.dart';
 import 'package:mizaniyah/core/services/sms_detection_service.dart';
 import 'package:mizaniyah/core/services/workmanager_dispatcher.dart';
-import 'package:mizaniyah/features/banks/bank_repository.dart';
-import 'package:mizaniyah/features/pending_sms/pending_sms_repository.dart';
-import 'package:mizaniyah/features/transactions/transaction_repository.dart';
-import 'package:mizaniyah/features/categories/category_repository.dart';
+import 'package:mizaniyah/core/database/daos/sms_template_dao.dart';
+import 'package:mizaniyah/core/database/daos/card_dao.dart';
+import 'package:mizaniyah/core/database/daos/pending_sms_confirmation_dao.dart';
+import 'package:mizaniyah/core/database/daos/transaction_dao.dart';
+import 'package:mizaniyah/core/database/daos/category_dao.dart';
 import 'package:mizaniyah/core/services/category_seeder.dart';
-import 'package:mizaniyah/features/banks/providers/bank_providers.dart';
 import 'package:mizaniyah/features/settings/providers/settings_framework_providers.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:mizaniyah/core/database/providers/database_provider.dart';
 import 'app.dart';
 
 void main() async {
@@ -116,21 +117,23 @@ void main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     try {
       final database = getDatabase();
-      final bankRepository = BankRepository(database);
-      final pendingSmsRepository = PendingSmsRepository(database);
-      final transactionRepository = TransactionRepository(database);
-      final categoryRepository = CategoryRepository(database);
+      final smsTemplateDao = SmsTemplateDao(database);
+      final cardDao = CardDao(database);
+      final pendingSmsDao = PendingSmsConfirmationDao(database);
+      final transactionDao = TransactionDao(database);
+      final categoryDao = CategoryDao(database);
 
       // Seed predefined categories
-      final categorySeeder = CategorySeeder(categoryRepository);
+      final categorySeeder = CategorySeeder(categoryDao);
       await categorySeeder.seedPredefinedCategories();
       Log.debug('Predefined categories seeded');
 
       await SmsDetectionService.instance.init(
-        bankRepository,
-        pendingSmsRepository,
-        transactionRepository: transactionRepository,
-        categoryRepository: categoryRepository,
+        smsTemplateDao,
+        pendingSmsDao,
+        transactionDao: transactionDao,
+        cardDao: cardDao,
+        categoryDao: categoryDao,
       );
       Log.debug('SMS detection service initialized');
     } catch (e, stackTrace) {

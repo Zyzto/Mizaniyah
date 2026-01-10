@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
-import '../providers/bank_providers.dart';
 import '../../../core/database/app_database.dart' as db;
+import '../../../core/database/providers/dao_providers.dart';
 import '../../../core/widgets/error_snackbar.dart';
-import '../../../core/widgets/bank_selector.dart';
+import '../../../core/widgets/enhanced_text_form_field.dart';
+import '../../../core/widgets/loading_button.dart';
 import '../../../core/services/sms_parsing_service.dart';
 import '../widgets/sms_pattern_tester.dart';
 import 'sms_pattern_builder_wizard.dart';
 
 class SmsTemplateFormPage extends ConsumerStatefulWidget {
   final db.SmsTemplate? template;
-  final int? bankId; // Pre-select bank if provided
 
-  const SmsTemplateFormPage({super.key, this.template, this.bankId});
+  const SmsTemplateFormPage({super.key, this.template});
 
   @override
   ConsumerState<SmsTemplateFormPage> createState() =>
@@ -23,23 +26,28 @@ class SmsTemplateFormPage extends ConsumerStatefulWidget {
 
 class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
   final _formKey = GlobalKey<FormState>();
+  late TextEditingController _senderPatternController;
   late TextEditingController _patternController;
   late TextEditingController _extractionRulesController;
-  int? _selectedBankId;
-  int _priority = 0;
+  late TextEditingController _priorityController;
   bool _isActive = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
+    _senderPatternController = TextEditingController(
+      text: widget.template?.senderPattern ?? '',
+    );
     _patternController = TextEditingController(
       text: widget.template?.pattern ?? '',
     );
     _extractionRulesController = TextEditingController(
       text: widget.template?.extractionRules ?? _getDefaultExtractionRules(),
     );
-    _selectedBankId = widget.template?.bankId ?? widget.bankId;
-    _priority = widget.template?.priority ?? 0;
+    _priorityController = TextEditingController(
+      text: (widget.template?.priority ?? 0).toString(),
+    );
     _isActive = widget.template?.isActive ?? true;
 
     // Add listeners to rebuild when text changes (for pattern tester visibility)
@@ -53,8 +61,10 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
 
   @override
   void dispose() {
+    _senderPatternController.dispose();
     _patternController.dispose();
     _extractionRulesController.dispose();
+    _priorityController.dispose();
     super.dispose();
   }
 
@@ -68,36 +78,39 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
   }
 
   Future<void> _launchPatternBuilder() async {
-    final result = await Navigator.of(context).push<PatternBuilderResult>(
-      MaterialPageRoute(
-        builder: (context) => SmsPatternBuilderWizard(bankId: _selectedBankId),
-      ),
+    HapticFeedback.lightImpact();
+    final result = await context.push<PatternBuilderResult>(
+      '/banks/sms-pattern-builder',
     );
 
-    if (result != null && mounted) {
+    if (result != null && mounted && context.mounted) {
+      HapticFeedback.heavyImpact();
       setState(() {
         _patternController.text = result.pattern;
         _extractionRulesController.text = result.extractionRules;
       });
       ErrorSnackbar.showSuccess(
         context,
-        'Pattern generated from visual builder',
+        'pattern_generated'.tr(),
       );
     }
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) {
+    final formState = _formKey.currentState;
+    if (formState == null || !formState.validate()) {
+      HapticFeedback.mediumImpact();
       return;
     }
 
-    if (_selectedBankId == null) {
-      ErrorSnackbar.show(context, 'Please select a bank');
-      return;
-    }
+    if (!mounted) return;
+
+    setState(() {
+      _isSaving = true;
+    });
 
     try {
-      final repository = ref.read(bankRepositoryProvider);
+      final dao = ref.read(smsTemplateDaoProvider);
 
       // Validate pattern and extraction rules
       final pattern = _patternController.text.trim();
@@ -107,7 +120,12 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
       try {
         jsonDecode(extractionRules);
       } catch (e) {
-        ErrorSnackbar.show(context, 'Invalid extraction rules JSON: $e');
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.show(
+          context,
+          'invalid_extraction_rules'.tr(args: [e.toString()]),
+        );
         return;
       }
 
@@ -117,52 +135,70 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
         extractionRules,
       );
       if (validationErrors.isNotEmpty) {
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
         ErrorSnackbar.show(
           context,
-          'Template validation failed:\n${validationErrors.join('\n')}',
+          'template_validation_failed'.tr(args: [
+            validationErrors.join('\n'),
+          ]),
         );
         return;
       }
 
+      final senderPattern = _senderPatternController.text.trim();
+      final senderPatternValue = senderPattern.isEmpty
+          ? const drift.Value<String?>.absent()
+          : drift.Value<String?>(senderPattern);
+
       if (widget.template == null) {
         // Create new template
-        await repository.createTemplate(
+        await dao.insertTemplate(
           db.SmsTemplatesCompanion(
-            bankId: drift.Value(_selectedBankId!),
+            senderPattern: senderPatternValue,
             pattern: drift.Value(_patternController.text.trim()),
             extractionRules: drift.Value(
               _extractionRulesController.text.trim(),
             ),
-            priority: drift.Value(_priority),
+            priority: drift.Value(int.tryParse(_priorityController.text) ?? 0),
             isActive: drift.Value(_isActive),
           ),
         );
-        if (mounted) {
-          ErrorSnackbar.showSuccess(context, 'SMS template created');
-          Navigator.of(context).pop();
-        }
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.showSuccess(context, 'sms_template_created'.tr());
+        context.pop();
       } else {
         // Update existing template
-        await repository.updateTemplate(
+        await dao.updateTemplate(
           db.SmsTemplatesCompanion(
             id: drift.Value(widget.template!.id),
-            bankId: drift.Value(_selectedBankId!),
+            senderPattern: senderPatternValue,
             pattern: drift.Value(_patternController.text.trim()),
             extractionRules: drift.Value(
               _extractionRulesController.text.trim(),
             ),
-            priority: drift.Value(_priority),
+            priority: drift.Value(int.tryParse(_priorityController.text) ?? 0),
             isActive: drift.Value(_isActive),
           ),
         );
-        if (mounted) {
-          ErrorSnackbar.showSuccess(context, 'SMS template updated');
-          Navigator.of(context).pop();
-        }
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.showSuccess(context, 'sms_template_updated'.tr());
+        context.pop();
       }
     } catch (e) {
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(
+        context,
+        'template_save_failed'.tr(args: [e.toString()]),
+      );
+    } finally {
       if (mounted) {
-        ErrorSnackbar.show(context, 'Failed to save template: $e');
+        setState(() {
+          _isSaving = false;
+        });
       }
     }
   }
@@ -172,48 +208,71 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.template == null ? 'New SMS Template' : 'Edit SMS Template',
+          widget.template == null
+              ? 'new_sms_template'.tr()
+              : 'edit_sms_template'.tr(),
         ),
-        actions: [IconButton(icon: const Icon(Icons.save), onPressed: _save)],
+        actions: [
+          if (_isSaving)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.save),
+              tooltip: 'save'.tr(),
+              onPressed: _save,
+            ),
+        ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            BankSelector(
-              selectedBankId: _selectedBankId,
-              onBankSelected: (bankId) {
-                setState(() {
-                  _selectedBankId = bankId;
-                });
+            // Sender pattern (optional)
+            EnhancedTextFormField(
+              controller: _senderPatternController,
+              labelText: 'sender_pattern'.tr(),
+              hintText: 'sender_pattern_hint'.tr(),
+              textInputAction: TextInputAction.next,
+              semanticLabel: 'sender_pattern'.tr(),
+              helperText: 'sender_pattern_helper'.tr(),
+              validator: (value) {
+                if (value != null && value.trim().isNotEmpty) {
+                  try {
+                    RegExp(value.trim());
+                  } catch (e) {
+                    return 'invalid_regex'.tr(args: [e.toString()]);
+                  }
+                }
+                return null;
               },
-              label: 'Bank',
-              enabled:
-                  widget.template ==
-                  null, // Can't change bank for existing template
             ),
             const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
+                  child: EnhancedTextFormField(
                     controller: _patternController,
-                    decoration: const InputDecoration(
-                      labelText: 'Pattern (Regex)',
-                      hintText: 'e.g., .*Amount:\\s*(\\d+\\.\\d+).*',
-                      helperText:
-                          'Regular expression pattern to match SMS body. Use capture groups for extraction.',
-                    ),
+                    labelText: 'pattern_regex'.tr(),
+                    hintText: 'pattern_regex_hint'.tr(),
+                    textInputAction: TextInputAction.next,
                     maxLines: 3,
+                    semanticLabel: 'pattern_regex'.tr(),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Pattern is required';
+                        return 'pattern_required'.tr();
                       }
                       try {
                         RegExp(value.trim());
                       } catch (e) {
-                        return 'Invalid regular expression: $e';
+                        return 'invalid_regex'.tr(args: [e.toString()]);
                       }
                       return null;
                     },
@@ -222,37 +281,54 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.auto_fix_high),
-                  tooltip: 'Visual Pattern Builder',
-                  onPressed: () => _launchPatternBuilder(),
+                  tooltip: 'visual_pattern_builder'.tr(),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _launchPatternBuilder();
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _extractionRulesController,
-              decoration: const InputDecoration(
-                labelText: 'Extraction Rules (JSON)',
-                hintText: 'JSON object with extraction rules',
-                helperText:
-                    'Supports three formats:\n'
-                    '• Capture groups: {"store_name": {"group": 1}} - uses capture group from pattern\n'
-                    '• Regex patterns: {"amount": {"pattern": "Amount:\\s*([\\d,]+)"}} - uses separate regex\n'
-                    '• Fixed values: {"currency": "USD"} - uses fixed string\n'
-                    'Required fields: store_name, amount',
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'pattern_helper'.tr(),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
               ),
+            ),
+            const SizedBox(height: 24),
+            EnhancedTextFormField(
+              controller: _extractionRulesController,
+              labelText: 'extraction_rules_json'.tr(),
+              hintText: 'extraction_rules_hint'.tr(),
+              textInputAction: TextInputAction.next,
               maxLines: 12,
+              semanticLabel: 'extraction_rules_json'.tr(),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Extraction rules are required';
+                  return 'extraction_rules_required'.tr();
                 }
                 try {
                   jsonDecode(value.trim());
                 } catch (e) {
-                  return 'Invalid JSON: $e';
+                  return 'invalid_json'.tr(args: [e.toString()]);
                 }
                 // Additional validation will be done in _save()
                 return null;
               },
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'extraction_rules_helper'.tr(),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
             ),
             const SizedBox(height: 24),
             // Pattern tester widget
@@ -262,32 +338,46 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
                 pattern: _patternController.text.trim(),
                 extractionRules: _extractionRulesController.text.trim(),
               ),
-            const SizedBox(height: 24),
-            TextFormField(
-              initialValue: _priority.toString(),
-              decoration: const InputDecoration(
-                labelText: 'Priority',
-                hintText: '0',
-                helperText:
-                    'Higher priority templates are checked first. Default is 0.',
-              ),
+            if (_patternController.text.trim().isNotEmpty &&
+                _extractionRulesController.text.trim().isNotEmpty)
+              const SizedBox(height: 24),
+            EnhancedTextFormField(
+              controller: _priorityController,
+              labelText: 'priority'.tr(),
+              hintText: '0',
+              textInputAction: TextInputAction.done,
               keyboardType: TextInputType.number,
-              onChanged: (value) {
-                _priority = int.tryParse(value) ?? 0;
-              },
+              semanticLabel: 'priority'.tr(),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'priority_helper'.tr(),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
             ),
             const SizedBox(height: 24),
             SwitchListTile(
-              title: const Text('Active'),
-              subtitle: const Text(
-                'Inactive templates won\'t be used for SMS parsing',
-              ),
+              title: Text('active'.tr()),
+              subtitle: Text('active_template_description'.tr()),
               value: _isActive,
               onChanged: (value) {
+                HapticFeedback.lightImpact();
                 setState(() {
                   _isActive = value;
                 });
               },
+            ),
+            const SizedBox(height: 32),
+            LoadingButton(
+              onPressed: _isSaving ? null : _save,
+              text: 'save_template'.tr(),
+              icon: Icons.save,
+              isLoading: _isSaving,
+              semanticLabel: 'save_template'.tr(),
             ),
           ],
         ),

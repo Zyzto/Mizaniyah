@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import '../providers/transaction_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../categories/providers/category_providers.dart';
-import '../../banks/providers/bank_providers.dart';
+import '../../accounts/providers/card_providers.dart';
 import '../../../core/database/app_database.dart' as db;
-import 'transaction_form_page.dart';
+import '../../../core/database/providers/dao_providers.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/error_snackbar.dart';
 
 class TransactionDetailPage extends ConsumerWidget {
@@ -15,28 +17,30 @@ class TransactionDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
-    final currencyFormat = NumberFormat.currency(symbol: '');
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transaction Details'),
+        title: Text('transaction_details'.tr()),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
+            tooltip: 'edit'.tr(),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      TransactionFormPage(transaction: transaction),
-                ),
-              );
+              HapticFeedback.lightImpact();
+              context.push('/transactions/${transaction.id}/edit');
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: () => _deleteTransaction(context, ref),
-            color: Colors.red,
+            tooltip: 'delete'.tr(),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              _deleteTransaction(context, ref);
+            },
+            color: colorScheme.error,
           ),
         ],
       ),
@@ -45,19 +49,22 @@ class TransactionDetailPage extends ConsumerWidget {
         children: [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     transaction.storeName,
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: theme.textTheme.headlineSmall,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   Text(
-                    '${currencyFormat.format(transaction.amount)} ${transaction.currencyCode}',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.green,
+                    CurrencyFormatter.format(
+                      transaction.amount,
+                      transaction.currencyCode,
+                    ),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -66,49 +73,68 @@ class TransactionDetailPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildDetailRow(context, 'Date', dateFormat.format(transaction.date)),
+          _buildDetailRow(
+            context,
+            'date'.tr(),
+            dateFormat.format(transaction.date),
+          ),
           if (transaction.cardId != null)
-            FutureBuilder<List<db.Card>>(
-              future: ref.read(allCardsProvider.future),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final card = snapshot.data!.firstWhere(
-                    (c) => c.id == transaction.cardId,
-                    orElse: () => throw StateError('Card not found'),
-                  );
-                  return _buildDetailRow(
-                    context,
-                    'Card',
-                    '${card.cardName} (****${card.last4Digits})',
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
+            _buildCardDetail(context, ref, transaction.cardId!),
           if (transaction.categoryId != null)
-            FutureBuilder<db.Category?>(
-              future: ref.read(
-                categoryProvider(transaction.categoryId!).future,
-              ),
-              builder: (context, snapshot) {
-                if (snapshot.hasData && snapshot.data != null) {
-                  final category = snapshot.data!;
-                  return _buildDetailRow(context, 'Category', category.name);
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          _buildDetailRow(context, 'Source', transaction.source),
+            _buildCategoryDetail(context, ref, transaction.categoryId!),
+          _buildDetailRow(
+            context,
+            'source'.tr(),
+            transaction.source == 'sms' ? 'sms'.tr() : 'manual'.tr(),
+          ),
           if (transaction.notes != null && transaction.notes!.isNotEmpty)
-            _buildDetailRow(context, 'Notes', transaction.notes!),
+            _buildDetailRow(
+              context,
+              'notes_optional'.tr(),
+              transaction.notes!,
+            ),
         ],
       ),
     );
   }
 
+  Widget _buildCardDetail(BuildContext context, WidgetRef ref, int cardId) {
+    final cardsAsync = ref.watch(allCardsProvider);
+    return cardsAsync.when(
+      data: (cards) {
+        final card = cards.firstWhere(
+          (c) => c.id == cardId,
+          orElse: () => throw StateError('Card not found'),
+        );
+        return _buildDetailRow(
+          context,
+          'card'.tr(),
+          '${card.cardName} (****${card.last4Digits})',
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildCategoryDetail(BuildContext context, WidgetRef ref, int categoryId) {
+    final categoryAsync = ref.watch(categoryProvider(categoryId));
+    return categoryAsync.when(
+      data: (category) {
+        if (category == null) return const SizedBox.shrink();
+        return _buildDetailRow(context, 'category'.tr(), category.name);
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+
   Widget _buildDetailRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -116,14 +142,17 @@ class TransactionDetailPage extends ConsumerWidget {
             width: 100,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.bold,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
           Expanded(
-            child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
+            child: Text(
+              value,
+              style: theme.textTheme.bodyLarge,
+            ),
           ),
         ],
       ),
@@ -134,19 +163,25 @@ class TransactionDetailPage extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction'),
-        content: const Text(
-          'Are you sure you want to delete this transaction?',
-        ),
+        title: Text('delete_transaction'.tr()),
+        content: Text('delete_transaction_confirmation'.tr()),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop(false);
+            },
+            child: Text('cancel'.tr()),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.of(context).pop(true);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text('delete'.tr()),
           ),
         ],
       ),
@@ -154,15 +189,20 @@ class TransactionDetailPage extends ConsumerWidget {
 
     if (confirmed == true) {
       try {
-        final repository = ref.read(transactionRepositoryProvider);
-        await repository.deleteTransaction(transaction.id);
+        final dao = ref.read(transactionDaoProvider);
+        await dao.deleteTransaction(transaction.id);
         if (context.mounted) {
-          ErrorSnackbar.showSuccess(context, 'Transaction deleted');
-          Navigator.of(context).pop();
+          HapticFeedback.heavyImpact();
+          ErrorSnackbar.showSuccess(context, 'transaction_deleted'.tr());
+          context.pop();
         }
       } catch (e) {
         if (context.mounted) {
-          ErrorSnackbar.show(context, 'Failed to delete transaction: $e');
+          HapticFeedback.heavyImpact();
+          ErrorSnackbar.show(
+            context,
+            'transaction_delete_failed'.tr(args: [e.toString()]),
+          );
         }
       }
     }

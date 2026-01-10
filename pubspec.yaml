@@ -2,7 +2,7 @@ name: mizaniyah
 description: "A spending tracker app with SMS transaction detection (Android only, iOS on hold)."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 0.2.0+1
 
 environment:
   sdk: ^3.10.0

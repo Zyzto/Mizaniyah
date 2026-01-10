@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
-import 'package:mizaniyah/features/pending_sms/pending_sms_repository.dart';
-import 'package:mizaniyah/features/banks/providers/bank_providers.dart';
-import 'package:mizaniyah/features/transactions/transaction_repository.dart';
-import 'package:mizaniyah/features/banks/bank_repository.dart';
+import 'package:mizaniyah/core/database/daos/pending_sms_confirmation_dao.dart';
+import 'package:mizaniyah/core/database/daos/transaction_dao.dart';
+import 'package:mizaniyah/core/database/daos/card_dao.dart';
+import 'package:mizaniyah/core/database/providers/database_provider.dart';
+import 'package:mizaniyah/core/utils/currency_formatter.dart';
 import 'package:drift/drift.dart' as drift;
 import 'dart:convert';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/loading_skeleton.dart';
+import '../../../core/widgets/error_state.dart';
+import '../../../core/widgets/error_snackbar.dart';
 
 class PendingConfirmationsTab extends ConsumerStatefulWidget {
   const PendingConfirmationsTab({super.key});
@@ -21,45 +28,32 @@ class _PendingConfirmationsTabState
   @override
   Widget build(BuildContext context) {
     final database = ref.watch(databaseProvider);
-    final pendingSmsRepository = PendingSmsRepository(database);
+    final pendingSmsDao = PendingSmsConfirmationDao(database);
 
     return FutureBuilder<List<db.PendingSmsConfirmation>>(
-      future: pendingSmsRepository.getNonExpiredConfirmations(),
+      future: pendingSmsDao.getNonExpiredConfirmations(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SkeletonList(itemCount: 3, itemHeight: 120);
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return ErrorState(
+            title: 'error_loading_confirmations'.tr(),
+            message: snapshot.error.toString(),
+            onRetry: () {
+              setState(() {});
+            },
+          );
         }
 
         final confirmations = snapshot.data ?? [];
 
         if (confirmations.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No pending confirmations',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'All SMS transactions have been processed',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+          return EmptyState(
+            icon: Icons.check_circle_outline,
+            title: 'no_pending'.tr(),
+            subtitle: 'all_processed'.tr(),
           );
         }
 
@@ -81,11 +75,12 @@ class _PendingConfirmationsTabState
   Future<void> _approveConfirmation(
     db.PendingSmsConfirmation confirmation,
   ) async {
+    HapticFeedback.mediumImpact();
     try {
       final database = ref.read(databaseProvider);
-      final transactionRepository = TransactionRepository(database);
-      final bankRepository = BankRepository(database);
-      final pendingSmsRepository = PendingSmsRepository(database);
+      final transactionDao = TransactionDao(database);
+      final cardDao = CardDao(database);
+      final pendingSmsDao = PendingSmsConfirmationDao(database);
 
       // Parse the parsed data
       final parsedDataJson =
@@ -96,18 +91,19 @@ class _PendingConfirmationsTabState
       final cardLast4 = parsedDataJson['card_last4'] as String?;
 
       if (storeName == null || amount == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invalid confirmation data')),
-          );
-        }
+        if (!mounted || !context.mounted) return;
+        HapticFeedback.heavyImpact();
+        ErrorSnackbar.show(
+          context,
+          'invalid_confirmation_data'.tr(),
+        );
         return;
       }
 
       // Find card by last 4 digits if available
       int? cardId;
       if (cardLast4 != null && cardLast4.length == 4) {
-        final card = await bankRepository.getCardByLast4Digits(cardLast4);
+        final card = await cardDao.getCardByLast4Digits(cardLast4);
         cardId = card?.id;
       }
 
@@ -120,47 +116,51 @@ class _PendingConfirmationsTabState
         categoryId: const drift.Value.absent(),
         date: drift.Value(DateTime.now()),
         source: const drift.Value('sms'),
-        notes: drift.Value('Approved from SMS confirmation'),
+        notes: drift.Value('approved_from_sms'.tr()),
       );
 
-      await transactionRepository.createTransaction(transaction);
+      await transactionDao.insertTransaction(transaction);
 
       // Delete the pending confirmation
-      await pendingSmsRepository.deleteConfirmation(confirmation.id);
+      await pendingSmsDao.deleteConfirmation(confirmation.id);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaction created successfully')),
-        );
-      }
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.showSuccess(
+        context,
+        'transaction_created'.tr(),
+      );
+      setState(() {}); // Refresh the list
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(
+        context,
+        'approve_confirmation_failed'.tr(args: [e.toString()]),
+      );
     }
   }
 
   Future<void> _rejectConfirmation(
     db.PendingSmsConfirmation confirmation,
   ) async {
+    HapticFeedback.mediumImpact();
     try {
       final database = ref.read(databaseProvider);
-      final pendingSmsRepository = PendingSmsRepository(database);
-      await pendingSmsRepository.deleteConfirmation(confirmation.id);
+      final pendingSmsDao = PendingSmsConfirmationDao(database);
+      await pendingSmsDao.deleteConfirmation(confirmation.id);
 
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Confirmation rejected')));
-      }
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.lightImpact();
+      ErrorSnackbar.showSuccess(context, 'confirmation_rejected'.tr());
+      setState(() {}); // Refresh the list
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(
+        context,
+        'reject_confirmation_failed'.tr(args: [e.toString()]),
+      );
     }
   }
 }
@@ -178,34 +178,64 @@ class _PendingConfirmationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final parsedDataJson =
         jsonDecode(confirmation.parsedData) as Map<String, dynamic>;
-    final storeName = parsedDataJson['store_name'] as String? ?? 'Unknown';
+    final storeName = parsedDataJson['store_name'] as String? ?? 'unknown'.tr();
     final amount = parsedDataJson['amount'] as double? ?? 0.0;
     final currency = parsedDataJson['currency'] as String? ?? 'USD';
     final confidence = parsedDataJson['confidence'] as double?;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        title: Text(storeName),
-        subtitle: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${amount.toStringAsFixed(2)} $currency'),
-            if (confidence != null)
-              Text(
-                'Confidence: ${(confidence * 100).toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.bodySmall,
+            Text(
+              storeName,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              CurrencyFormatter.format(amount, currency),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextButton(onPressed: onReject, child: const Text('Reject')),
-            const SizedBox(width: 8),
-            FilledButton(onPressed: onApprove, child: const Text('Approve')),
+            ),
+            if (confidence != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'confidence_label'.tr(args: [
+                  (confidence * 100).toStringAsFixed(0),
+                ]),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onReject();
+                  },
+                  child: Text('reject'.tr()),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onApprove();
+                  },
+                  child: Text('approve'.tr()),
+                ),
+              ],
+            ),
           ],
         ),
       ),
