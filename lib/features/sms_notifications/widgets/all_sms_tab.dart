@@ -4,23 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:another_telephony/telephony.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../../../core/services/sms_reader_service.dart';
+import '../providers/sms_providers.dart';
 import '../../../core/services/sms_parsing_service.dart';
-import '../../../core/database/providers/dao_providers.dart';
-import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/error_state.dart';
 import '../../../core/utils/currency_formatter.dart';
 
-/// SMS with parsing status
-class SmsWithStatus {
-  final SmsMessage sms;
-  final Map<String, dynamic>? matchResult;
-  final bool isMatched;
-
-  SmsWithStatus({required this.sms, this.matchResult, required this.isMatched});
-}
-
 /// All SMS tab - integrated SMS reader with parsing status
+/// Uses reactive providers for smooth loading and background parsing
 class AllSmsTab extends ConsumerStatefulWidget {
   const AllSmsTab({super.key});
 
@@ -30,15 +21,10 @@ class AllSmsTab extends ConsumerStatefulWidget {
 
 class _AllSmsTabState extends ConsumerState<AllSmsTab>
     with AutomaticKeepAliveClientMixin {
-  final SmsReaderService _smsReaderService = SmsReaderService.instance;
-  List<SmsWithStatus> _smsList = [];
-  bool _isLoading = false;
   String _searchQuery = '';
   bool _showBankSmsOnly = false;
   bool _showMatchedOnly = false;
   final ScrollController _scrollController = ScrollController();
-  int _loadedCount = 0;
-  static const _pageSize = 50;
 
   @override
   bool get wantKeepAlive => true;
@@ -46,7 +32,6 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
   @override
   void initState() {
     super.initState();
-    _loadSms();
     _scrollController.addListener(_onScroll);
   }
 
@@ -59,89 +44,12 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.8) {
-      _loadMoreSms();
+      ref.read(smsListProvider.notifier).loadMore();
     }
   }
 
-  Future<void> _loadSms({bool refresh = false}) async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      if (refresh) {
-        _loadedCount = 0;
-        _smsList = [];
-        _smsReaderService.clearCache();
-      }
-    });
-
-    try {
-      await _smsReaderService.init();
-      List<SmsMessage> sms;
-
-      if (_showBankSmsOnly) {
-        final smsTemplateDao = ref.read(smsTemplateDaoProvider);
-        sms = await _smsReaderService.filterSmsByTemplates(
-          smsTemplateDao,
-          limit: _pageSize,
-          offset: _loadedCount,
-        );
-      } else {
-        sms = await _smsReaderService.getInboxSms(
-          limit: _pageSize,
-          offset: _loadedCount,
-          forceRefresh: refresh,
-        );
-      }
-
-      // Check parsing status for each SMS
-      final smsWithStatus = await _checkParsingStatus(sms);
-
-      setState(() {
-        _smsList.addAll(smsWithStatus);
-        _loadedCount += sms.length;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (!mounted || !context.mounted) return;
-      HapticFeedback.heavyImpact();
-      ErrorSnackbar.show(context, 'sms_load_failed'.tr(args: [e.toString()]));
-    }
-  }
-
-  Future<List<SmsWithStatus>> _checkParsingStatus(
-    List<SmsMessage> smsList,
-  ) async {
-    final smsTemplateDao = ref.read(smsTemplateDaoProvider);
-    final templates = await smsTemplateDao.getActiveTemplates();
-    final result = <SmsWithStatus>[];
-
-    for (final sms in smsList) {
-      final body = sms.body ?? '';
-      if (body.isEmpty) {
-        result.add(SmsWithStatus(sms: sms, isMatched: false));
-        continue;
-      }
-
-      final match = SmsParsingService.findMatchingTemplate(body, templates);
-      result.add(
-        SmsWithStatus(sms: sms, matchResult: match, isMatched: match != null),
-      );
-    }
-
-    return result;
-  }
-
-  Future<void> _loadMoreSms() async {
-    if (_isLoading || _smsList.isEmpty) return;
-    await _loadSms();
-  }
-
-  List<SmsWithStatus> _getFilteredSms() {
-    var filtered = _smsList;
+  List<SmsWithStatus> _getFilteredSms(List<SmsWithStatus> smsList) {
+    var filtered = smsList;
 
     // Filter by match status
     if (_showMatchedOnly) {
@@ -164,155 +72,166 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
-    final filteredSms = _getFilteredSms();
-    final matchedCount = _smsList.where((item) => item.isMatched).length;
-    final unmatchedCount = _smsList.length - matchedCount;
+    final smsAsync = ref.watch(smsListProvider);
 
-    return Column(
-      children: [
-        // Search and filter bar
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'search_sms_hint'.tr(),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'clear_search'.tr(),
-                          onPressed: () {
+    return smsAsync.when(
+      data: (smsList) {
+        final filteredSms = _getFilteredSms(smsList);
+        final matchedCount = smsList.where((item) => item.isMatched).length;
+        final unmatchedCount = smsList.length - matchedCount;
+        final parsingCount = smsList.where((item) => item.isParsing).length;
+
+        return Column(
+          children: [
+            // Search and filter bar
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'search_sms_hint'.tr(),
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              tooltip: 'clear_search'.tr(),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilterChip(
+                          label: Text('show_bank_sms_only'.tr()),
+                          selected: _showBankSmsOnly,
+                          onSelected: (value) {
                             HapticFeedback.lightImpact();
                             setState(() {
-                              _searchQuery = '';
+                              _showBankSmsOnly = value;
+                            });
+                            ref.read(smsListProvider.notifier).filterByBankSms(value);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilterChip(
+                          label: Text('matched_only'.tr()),
+                          selected: _showMatchedOnly,
+                          onSelected: (value) {
+                            HapticFeedback.lightImpact();
+                            setState(() {
+                              _showMatchedOnly = value;
                             });
                           },
-                        )
-                      : null,
-                ),
-                textInputAction: TextInputAction.search,
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilterChip(
-                      label: Text('show_bank_sms_only'.tr()),
-                      selected: _showBankSmsOnly,
-                      onSelected: (value) {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _showBankSmsOnly = value;
-                          _loadedCount = 0;
-                          _smsList = [];
-                        });
-                        _loadSms(refresh: true);
-                      },
-                    ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        tooltip: 'refresh'.tr(),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(smsListProvider.notifier).refresh();
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FilterChip(
-                      label: Text('matched_only'.tr()),
-                      selected: _showMatchedOnly,
-                      onSelected: (value) {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _showMatchedOnly = value;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    tooltip: 'refresh'.tr(),
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      _loadSms(refresh: true);
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    'total_sms'.tr(args: [_smsList.length.toString()]),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'matched_count'.tr(args: [matchedCount.toString()]),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'unmatched_count'.tr(args: [unmatchedCount.toString()]),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        // SMS List
-        Expanded(
-          child: _isLoading && _smsList.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : filteredSms.isEmpty
-              ? EmptyState(
-                  icon: Icons.sms_outlined,
-                  title: _searchQuery.isNotEmpty
-                      ? 'no_sms_matching'.tr(args: [_searchQuery])
-                      : 'no_sms_messages'.tr(),
-                  subtitle: _searchQuery.isNotEmpty
-                      ? null
-                      : 'no_sms_messages_description'.tr(),
-                )
-              : RefreshIndicator(
-                  onRefresh: () => _loadSms(refresh: true),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: filteredSms.length + (_isLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index >= filteredSms.length) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: CircularProgressIndicator(),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        'total_sms'.tr(args: [smsList.length.toString()]),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        'matched_count'.tr(args: [matchedCount.toString()]),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        'unmatched_count'.tr(args: [unmatchedCount.toString()]),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      if (parsingCount > 0) ...[
+                        const SizedBox(width: 16),
+                        Text(
+                          'parsing: $parsingCount',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
-                        );
-                      }
-
-                      final smsWithStatus = filteredSms[index];
-                      return _SmsListItemWithStatus(
-                        smsWithStatus: smsWithStatus,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          _showSmsDetails(smsWithStatus);
-                        },
-                        onCreateTemplate: () {
-                          HapticFeedback.lightImpact();
-                          _createTemplateFromSms(smsWithStatus.sms);
-                        },
-                      );
-                    },
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-        ),
-      ],
+                ],
+              ),
+            ),
+            // SMS List
+            Expanded(
+              child: filteredSms.isEmpty
+                  ? EmptyState(
+                      icon: Icons.sms_outlined,
+                      title: _searchQuery.isNotEmpty
+                          ? 'no_sms_matching'.tr(args: [_searchQuery])
+                          : 'no_sms_messages'.tr(),
+                      subtitle: _searchQuery.isNotEmpty
+                          ? null
+                          : 'no_sms_messages_description'.tr(),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        await ref.read(smsListProvider.notifier).refresh();
+                      },
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        itemCount: filteredSms.length,
+                        itemBuilder: (context, index) {
+                          final smsWithStatus = filteredSms[index];
+                          return _SmsListItemWithStatus(
+                            smsWithStatus: smsWithStatus,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _showSmsDetails(smsWithStatus);
+                            },
+                            onCreateTemplate: () {
+                              HapticFeedback.lightImpact();
+                              _createTemplateFromSms(smsWithStatus.sms);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => ErrorState(
+        title: 'error_loading_sms'.tr(),
+        message: error.toString(),
+        onRetry: () => ref.read(smsListProvider.notifier).refresh(),
+      ),
     );
   }
 
@@ -387,9 +306,15 @@ class _SmsListItemWithStatus extends StatelessWidget {
                   CircleAvatar(
                     backgroundColor: smsWithStatus.isMatched
                         ? colorScheme.primaryContainer
-                        : colorScheme.surfaceContainerHighest,
+                        : smsWithStatus.isParsing
+                            ? colorScheme.surfaceContainerHighest
+                            : colorScheme.surfaceContainerHighest,
                     child: Icon(
-                      smsWithStatus.isMatched ? Icons.check_circle : Icons.sms,
+                      smsWithStatus.isParsing
+                          ? Icons.hourglass_empty
+                          : smsWithStatus.isMatched
+                              ? Icons.check_circle
+                              : Icons.sms,
                       size: 20,
                       color: smsWithStatus.isMatched
                           ? colorScheme.onPrimaryContainer
@@ -477,7 +402,7 @@ class _SmsListItemWithStatus extends StatelessWidget {
                   ),
                 ),
               ],
-              if (!smsWithStatus.isMatched) ...[
+              if (!smsWithStatus.isMatched && !smsWithStatus.isParsing) ...[
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
