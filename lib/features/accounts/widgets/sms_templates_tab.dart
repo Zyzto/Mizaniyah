@@ -9,7 +9,8 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../sms_templates/providers/sms_template_providers.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/providers/dao_providers.dart';
-import '../../banks/widgets/sms_template_tester.dart';
+import '../../../core/navigation/route_paths.dart';
+import '../../sms_management/widgets/sms_template_tester.dart';
 import '../../sms_notifications/widgets/all_sms_tab.dart';
 import '../../sms_notifications/widgets/notifications_tab.dart';
 import '../../sms_notifications/widgets/pending_confirmations_tab.dart';
@@ -288,11 +289,11 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
   }
 
   void _navigateToAddTemplate() {
-    context.push('/banks/sms-template-form');
+    context.push(RoutePaths.smsTemplateForm);
   }
 
   void _navigateToEditTemplate(db.SmsTemplate template) {
-    context.push('/banks/sms-template/${template.id}/edit');
+    context.push(RoutePaths.smsTemplateEdit(template.id));
   }
 
   Future<void> _toggleTemplateActive(

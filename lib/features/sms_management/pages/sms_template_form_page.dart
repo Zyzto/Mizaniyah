@@ -12,6 +12,7 @@ import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/enhanced_text_form_field.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../../core/services/sms_parsing_service.dart';
+import '../../../core/navigation/route_paths.dart';
 import '../widgets/sms_template_tester.dart';
 import 'sms_template_builder_wizard.dart';
 
@@ -111,8 +112,8 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
     HapticFeedback.lightImpact();
     final result = await context.push<TemplateBuilderResult>(
       widget.initialSms != null && widget.initialSms!.isNotEmpty
-          ? '/banks/sms-template-builder?initialSms=${Uri.encodeComponent(widget.initialSms!)}'
-          : '/banks/sms-template-builder',
+          ? '${RoutePaths.smsTemplateBuilder}?initialSms=${Uri.encodeComponent(widget.initialSms!)}'
+          : RoutePaths.smsTemplateBuilder,
     );
 
     if (result != null && mounted && context.mounted) {

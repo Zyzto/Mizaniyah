@@ -231,7 +231,7 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
     await _loadInitialSms();
   }
 
-  Future<void> filterByBankSms(bool showBankSmsOnly) async {
+  Future<void> filterByMatchedSms(bool showMatchedSmsOnly) async {
     if (_isLoading) return;
     _isLoading = true;
     state = const AsyncValue.loading();
@@ -240,7 +240,7 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
       await _smsReaderService.init();
       List<SmsMessage> sms;
 
-      if (showBankSmsOnly) {
+      if (showMatchedSmsOnly) {
         final smsTemplateDao = ref.read(smsTemplateDaoProvider);
         sms = await _smsReaderService.filterSmsByTemplates(
           smsTemplateDao,

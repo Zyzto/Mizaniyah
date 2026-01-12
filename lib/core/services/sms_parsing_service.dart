@@ -32,7 +32,7 @@ class ParsedSmsData {
 }
 
 /// SMS Parsing Service
-/// Matches SMS against bank templates and extracts transaction data
+/// Matches SMS against templates and extracts transaction data
 class SmsParsingService with Loggable {
   /// Extract a field value using extraction rule
   /// Supports:

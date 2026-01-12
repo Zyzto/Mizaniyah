@@ -70,7 +70,6 @@ class DatabaseMaintenanceService with Loggable {
     try {
       final tables = [
         'transactions',
-        'banks',
         'cards',
         'categories',
         'budgets',

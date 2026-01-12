@@ -6,6 +6,7 @@ import 'package:another_telephony/telephony.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/services/sms_reader_service.dart';
 import '../../../core/database/providers/dao_providers.dart';
+import '../../../core/navigation/route_paths.dart';
 import '../widgets/sms_list_item.dart';
 import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -29,7 +30,7 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
   List<SmsMessage> _smsList = [];
   bool _isLoading = false;
   String _searchQuery = '';
-  bool _showBankSmsOnly = false;
+  bool _showMatchedSmsOnly = false;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   int _loadedCount = 0;
@@ -80,7 +81,7 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
       await _smsReaderService.init();
       List<SmsMessage> sms;
 
-      if (_showBankSmsOnly) {
+      if (_showMatchedSmsOnly) {
         final smsTemplateDao = ref.read(smsTemplateDaoProvider);
         sms = await _smsReaderService.filterSmsByTemplates(
           smsTemplateDao,
@@ -169,18 +170,18 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
               Row(
                 children: [
                   Checkbox(
-                    value: _showBankSmsOnly,
+                    value: _showMatchedSmsOnly,
                     onChanged: (value) {
                       HapticFeedback.lightImpact();
                       setState(() {
-                        _showBankSmsOnly = value ?? false;
+                        _showMatchedSmsOnly = value ?? false;
                         _loadedCount = 0;
                         _smsList = [];
                       });
                       _loadSms(refresh: true);
                     },
                   ),
-                  Text('show_bank_sms_only'.tr()),
+                  Text('show_matched_sms_only'.tr()),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.refresh),
@@ -230,7 +231,7 @@ class _SmsReaderPageState extends ConsumerState<SmsReaderPage> {
                         onTap: () {
                           HapticFeedback.lightImpact();
                           // Navigate to SMS Template page
-                          context.push('/banks/sms-template');
+                          context.push(RoutePaths.smsTemplatePage);
                         },
                       );
                     },

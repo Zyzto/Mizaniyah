@@ -34,13 +34,12 @@ class RoutePaths {
   // Statistics
   static const String statistics = '/statistics';
 
-  // Banks
-  static const String banks = '/banks';
-  static const String smsTemplateBuilder = '/banks/sms-template-builder';
-  static const String smsTemplatePage = '/banks/sms-template';
-  static const String smsReader = '/banks/sms-reader';
-  static const String smsTemplateForm = '/banks/sms-template-form';
-  static String smsTemplateEdit(int id) => '/banks/sms-template/$id/edit';
+  // SMS Management
+  static const String smsTemplateBuilder = '/sms/template-builder';
+  static const String smsTemplatePage = '/sms/template';
+  static const String smsReader = '/sms/reader';
+  static const String smsTemplateForm = '/sms/template-form';
+  static String smsTemplateEdit(int id) => '/sms/template/$id/edit';
 
   // Helper methods to extract IDs from paths
   static int? extractTransactionId(String path) {
@@ -64,7 +63,7 @@ class RoutePaths {
   }
 
   static int? extractSmsTemplateId(String path) {
-    final match = RegExp(r'/banks/sms-template/(\d+)/edit').firstMatch(path);
+    final match = RegExp(r'/sms/template/(\d+)/edit').firstMatch(path);
     return match != null ? int.tryParse(match.group(1)!) : null;
   }
 }

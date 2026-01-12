@@ -21,9 +21,8 @@ class TemplateBuilderResult {
 /// Allows users to visually build SMS templates by selecting and labeling parts
 class SmsTemplateBuilderWizard extends ConsumerStatefulWidget {
   final String? initialSms;
-  final int? bankId;
 
-  const SmsTemplateBuilderWizard({super.key, this.initialSms, this.bankId});
+  const SmsTemplateBuilderWizard({super.key, this.initialSms});
 
   @override
   ConsumerState<SmsTemplateBuilderWizard> createState() =>

@@ -6,6 +6,7 @@ import 'package:another_telephony/telephony.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../providers/sms_providers.dart';
 import '../../../core/services/sms_parsing_service.dart';
+import '../../../core/navigation/route_paths.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
@@ -25,7 +26,7 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
     with AutomaticKeepAliveClientMixin {
   String _searchQuery = '';
   String _debouncedSearchQuery = '';
-  bool _showBankSmsOnly = false;
+  bool _showMatchedSmsOnly = false;
   bool _showMatchedOnly = false;
   final ScrollController _scrollController = ScrollController();
   late final Debouncer _searchDebouncer;
@@ -156,14 +157,14 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                     children: [
                       Expanded(
                         child: FilterChip(
-                          label: Text('show_bank_sms_only'.tr()),
-                          selected: _showBankSmsOnly,
+                          label: Text('show_matched_sms_only'.tr()),
+                          selected: _showMatchedSmsOnly,
                           onSelected: (value) {
                             HapticFeedback.lightImpact();
                             setState(() {
-                              _showBankSmsOnly = value;
+                              _showMatchedSmsOnly = value;
                             });
-                            ref.read(smsListProvider.notifier).filterByBankSms(value);
+                            ref.read(smsListProvider.notifier).filterByMatchedSms(value);
                           },
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                         ),
@@ -330,14 +331,14 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
     if (_showMatchedOnly) {
       return 'no_matched_sms'.tr();
     }
-    if (_showBankSmsOnly) {
-      return 'no_bank_sms'.tr();
+    if (_showMatchedSmsOnly) {
+      return 'no_matched_sms'.tr();
     }
     return 'no_sms_messages'.tr();
   }
 
   String? _getEmptyStateSubtitle() {
-    if (_debouncedSearchQuery.isNotEmpty || _showMatchedOnly || _showBankSmsOnly) {
+    if (_debouncedSearchQuery.isNotEmpty || _showMatchedOnly || _showMatchedSmsOnly) {
       return null;
     }
     return 'no_sms_messages_description'.tr();
@@ -395,7 +396,7 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
         .map((e) => '${e.key}=${e.value}')
         .join('&');
     context.push(
-      '/banks/sms-template-form${queryString.isNotEmpty ? '?$queryString' : ''}',
+      '${RoutePaths.smsTemplateForm}${queryString.isNotEmpty ? '?$queryString' : ''}',
     );
   }
 }

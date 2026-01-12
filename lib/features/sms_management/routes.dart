@@ -9,8 +9,8 @@ import '../../../core/database/providers/database_provider.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/daos/sms_template_dao.dart';
 
-/// Bank routes for the application
-List<RouteBase> getBankRoutes() {
+/// SMS Management routes for the application
+List<RouteBase> getSmsManagementRoutes() {
   return [
     GoRoute(
       path: RoutePaths.smsTemplatePage,
@@ -85,7 +85,7 @@ List<RouteBase> getBankRoutes() {
       },
     ),
     GoRoute(
-      path: '/banks/sms-template/:id/edit',
+      path: '/sms/template/:id/edit',
       builder: (context, state) {
         final id = int.tryParse(state.pathParameters['id'] ?? '');
         if (id == null) {

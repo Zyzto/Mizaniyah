@@ -8,7 +8,7 @@ import '../../features/accounts/routes.dart';
 import '../../features/budgets/routes.dart';
 import '../../features/settings/routes.dart';
 import '../../features/statistics/routes.dart';
-import '../../features/banks/routes.dart';
+import '../../features/sms_management/routes.dart';
 import '../../features/sms_notifications/routes.dart';
 import 'main_scaffold.dart';
 
@@ -51,7 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ...getBudgetRoutes(),
           ...getSettingsRoutes(),
           ...getStatisticsRoutes(),
-          ...getBankRoutes(),
+          ...getSmsManagementRoutes(),
           // Keep SMS notification routes for backward compatibility
           ...getSmsNotificationRoutes(),
         ],

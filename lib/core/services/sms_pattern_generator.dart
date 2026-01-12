@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../../features/banks/widgets/sms_text_selector.dart';
+import '../../features/sms_management/widgets/sms_text_selector.dart';
 
 /// Result of pattern generation
 class PatternGenerationResult {

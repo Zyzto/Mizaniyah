@@ -10,6 +10,7 @@ import '../../../core/database/providers/dao_providers.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
 import '../../../core/widgets/error_state.dart';
+import '../../../core/navigation/route_paths.dart';
 import '../widgets/sms_template_tester.dart';
 
 /// SMS Template Library page
@@ -378,11 +379,11 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
   }
 
   void _navigateToAddTemplate() {
-    context.push('/banks/sms-template-form');
+    context.push(RoutePaths.smsTemplateForm);
   }
 
   void _navigateToEditTemplate(db.SmsTemplate template) {
-    context.push('/banks/sms-template/${template.id}/edit');
+    context.push(RoutePaths.smsTemplateEdit(template.id));
   }
 
   List<db.SmsTemplate> _filterTemplates(List<db.SmsTemplate> templates) {

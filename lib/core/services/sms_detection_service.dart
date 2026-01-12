@@ -170,7 +170,7 @@ class SmsDetectionService with Loggable {
     }
 
     try {
-      // Match SMS to bank and parse transaction data
+      // Match SMS to template and parse transaction data
       final matchResult = await _smsMatcher!.matchSms(sender, body);
       if (matchResult == null) {
         return; // No match found, silently ignore
