@@ -30,6 +30,16 @@ class PendingSmsConfirmationDao extends DatabaseAccessor<AppDatabase>
     return select(db.pendingSmsConfirmations).watch();
   }
 
+  /// Watch non-expired confirmations reactively
+  Stream<List<PendingSmsConfirmation>> watchNonExpiredConfirmations() {
+    logDebug('watchNonExpiredConfirmations() called');
+    final now = DateTime.now();
+    return (select(db.pendingSmsConfirmations)
+          ..where((p) => p.expiresAt.isBiggerThanValue(now))
+          ..orderBy([(p) => OrderingTerm.desc(p.createdAt)]))
+        .watch();
+  }
+
   Future<List<PendingSmsConfirmation>> getNonExpiredConfirmations() async {
     return executeWithErrorHandling<List<PendingSmsConfirmation>>(
       operationName: 'getNonExpiredConfirmations',

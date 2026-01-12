@@ -54,6 +54,8 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
       children: [
         TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           tabs: [
             Tab(
               icon: const Icon(Icons.pending_outlined),

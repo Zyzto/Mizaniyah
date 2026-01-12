@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
-import '../providers/account_providers.dart';
 import '../providers/card_providers.dart';
+import '../providers/account_providers.dart';
 import '../../../core/widgets/loading_skeleton.dart';
 import 'card_item.dart';
 
@@ -30,7 +30,7 @@ class _AccountItemState extends ConsumerState<AccountItem> {
 
   @override
   Widget build(BuildContext context) {
-    final cardsAsync = ref.watch(cardsByAccountStreamProvider(widget.account.id));
+    final cardsAsync = ref.watch(cardsByAccountProvider(widget.account.id));
     final theme = Theme.of(context);
 
     return Card(

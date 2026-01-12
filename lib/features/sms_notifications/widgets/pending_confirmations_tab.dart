@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
-import 'package:mizaniyah/core/database/daos/pending_sms_confirmation_dao.dart';
 import 'package:mizaniyah/core/database/daos/transaction_dao.dart';
 import 'package:mizaniyah/core/database/daos/card_dao.dart';
 import 'package:mizaniyah/core/database/providers/database_provider.dart';
+import 'package:mizaniyah/core/database/providers/dao_providers.dart';
 import 'package:mizaniyah/core/utils/currency_formatter.dart';
+import 'package:mizaniyah/features/sms_templates/providers/sms_template_providers.dart';
 import 'package:drift/drift.dart' as drift;
 import 'dart:convert';
 import '../../../core/widgets/empty_state.dart';
@@ -30,28 +31,11 @@ class _PendingConfirmationsTabState
 
   @override
   Widget build(BuildContext context) {
-    final database = ref.watch(databaseProvider);
-    final pendingSmsDao = PendingSmsConfirmationDao(database);
+    // Use StreamProvider for reactive updates without refetching on navigation
+    final confirmationsAsync = ref.watch(pendingSmsConfirmationsProvider);
 
-    return FutureBuilder<List<db.PendingSmsConfirmation>>(
-      future: pendingSmsDao.getNonExpiredConfirmations(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SkeletonList(itemCount: 3, itemHeight: 160);
-        }
-
-        if (snapshot.hasError) {
-          return ErrorState(
-            title: 'error_loading_confirmations'.tr(),
-            message: snapshot.error.toString(),
-            onRetry: () {
-              setState(() {});
-            },
-          );
-        }
-
-        final confirmations = snapshot.data ?? [];
-
+    return confirmationsAsync.when(
+      data: (confirmations) {
         if (confirmations.isEmpty) {
           return EmptyState(
             icon: Icons.check_circle_outline,
@@ -95,6 +79,12 @@ class _PendingConfirmationsTabState
           ],
         );
       },
+      loading: () => const SkeletonList(itemCount: 3, itemHeight: 160),
+      error: (error, stack) => ErrorState(
+        title: 'error_loading_confirmations'.tr(),
+        message: error.toString(),
+        onRetry: () => ref.invalidate(pendingSmsConfirmationsProvider),
+      ),
     );
   }
 
@@ -113,9 +103,9 @@ class _PendingConfirmationsTabState
         children: [
           Text(
             'selected_count'.tr(args: [_selectedIds.length.toString()]),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const Spacer(),
           TextButton.icon(
@@ -145,9 +135,7 @@ class _PendingConfirmationsTabState
           ),
           const SizedBox(width: 8),
           FilledButton.icon(
-            onPressed: _selectedIds.isEmpty
-                ? null
-                : () => _bulkApprove(),
+            onPressed: _selectedIds.isEmpty ? null : () => _bulkApprove(),
             icon: const Icon(Icons.check),
             label: Text('approve_selected'.tr()),
           ),
@@ -170,8 +158,7 @@ class _PendingConfirmationsTabState
     if (_selectedIds.isEmpty) return;
 
     HapticFeedback.mediumImpact();
-    final database = ref.read(databaseProvider);
-    final pendingSmsDao = PendingSmsConfirmationDao(database);
+    final pendingSmsDao = ref.read(pendingSmsConfirmationDaoProvider);
     final confirmations = await pendingSmsDao.getAllPendingConfirmations();
     final toApprove = confirmations
         .where((c) => _selectedIds.contains(c.id))
@@ -209,7 +196,7 @@ class _PendingConfirmationsTabState
       final database = ref.read(databaseProvider);
       final transactionDao = TransactionDao(database);
       final cardDao = CardDao(database);
-      final pendingSmsDao = PendingSmsConfirmationDao(database);
+      final pendingSmsDao = ref.read(pendingSmsConfirmationDaoProvider);
 
       // Parse the parsed data
       final parsedDataJson =
@@ -223,10 +210,7 @@ class _PendingConfirmationsTabState
         if (!mounted || !context.mounted) return;
         if (!silent) {
           HapticFeedback.heavyImpact();
-          ErrorSnackbar.show(
-            context,
-            'invalid_confirmation_data'.tr(),
-          );
+          ErrorSnackbar.show(context, 'invalid_confirmation_data'.tr());
         }
         return;
       }
@@ -252,17 +236,14 @@ class _PendingConfirmationsTabState
 
       await transactionDao.insertTransaction(transaction);
 
-      // Delete the pending confirmation
+      // Delete the pending confirmation - stream will auto-update UI
       await pendingSmsDao.deleteConfirmation(confirmation.id);
 
       if (!mounted || !context.mounted) return;
       if (!silent) {
         HapticFeedback.heavyImpact();
-        ErrorSnackbar.showSuccess(
-          context,
-          'transaction_created'.tr(),
-        );
-        setState(() {}); // Refresh the list
+        ErrorSnackbar.showSuccess(context, 'transaction_created'.tr());
+        // No need for setState - stream provider auto-updates
       }
     } catch (e) {
       if (!mounted || !context.mounted) return;
@@ -283,14 +264,14 @@ class _PendingConfirmationsTabState
   ) async {
     HapticFeedback.mediumImpact();
     try {
-      final database = ref.read(databaseProvider);
-      final pendingSmsDao = PendingSmsConfirmationDao(database);
+      final pendingSmsDao = ref.read(pendingSmsConfirmationDaoProvider);
+      // Delete confirmation - stream will auto-update UI
       await pendingSmsDao.deleteConfirmation(confirmation.id);
 
       if (!mounted || !context.mounted) return;
       HapticFeedback.lightImpact();
       ErrorSnackbar.showSuccess(context, 'confirmation_rejected'.tr());
-      setState(() {}); // Refresh the list
+      // No need for setState - stream provider auto-updates
     } catch (e) {
       if (!mounted || !context.mounted) return;
       HapticFeedback.heavyImpact();
@@ -667,16 +648,13 @@ class _SmsViewSheet extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),

@@ -3,8 +3,9 @@ import 'package:flutter_logging_service/flutter_logging_service.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/providers/dao_providers.dart';
 
-// All transactions stream - auto-dispose when not in use
-final transactionsProvider = StreamProvider.autoDispose<List<db.Transaction>>((ref) async* {
+/// All transactions stream - persisted across navigation
+final transactionsProvider = StreamProvider<List<db.Transaction>>((ref) async* {
+  ref.keepAlive();
   final dao = ref.watch(transactionDaoProvider);
   try {
     await for (final transactions in dao.watchAllTransactions()) {
@@ -20,11 +21,12 @@ final transactionsProvider = StreamProvider.autoDispose<List<db.Transaction>>((r
   }
 });
 
-// Single transaction provider - cached per ID, auto-dispose when not watched
-final transactionProvider = FutureProvider.autoDispose.family<db.Transaction?, int>((
+/// Single transaction provider - kept alive to avoid refetching
+final transactionProvider = FutureProvider.family<db.Transaction?, int>((
   ref,
   id,
 ) async {
+  ref.keepAlive();
   final dao = ref.watch(transactionDaoProvider);
   try {
     return await dao.getTransactionById(id);
@@ -90,9 +92,10 @@ final transactionSearchQueryProvider =
 });
 
 /// Stream provider for filtered transactions (optimized - filters in database)
-/// Auto-dispose when not watched to free resources
-final filteredTransactionsProvider = StreamProvider.autoDispose.family<
+/// Persisted across navigation for smooth UX
+final filteredTransactionsProvider = StreamProvider.family<
     List<db.Transaction>, TransactionFilters>((ref, filters) async* {
+  ref.keepAlive();
   final dao = ref.watch(transactionDaoProvider);
   try {
     await for (final transactions

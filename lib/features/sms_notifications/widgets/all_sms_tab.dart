@@ -17,11 +17,7 @@ class SmsWithStatus {
   final Map<String, dynamic>? matchResult;
   final bool isMatched;
 
-  SmsWithStatus({
-    required this.sms,
-    this.matchResult,
-    required this.isMatched,
-  });
+  SmsWithStatus({required this.sms, this.matchResult, required this.isMatched});
 }
 
 /// All SMS tab - integrated SMS reader with parsing status
@@ -32,7 +28,8 @@ class AllSmsTab extends ConsumerStatefulWidget {
   ConsumerState<AllSmsTab> createState() => _AllSmsTabState();
 }
 
-class _AllSmsTabState extends ConsumerState<AllSmsTab> {
+class _AllSmsTabState extends ConsumerState<AllSmsTab>
+    with AutomaticKeepAliveClientMixin {
   final SmsReaderService _smsReaderService = SmsReaderService.instance;
   List<SmsWithStatus> _smsList = [];
   bool _isLoading = false;
@@ -42,6 +39,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab> {
   final ScrollController _scrollController = ScrollController();
   int _loadedCount = 0;
   static const _pageSize = 50;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -128,11 +128,7 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab> {
 
       final match = SmsParsingService.findMatchingTemplate(body, templates);
       result.add(
-        SmsWithStatus(
-          sms: sms,
-          matchResult: match,
-          isMatched: match != null,
-        ),
+        SmsWithStatus(sms: sms, matchResult: match, isMatched: match != null),
       );
     }
 
@@ -167,6 +163,7 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final filteredSms = _getFilteredSms();
     final matchedCount = _smsList.where((item) => item.isMatched).length;
     final unmatchedCount = _smsList.length - matchedCount;
@@ -244,34 +241,29 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab> {
                   ),
                 ],
               ),
-              if (_smsList.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      'total_sms'.tr(args: [_smsList.length.toString()]),
-                      style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    'total_sms'.tr(args: [_smsList.length.toString()]),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'matched_count'.tr(args: [matchedCount.toString()]),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                    const SizedBox(width: 16),
-                    if (matchedCount > 0)
-                      Text(
-                        'matched_count'.tr(args: [matchedCount.toString()]),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                      ),
-                    if (unmatchedCount > 0) ...[
-                      const SizedBox(width: 16),
-                      Text(
-                        'unmatched_count'.tr(args: [unmatchedCount.toString()]),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'unmatched_count'.tr(args: [unmatchedCount.toString()]),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -368,8 +360,8 @@ class _SmsListItemWithStatus extends StatelessWidget {
     final date = smsWithStatus.sms.date != null
         ? DateTime.fromMillisecondsSinceEpoch(smsWithStatus.sms.date!)
         : DateTime.now();
-    final bodyPreview = smsWithStatus.sms.body != null &&
-            smsWithStatus.sms.body!.length > 100
+    final bodyPreview =
+        smsWithStatus.sms.body != null && smsWithStatus.sms.body!.length > 100
         ? '${smsWithStatus.sms.body!.substring(0, 100)}...'
         : smsWithStatus.sms.body ?? '';
 
@@ -397,9 +389,7 @@ class _SmsListItemWithStatus extends StatelessWidget {
                         ? colorScheme.primaryContainer
                         : colorScheme.surfaceContainerHighest,
                     child: Icon(
-                      smsWithStatus.isMatched
-                          ? Icons.check_circle
-                          : Icons.sms,
+                      smsWithStatus.isMatched ? Icons.check_circle : Icons.sms,
                       size: 20,
                       color: smsWithStatus.isMatched
                           ? colorScheme.onPrimaryContainer
@@ -447,10 +437,7 @@ class _SmsListItemWithStatus extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                bodyPreview,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(bodyPreview, style: theme.textTheme.bodyMedium),
               if (parsedData != null) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -524,15 +511,12 @@ class _SmsListItemWithStatus extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '$label: ',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            child: Text(value, style: Theme.of(context).textTheme.bodySmall),
           ),
         ],
       ),
@@ -738,16 +722,13 @@ class _SmsDetailsSheet extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -768,16 +749,13 @@ class _SmsDetailsSheet extends StatelessWidget {
             width: 100,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:mizaniyah/core/database/app_database.dart' as db;
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import '../../../core/database/providers/dao_providers.dart';
 
+/// All cards stream - persisted across navigation
 final allCardsProvider = StreamProvider<List<db.Card>>((ref) async* {
   ref.keepAlive();
   final dao = ref.watch(cardDaoProvider);
@@ -20,21 +21,18 @@ final allCardsProvider = StreamProvider<List<db.Card>>((ref) async* {
   }
 });
 
-final activeCardsProvider = FutureProvider<List<db.Card>>((ref) async {
-  final dao = ref.watch(cardDaoProvider);
-  try {
-    return await dao.getActiveCards();
-  } catch (e, stackTrace) {
-    Log.error(
-      'Error in activeCardsProvider',
-      error: e,
-      stackTrace: stackTrace,
-    );
-    return [];
-  }
+/// Active cards only - derived from stream for reactivity
+final activeCardsProvider = Provider<AsyncValue<List<db.Card>>>((ref) {
+  ref.keepAlive();
+  final cardsAsync = ref.watch(allCardsProvider);
+  return cardsAsync.whenData(
+    (cards) => cards.where((c) => c.isActive).toList(),
+  );
 });
 
+/// Single card by ID - kept alive
 final cardProvider = FutureProvider.family<db.Card?, int>((ref, id) async {
+  ref.keepAlive();
   final dao = ref.watch(cardDaoProvider);
   try {
     return await dao.getCardById(id);
@@ -48,9 +46,10 @@ final cardProvider = FutureProvider.family<db.Card?, int>((ref, id) async {
   }
 });
 
-/// Provider for card statistics (transaction count and total spent)
+/// Provider for card statistics (transaction count and total spent) - kept alive
 final cardStatisticsProvider =
     FutureProvider.family<CardStatistics, int>((ref, cardId) async {
+  ref.keepAlive();
   final transactionDao = ref.watch(transactionDaoProvider);
   try {
     final stats = await transactionDao.getCardStatistics(cardId);

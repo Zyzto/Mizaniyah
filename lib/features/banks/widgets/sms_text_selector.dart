@@ -450,7 +450,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         children: [
           _buildRequiredStatusBadge(context),
-          ...widget.selections.map((s) => _buildSelectionChip(s)).toList(),
+          ...widget.selections.map((s) => _buildSelectionChip(s)),
         ],
       ),
     );
