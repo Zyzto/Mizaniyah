@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../categories/providers/category_providers.dart';
+import '../../../core/utils/category_translations.dart';
 
 class CategoryFilter extends ConsumerWidget {
   final int? selectedCategoryId;
@@ -46,7 +47,7 @@ class CategoryFilter extends ConsumerWidget {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: _FilterChip(
-                    label: category.name,
+                    label: CategoryTranslations.getTranslatedName(category),
                     selected: selectedCategoryId == category.id,
                     onSelected: () {
                       HapticFeedback.lightImpact();

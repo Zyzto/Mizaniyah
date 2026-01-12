@@ -8,6 +8,7 @@ import '../../accounts/providers/card_providers.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/providers/dao_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/category_translations.dart';
 import '../../../core/widgets/error_snackbar.dart';
 
 class TransactionDetailPage extends ConsumerWidget {
@@ -122,7 +123,11 @@ class TransactionDetailPage extends ConsumerWidget {
     return categoryAsync.when(
       data: (category) {
         if (category == null) return const SizedBox.shrink();
-        return _buildDetailRow(context, 'category'.tr(), category.name);
+        return _buildDetailRow(
+          context,
+          'category'.tr(),
+          CategoryTranslations.getTranslatedName(category),
+        );
       },
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),

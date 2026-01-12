@@ -62,7 +62,7 @@ const themeModeSettingDef = EnumSetting(
 /// Theme color setting
 const themeColorSettingDef = ColorSetting(
   'theme_color',
-  defaultValue: 4283215696, // Default gray color
+  defaultValue: 0xFF2E7D32, // Default Material Green (better than gray)
   titleKey: 'select_theme_color',
   icon: Icons.palette,
   section: 'general',
@@ -102,30 +102,6 @@ const fontSizeScaleSettingDef = EnumSetting(
   order: 0,
 );
 
-/// Card elevation
-const cardElevationSettingDef = DoubleSetting(
-  'card_elevation',
-  defaultValue: 2.0,
-  min: 0.0,
-  max: 8.0,
-  titleKey: 'card_elevation',
-  icon: Icons.layers,
-  section: 'appearance',
-  order: 1,
-);
-
-/// Card border radius
-const cardBorderRadiusSettingDef = DoubleSetting(
-  'card_border_radius',
-  defaultValue: 12.0,
-  min: 0.0,
-  max: 32.0,
-  titleKey: 'card_border_radius',
-  icon: Icons.rounded_corner,
-  section: 'appearance',
-  order: 2,
-);
-
 // =============================================================================
 // SMS DETECTION SETTINGS
 // =============================================================================
@@ -155,10 +131,40 @@ const autoConfirmTransactionsSettingDef = BoolSetting(
 // =============================================================================
 
 /// Default currency
-const defaultCurrencySettingDef = StringSetting(
+const defaultCurrencySettingDef = EnumSetting(
   'default_currency',
   defaultValue: 'USD',
   titleKey: 'default_currency',
+  options: [
+    'USD',
+    'EUR',
+    'GBP',
+    'JPY',
+    'AUD',
+    'CAD',
+    'CHF',
+    'CNY',
+    'INR',
+    'SGD',
+    'AED',
+    'SAR',
+    'EGP',
+  ],
+  optionLabels: {
+    'USD': 'US Dollar',
+    'EUR': 'Euro',
+    'GBP': 'British Pound',
+    'JPY': 'Japanese Yen',
+    'AUD': 'Australian Dollar',
+    'CAD': 'Canadian Dollar',
+    'CHF': 'Swiss Franc',
+    'CNY': 'Chinese Yuan',
+    'INR': 'Indian Rupee',
+    'SGD': 'Singapore Dollar',
+    'AED': 'UAE Dirham',
+    'SAR': 'Saudi Riyal',
+    'EGP': 'Egyptian Pound',
+  },
   icon: Icons.attach_money,
   section: 'currency',
   order: 0,
@@ -185,8 +191,6 @@ const allSettings = <SettingDefinition>[
 
   // Appearance
   fontSizeScaleSettingDef,
-  cardElevationSettingDef,
-  cardBorderRadiusSettingDef,
 
   // SMS
   smsDetectionEnabledSettingDef,

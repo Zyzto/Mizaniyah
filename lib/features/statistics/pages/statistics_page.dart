@@ -6,6 +6,7 @@ import '../../budgets/providers/budget_providers.dart';
 import '../../categories/providers/category_providers.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/category_translations.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
 
@@ -225,7 +226,9 @@ class _SpendingByCategoryCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            category?.name ?? 'unknown_category'.tr(),
+                            category != null
+                                ? CategoryTranslations.getTranslatedName(category)
+                                : 'unknown_category'.tr(),
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
                           Text(
@@ -293,7 +296,9 @@ class _BudgetVsActualCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      category?.name ?? 'unknown_category'.tr(),
+                      category != null
+                          ? CategoryTranslations.getTranslatedName(category)
+                          : 'unknown_category'.tr(),
                       style: Theme.of(context).textTheme.bodyLarge
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),

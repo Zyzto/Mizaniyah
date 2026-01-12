@@ -134,14 +134,19 @@ void main() async {
       await categorySeeder.seedPredefinedCategories();
       Log.debug('Predefined categories seeded');
 
+      // Initialize SMS detection service (listening will be controlled by settings provider)
+      // Default to not starting - the provider will start it if enabled
       await SmsDetectionService.instance.init(
         smsTemplateDao,
         pendingSmsDao,
         transactionDao: transactionDao,
         cardDao: cardDao,
         categoryDao: categoryDao,
+        shouldStartListening: false, // Will be controlled by settings provider
       );
-      Log.debug('SMS detection service initialized');
+      Log.debug(
+        'SMS detection service initialized (listening controlled by settings)',
+      );
     } catch (e, stackTrace) {
       Log.error(
         'Failed to initialize services',

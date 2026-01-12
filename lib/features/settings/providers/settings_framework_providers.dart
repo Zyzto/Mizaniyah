@@ -19,8 +19,15 @@ final mizaniyahSettingsProvider = Provider<SettingsProviders>((ref) {
 
 /// Initialize the Mizaniyah settings framework.
 Future<SettingsProviders> initializeMizaniyahSettings() async {
-  final registry = createMizaniyahSettingsRegistry();
-  final storage = SharedPreferencesStorage();
+  try {
+    final registry = createMizaniyahSettingsRegistry();
+    final storage = SharedPreferencesStorage();
 
-  return initializeSettings(registry: registry, storage: storage);
+    return await initializeSettings(registry: registry, storage: storage);
+  } catch (e) {
+    // Re-throw with more context
+    throw Exception(
+      'Failed to initialize settings framework: $e',
+    );
+  }
 }

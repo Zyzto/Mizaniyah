@@ -7,6 +7,7 @@ import 'core/theme/app_scroll_behavior.dart';
 import 'features/settings/providers/settings_framework_providers.dart';
 import 'features/settings/settings_definitions.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/providers/sms_detection_provider.dart';
 import 'core/navigation/app_router.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 
@@ -21,11 +22,12 @@ class App extends ConsumerWidget {
     // Set router in NotificationService for navigation from notification taps
     NotificationService.setRouter(router);
 
+    // Watch SMS detection settings to manage the service
+    ref.watch(smsDetectionManagerProvider);
+
     // Get settings from framework
     ThemeMode themeMode;
     int themeColor;
-    double cardElevation;
-    double cardBorderRadius;
     String fontSizeScale;
     Locale? locale;
 
@@ -34,27 +36,24 @@ class App extends ConsumerWidget {
       final themeModeStr = ref.watch(settings.provider(themeModeSettingDef));
       themeMode = _parseThemeMode(themeModeStr);
       themeColor = ref.watch(settings.provider(themeColorSettingDef));
-      cardElevation = ref.watch(settings.provider(cardElevationSettingDef));
-      cardBorderRadius = ref.watch(
-        settings.provider(cardBorderRadiusSettingDef),
-      );
       fontSizeScale = ref.watch(settings.provider(fontSizeScaleSettingDef));
 
       // Get language setting and update locale
       final languageCode = ref.watch(settings.provider(languageSettingDef));
       locale = Locale(languageCode);
-      // Update context locale if it's different
+      // Update EasyLocalization context locale if it's different
       if (context.locale.languageCode != languageCode) {
+        // Use SchedulerBinding to ensure this runs after the current frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          context.setLocale(locale!);
+          if (context.mounted) {
+            context.setLocale(locale!);
+          }
         });
       }
     } catch (e) {
       Log.warning('Settings framework not initialized, using defaults');
       themeMode = ThemeMode.system;
-      themeColor = 4283215696;
-      cardElevation = 2.0;
-      cardBorderRadius = 12.0;
+      themeColor = 0xFF2E7D32; // Default Material Green
       fontSizeScale = 'normal';
       locale = const Locale('en');
     }
@@ -68,14 +67,10 @@ class App extends ConsumerWidget {
       locale: locale,
       theme: AppTheme.lightTheme(
         seedColor: Color(themeColor),
-        cardElevation: cardElevation,
-        cardBorderRadius: cardBorderRadius,
         fontSizeScale: fontSizeScale,
       ),
       darkTheme: AppTheme.darkTheme(
         seedColor: Color(themeColor),
-        cardElevation: cardElevation,
-        cardBorderRadius: cardBorderRadius,
         fontSizeScale: fontSizeScale,
       ),
       themeMode: themeMode,

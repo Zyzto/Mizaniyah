@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/category_translations.dart';
 import '../../budgets/providers/budget_providers.dart';
 import '../../categories/providers/category_providers.dart';
 
@@ -71,7 +72,9 @@ class BudgetCard extends ConsumerWidget {
                 children: [
                   categoryAsync.when(
                     data: (category) => Text(
-                      category?.name ?? 'unknown_category'.tr(),
+                      category != null
+                          ? CategoryTranslations.getTranslatedName(category)
+                          : 'unknown_category'.tr(),
                       style: theme.textTheme.titleMedium,
                     ),
                     loading: () => SizedBox(

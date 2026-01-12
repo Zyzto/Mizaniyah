@@ -8,7 +8,6 @@ import 'package:flutter_settings_framework/flutter_settings_framework.dart'
         SettingsPageScaffold,
         SettingsSectionWidget,
         SwitchSettingsTile,
-        SelectSettingsTile,
         SliderSettingsTile,
         ColorSettingsTile,
         SettingsProviders,
@@ -19,6 +18,8 @@ import 'package:flutter_settings_framework/flutter_settings_framework.dart'
         ColorSetting,
         StringSetting;
 import '../providers/settings_framework_providers.dart';
+import '../widgets/theme_color_picker.dart'
+    show ThemeColorPickerDialog, ThemeColorPalette;
 import '../../categories/pages/categories_page.dart';
 import '../../categories/providers/category_providers.dart';
 import '../../../core/services/providers/export_providers.dart';
@@ -30,7 +31,8 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     try {
-      final settings = ref.read(mizaniyahSettingsProvider);
+      // Use watch instead of read to ensure reactive updates
+      final settings = ref.watch(mizaniyahSettingsProvider);
 
       // Build settings sections from registry
       final sections = settings.registry.sections.map((section) {
@@ -62,33 +64,86 @@ class SettingsPage extends ConsumerWidget {
         title: 'settings'.tr(),
         sections: sections,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       // If settings framework is not initialized, show error
+      // Log the error for debugging
+      debugPrint('Settings page error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       return Scaffold(
         appBar: AppBar(
           title: Text('settings'.tr()),
         ),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'settings_not_available'.tr(),
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'settings_not_available'.tr(),
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please restart the app to initialize settings.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
   }
+
+  /// Get helper text key for a setting
+  String _getHelperTextKey(SettingDefinition settingDef) {
+    return '${settingDef.key}_helper';
+  }
+
+  /// Build helper text widget if available
+  Widget? _buildHelperText(BuildContext context, SettingDefinition settingDef) {
+    final helperKey = _getHelperTextKey(settingDef);
+    try {
+      final helperText = helperKey.tr();
+      // Check if translation exists (if tr() returns the key, translation doesn't exist)
+      if (helperText != helperKey && helperText.isNotEmpty) {
+        return Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+          child: Text(
+            helperText,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Translation key doesn't exist, skip helper text
+    }
+    return null;
+  }
+
+  /// Get color name from color value
+  String _getColorName(int colorValue) {
+    final colorOption = ThemeColorPalette.getColorByValue(colorValue);
+    if (colorOption != null) {
+      return colorOption.name;
+    }
+    return 'custom_color'.tr();
+  }
+
 
   Widget _buildSettingTile(
     BuildContext context,
@@ -96,44 +151,92 @@ class SettingsPage extends ConsumerWidget {
     SettingsProviders settings,
     SettingDefinition settingDef,
   ) {
+    final currentValue = ref.watch(settings.provider(settingDef));
+    final helperText = _buildHelperText(context, settingDef);
+
     // Build appropriate tile based on setting type
+    Widget tile;
     if (settingDef is BoolSetting) {
-      return SwitchSettingsTile.fromSetting(
+      tile = SwitchSettingsTile.fromSetting(
         setting: settingDef,
         title: settingDef.titleKey.tr(),
-        value: ref.watch(settings.provider(settingDef)),
+        value: currentValue as bool,
         onChanged: (value) {
           HapticFeedback.lightImpact();
           ref.read(settings.provider(settingDef).notifier).set(value);
         },
       );
     } else if (settingDef is EnumSetting) {
-      final currentValue = ref.watch(settings.provider(settingDef));
       final options = settingDef.options ?? [];
-      return SelectSettingsTile<String>(
+      // Use ModalBottomSheet for all enum settings for consistent UX
+      final currentValueStr = currentValue as String;
+      final currentLabelKey = settingDef.optionLabels?[currentValueStr] ?? currentValueStr;
+      tile = ListTile(
         leading: settingDef.icon != null ? Icon(settingDef.icon) : null,
         title: Text(settingDef.titleKey.tr()),
-        options: options,
-        value: currentValue,
-        itemBuilder: (option) {
-          final label = settingDef.optionLabels?[option] ?? option;
-          return Text(label.tr());
-        },
-        onChanged: (value) {
-          if (value != null) {
-            HapticFeedback.lightImpact();
-            ref.read(settings.provider(settingDef).notifier).set(value);
-          }
+        subtitle: Text(currentLabelKey.tr()),
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          showModalBottomSheet<String>(
+            context: context,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (sheetContext) {
+              return SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        settingDef.titleKey.tr(),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ...options.map((option) {
+                      final labelKey = settingDef.optionLabels?[option] ?? option;
+                      final isSelected = option == currentValueStr;
+                      return ListTile(
+                        leading: isSelected
+                            ? Icon(
+                                Icons.check_circle,
+                                color: Theme.of(context).colorScheme.primary,
+                              )
+                            : const SizedBox(width: 24),
+                        title: Text(labelKey.tr()),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop(option);
+                        },
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              );
+            },
+          ).then((value) {
+            if (value != null && context.mounted) {
+              ref.read(settings.provider(settingDef).notifier).set(value);
+            }
+          });
         },
       );
     } else if (settingDef is DoubleSetting) {
       final min = settingDef.min ?? 0.0;
       final max = settingDef.max ?? 100.0;
       final step = settingDef.step;
-      return SliderSettingsTile(
+      tile = SliderSettingsTile(
         leading: settingDef.icon != null ? Icon(settingDef.icon) : null,
         title: Text(settingDef.titleKey.tr()),
-        value: ref.watch(settings.provider(settingDef)),
+        value: currentValue,
         min: min,
         max: max,
         divisions: step > 0 ? ((max - min) / step).round() : null,
@@ -143,35 +246,135 @@ class SettingsPage extends ConsumerWidget {
         },
       );
     } else if (settingDef is ColorSetting) {
-      final colorValue = ref.watch(settings.provider(settingDef));
-      return ColorSettingsTile.fromSetting(
-        setting: settingDef,
-        title: settingDef.titleKey.tr(),
-        value: colorValue,
-        onChanged: (value) {
-          HapticFeedback.lightImpact();
-          ref.read(settings.provider(settingDef).notifier).set(value);
-        },
-      );
+      // Custom theme color picker for better UX
+      if (settingDef.key == 'theme_color') {
+        final currentColor = Color(currentValue);
+        final colorName = _getColorName(currentValue);
+        final isCustom = !ThemeColorPalette.isPredefinedColor(currentValue);
+
+        tile = ListTile(
+          leading: settingDef.icon != null
+              ? Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    settingDef.icon,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                )
+              : null,
+          title: Text(settingDef.titleKey.tr()),
+          subtitle: Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: currentColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: currentColor.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      colorName,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                    if (isCustom)
+                      Text(
+                        '#${currentValue.toRadixString(16).substring(2).toUpperCase()}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              fontFamily: 'monospace',
+                            ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            showDialog(
+              context: context,
+              builder: (dialogContext) => ThemeColorPickerDialog(
+                currentValue: currentValue,
+                onColorSelected: (value) {
+                  ref.read(settings.provider(settingDef).notifier).set(value);
+                },
+              ),
+            );
+          },
+        );
+      } else {
+        // Fallback to default ColorSettingsTile for other color settings
+        tile = ColorSettingsTile.fromSetting(
+          setting: settingDef,
+          title: settingDef.titleKey.tr(),
+          value: currentValue,
+          onChanged: (value) {
+            HapticFeedback.lightImpact();
+            ref.read(settings.provider(settingDef).notifier).set(value);
+          },
+        );
+      }
     } else if (settingDef is StringSetting) {
-      // For string settings, use a basic tile that navigates to edit
-      return ListTile(
+      // String settings are not used anymore (defaultCurrency converted to EnumSetting)
+      // Fallback implementation
+      tile = ListTile(
         leading: settingDef.icon != null ? Icon(settingDef.icon) : null,
         title: Text(settingDef.titleKey.tr()),
-        subtitle: Text(ref.watch(settings.provider(settingDef))),
+        subtitle: Text(currentValue),
         onTap: () {
           HapticFeedback.lightImpact();
-          // TODO: Show dialog to edit string setting
         },
       );
     } else {
       // Fallback for unknown setting types
-      return ListTile(
+      tile = ListTile(
         leading: settingDef.icon != null ? Icon(settingDef.icon) : null,
         title: Text(settingDef.titleKey.tr()),
-        subtitle: Text('Unsupported setting type'),
+        subtitle: const Text('Unsupported setting type'),
       );
     }
+
+    // Wrap tile with helper text if available
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        tile,
+        if (helperText != null) helperText,
+      ],
+    );
   }
 
   SettingsSectionWidget _buildManagementSection(

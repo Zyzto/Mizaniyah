@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../features/categories/providers/category_providers.dart';
+import '../utils/category_translations.dart';
 
 /// A dropdown selector for choosing a category with icon and color display
 class CategorySelector extends ConsumerWidget {
@@ -75,7 +76,7 @@ class CategorySelector extends ConsumerWidget {
                         ),
                       ),
                     const SizedBox(width: 8),
-                    Text(category.name),
+                    Text(CategoryTranslations.getTranslatedName(category)),
                   ],
                 ),
               );

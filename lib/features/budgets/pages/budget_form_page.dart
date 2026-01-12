@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../categories/providers/category_providers.dart';
 import '../../../core/database/providers/dao_providers.dart';
+import '../../../core/utils/category_translations.dart';
 import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/enhanced_text_form_field.dart';
 import '../../../core/widgets/enhanced_currency_field.dart';
@@ -114,7 +115,7 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
                   items: categories.map((category) {
                     return DropdownMenuItem<int>(
                       value: category.id,
-                      child: Text(category.name),
+                      child: Text(CategoryTranslations.getTranslatedName(category)),
                     );
                   }).toList(),
                   onChanged: (value) {

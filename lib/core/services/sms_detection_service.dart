@@ -48,6 +48,7 @@ class SmsDetectionService with Loggable {
   Telephony? _telephony;
   bool _isInitialized = false;
   bool _isListening = false;
+  bool _autoConfirm = false;
 
   /// Initialize the SMS detection service
   /// Prefer using the factory constructor for new code
@@ -57,6 +58,7 @@ class SmsDetectionService with Loggable {
     TransactionDao? transactionDao,
     CardDao? cardDao,
     CategoryDao? categoryDao,
+    bool shouldStartListening = true,
   }) async {
     if (_isInitialized) {
       logWarning('SmsDetectionService already initialized');
@@ -96,7 +98,10 @@ class SmsDetectionService with Loggable {
         return;
       }
 
-      await _startListening();
+      // Only start listening if enabled
+      if (shouldStartListening) {
+        await _startListening();
+      }
       _isInitialized = true;
       logInfo('SmsDetectionService initialized successfully');
     } catch (e, stackTrace) {
@@ -132,7 +137,12 @@ class SmsDetectionService with Loggable {
     return service;
   }
 
-  /// Start listening for SMS
+  /// Start listening for SMS (public method to allow starting/stopping based on settings)
+  Future<void> startListening() async {
+    await _startListening();
+  }
+
+  /// Start listening for SMS (internal)
   Future<void> _startListening() async {
     if (_isListening || _telephony == null) {
       logWarning('SMS listening already active or telephony not initialized');
@@ -181,6 +191,7 @@ class SmsDetectionService with Loggable {
         matchResult: matchResult,
         smsBody: body,
         smsSender: sender,
+        autoConfirm: _autoConfirm,
       );
     } catch (e, stackTrace) {
       logError('Failed to process SMS', error: e, stackTrace: stackTrace);
@@ -192,6 +203,7 @@ class SmsDetectionService with Loggable {
     required SmsMatchResult matchResult,
     required String smsBody,
     required String smsSender,
+    required bool autoConfirm,
   }) async {
     final confidence = matchResult.confidence;
     final parsedData = matchResult.parsedData;
@@ -205,8 +217,14 @@ class SmsDetectionService with Loggable {
     );
 
     // Auto-create transaction if confidence is high enough
-    if (confidence >= SmsDetectionConstants.autoCreateConfidenceThreshold &&
-        _transactionCreator != null) {
+    // If auto-confirm is enabled, it will auto-create for high confidence transactions
+    // If auto-confirm is disabled, it will still auto-create for high confidence (default behavior)
+    // The auto-confirm setting only affects whether we skip the confirmation dialog
+    // for high-confidence transactions (currently always auto-creates high confidence)
+    final isHighConfidence =
+        confidence >= SmsDetectionConstants.autoCreateConfidenceThreshold;
+
+    if (isHighConfidence && _transactionCreator != null) {
       final transactionId =
           await _transactionCreator!.createTransactionFromSms(
         parsedData,
@@ -233,6 +251,12 @@ class SmsDetectionService with Loggable {
       confirmationId: confirmationId,
       parsedData: parsedData,
     );
+  }
+
+  /// Set auto-confirm setting
+  void setAutoConfirm(bool autoConfirm) {
+    _autoConfirm = autoConfirm;
+    logInfo('Auto-confirm transactions set to: $autoConfirm');
   }
 
   /// Stop listening for SMS

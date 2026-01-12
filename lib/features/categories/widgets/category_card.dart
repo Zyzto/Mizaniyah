@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/utils/icon_utils.dart';
+import '../../../core/utils/category_translations.dart';
 
 class CategoryCard extends StatelessWidget {
   final db.Category category;
@@ -53,7 +54,7 @@ class CategoryCard extends StatelessWidget {
                 backgroundColor: color.withValues(alpha: 0.2),
                 child: Icon(iconData, color: color),
               ),
-        title: Text(category.name),
+        title: Text(CategoryTranslations.getTranslatedName(category)),
         subtitle: Text(
           transactionCount == 1
               ? 'one_transaction'.tr()

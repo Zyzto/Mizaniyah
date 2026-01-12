@@ -91,6 +91,10 @@ class CurrencyService with Loggable {
   }
 
   /// Get default currency
+  /// Note: This method reads from SharedPreferences for backward compatibility.
+  /// The settings framework is the source of truth, and this method should be
+  /// used only when settings framework is not available.
+  /// Prefer using the defaultCurrencyProvider from settings framework.
   Future<String> getDefaultCurrency() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -102,11 +106,16 @@ class CurrencyService with Loggable {
   }
 
   /// Set default currency
+  /// Note: This method writes to SharedPreferences for backward compatibility.
+  /// The settings framework is the source of truth. This method should be
+  /// used only when settings framework is not available.
+  /// Prefer updating the defaultCurrencySettingDef in settings framework.
   Future<void> setDefaultCurrency(String currency) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_defaultCurrencyKey, currency);
-      logInfo('Set default currency to $currency');
+      logInfo('Set default currency to $currency (SharedPreferences)');
+      // Note: Settings framework should be updated separately via its provider
     } catch (e, stackTrace) {
       logError(
         'Failed to set default currency',

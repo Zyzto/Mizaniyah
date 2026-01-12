@@ -74,12 +74,14 @@ class AppTheme {
 
   static ThemeData lightTheme({
     Color? seedColor,
-    double? cardElevation,
-    double? cardBorderRadius,
     String? fontSizeScale,
   }) {
+    // Card styling constants
+    const double cardElevation = 2.0;
+    const double cardBorderRadius = 12.0;
+
     Log.debug(
-      'AppTheme.lightTheme(seedColor=$seedColor, cardElevation=$cardElevation, cardBorderRadius=$cardBorderRadius, fontSizeScale=$fontSizeScale)',
+      'AppTheme.lightTheme(seedColor=$seedColor, fontSizeScale=$fontSizeScale)',
     );
     final baseSeedColor = seedColor ?? Colors.deepPurple;
     final colorScheme = ColorScheme.fromSeed(
@@ -116,9 +118,9 @@ class AppTheme {
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       cardTheme: CardThemeData(
-        elevation: cardElevation ?? 2,
+        elevation: cardElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(cardBorderRadius ?? 12),
+          borderRadius: BorderRadius.circular(cardBorderRadius),
         ),
         color: colorScheme.surface,
       ),
@@ -151,12 +153,14 @@ class AppTheme {
 
   static ThemeData darkTheme({
     Color? seedColor,
-    double? cardElevation,
-    double? cardBorderRadius,
     String? fontSizeScale,
   }) {
+    // Card styling constants
+    const double cardElevation = 2.0;
+    const double cardBorderRadius = 12.0;
+
     Log.debug(
-      'AppTheme.darkTheme(seedColor=$seedColor, cardElevation=$cardElevation, cardBorderRadius=$cardBorderRadius, fontSizeScale=$fontSizeScale)',
+      'AppTheme.darkTheme(seedColor=$seedColor, fontSizeScale=$fontSizeScale)',
     );
     final baseSeedColor = seedColor ?? Colors.deepPurple;
     final colorScheme = ColorScheme.fromSeed(
@@ -193,9 +197,9 @@ class AppTheme {
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       cardTheme: CardThemeData(
-        elevation: cardElevation ?? 2,
+        elevation: cardElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(cardBorderRadius ?? 12),
+          borderRadius: BorderRadius.circular(cardBorderRadius),
         ),
         color: colorScheme.surface,
       ),
