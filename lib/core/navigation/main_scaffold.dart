@@ -95,6 +95,16 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
     super.dispose();
   }
 
+  /// Check if navigation bar should be visible
+  /// Only show on the 3 main pages: Home, Accounts, Budget
+  bool _shouldShowNavBar() {
+    final location = widget.location;
+    // Only show nav bar on exact main page routes (not sub-routes)
+    return location == RoutePaths.home ||
+        location == RoutePaths.accounts ||
+        location == RoutePaths.budget;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Ensure controllers exist for current route
@@ -114,9 +124,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
       orElse: () => false,
     );
     // Show FAB on home page (which shows transactions by default)
-    final showFab = (widget.location.startsWith(RoutePaths.home) ||
+    final showFab =
+        (widget.location.startsWith(RoutePaths.home) ||
             widget.location.startsWith(RoutePaths.transactions)) &&
         hasTransactions;
+
+    final showNavBar = _shouldShowNavBar();
 
     return Scaffold(
       appBar: _buildAppBar(context, ref),
@@ -124,17 +137,15 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
         children: [
           // Main content with bottom padding for floating nav bar (only if nav bar is visible)
           Padding(
-            padding: EdgeInsets.only(
-              bottom: widget.location.startsWith(RoutePaths.smsTemplateBuilder) ? 0 : 100,
-            ),
+            padding: EdgeInsets.only(bottom: showNavBar ? 100 : 0),
             child: widget.location.startsWith(RoutePaths.accounts)
                 ? AccountsPage(tabController: _accountsTabController!)
                 : widget.location.startsWith(RoutePaths.budget)
                 ? BudgetsPage(tabController: _budgetTabController!)
                 : widget.child,
           ),
-          // Floating navigation bar - hide during wizard flows
-          if (!widget.location.startsWith(RoutePaths.smsTemplateBuilder))
+          // Floating navigation bar - only show on 3 main pages
+          if (showNavBar)
             Positioned(
               left: 0,
               right: 0,
@@ -200,9 +211,19 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
         widget.location.startsWith(RoutePaths.transactions)) {
       return buildHomeAppBar(context, ref, location: widget.location);
     } else if (widget.location.startsWith(RoutePaths.accounts)) {
-      return buildAccountsAppBar(context, ref, _accountsTabController, location: widget.location);
+      return buildAccountsAppBar(
+        context,
+        ref,
+        _accountsTabController,
+        location: widget.location,
+      );
     } else if (widget.location.startsWith(RoutePaths.budget)) {
-      return buildBudgetAppBar(context, ref, _budgetTabController, location: widget.location);
+      return buildBudgetAppBar(
+        context,
+        ref,
+        _budgetTabController,
+        location: widget.location,
+      );
     }
     return null;
   }
