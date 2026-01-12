@@ -26,9 +26,12 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
     with AutomaticKeepAliveClientMixin {
   String _searchQuery = '';
   String _debouncedSearchQuery = '';
-  bool _showMatchedSmsOnly = false;
   bool _showMatchedOnly = false;
+  bool _showUnmatchedOnly = false;
+  bool _isSearchExpanded = false;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   late final Debouncer _searchDebouncer;
 
   @override
@@ -44,6 +47,8 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     _searchDebouncer.dispose();
     super.dispose();
   }
@@ -61,6 +66,8 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
     // Filter by match status
     if (_showMatchedOnly) {
       filtered = filtered.where((item) => item.isMatched).toList();
+    } else if (_showUnmatchedOnly) {
+      filtered = filtered.where((item) => !item.isMatched && !item.isParsing).toList();
     }
 
     // Filter by search query (use debounced query)
@@ -80,6 +87,17 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final smsAsync = ref.watch(smsListProvider);
+
+    // Auto-expand search if there's a query
+    if (_searchQuery.isNotEmpty && !_isSearchExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isSearchExpanded = true;
+          });
+        }
+      });
+    }
 
     // Debounce search query
     if (_searchQuery != _debouncedSearchQuery) {
@@ -114,88 +132,201 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
               ),
               child: Column(
                 children: [
-                  // Search field
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'search_sms_hint'.tr(),
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              tooltip: 'clear_search'.tr(),
+                  // Search row
+                  Row(
+                    children: [
+                      // Search field - expandable button
+                      _isSearchExpanded
+                          ? Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                focusNode: _searchFocusNode,
+                                decoration: InputDecoration(
+                                  hintText: 'search_sms_hint'.tr(),
+                                  prefixIcon: const Icon(Icons.search),
+                                  suffixIcon: _searchQuery.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          tooltip: 'clear_search'.tr(),
+                                          onPressed: () {
+                                            HapticFeedback.lightImpact();
+                                            setState(() {
+                                              _searchQuery = '';
+                                              _debouncedSearchQuery = '';
+                                              _searchController.clear();
+                                            });
+                                            _searchDebouncer.cancel();
+                                          },
+                                        )
+                                      : IconButton(
+                                          icon: const Icon(Icons.close),
+                                          tooltip: 'close'.tr(),
+                                          onPressed: () {
+                                            HapticFeedback.lightImpact();
+                                            setState(() {
+                                              _isSearchExpanded = false;
+                                              _searchQuery = '';
+                                              _debouncedSearchQuery = '';
+                                              _searchController.clear();
+                                            });
+                                            _searchFocusNode.unfocus();
+                                            _searchDebouncer.cancel();
+                                          },
+                                        ),
+                                  filled: true,
+                                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                textInputAction: TextInputAction.search,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _searchQuery = value;
+                                  });
+                                },
+                                onSubmitted: (_) {
+                                  _searchFocusNode.unfocus();
+                                },
+                              ),
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.search),
+                              tooltip: 'search_sms_hint'.tr(),
                               onPressed: () {
                                 HapticFeedback.lightImpact();
                                 setState(() {
-                                  _searchQuery = '';
-                                  _debouncedSearchQuery = '';
+                                  _isSearchExpanded = true;
                                 });
-                                _searchDebouncer.cancel();
+                                Future.delayed(
+                                  const Duration(milliseconds: 100),
+                                  () => _searchFocusNode.requestFocus(),
+                                );
                               },
-                            )
-                          : null,
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    textInputAction: TextInputAction.search,
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Filter chips row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilterChip(
-                          label: Text('show_matched_sms_only'.tr()),
-                          selected: _showMatchedSmsOnly,
-                          onSelected: (value) {
-                            HapticFeedback.lightImpact();
-                            setState(() {
-                              _showMatchedSmsOnly = value;
-                            });
-                            ref.read(smsListProvider.notifier).filterByMatchedSms(value);
-                          },
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                      if (!_isSearchExpanded) ...[
+                        const SizedBox(width: 6),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: FilterChip(
+                            label: Text('matched_only'.tr()),
+                            selected: _showMatchedOnly,
+                            onSelected: (value) {
+                              HapticFeedback.lightImpact();
+                              setState(() {
+                                _showMatchedOnly = value;
+                                if (value) _showUnmatchedOnly = false;
+                              });
+                            },
+                            selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                            checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                            labelStyle: TextStyle(
+                              color: _showMatchedOnly
+                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                  : Theme.of(context).colorScheme.onSurface,
+                              fontWeight: _showMatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: FilterChip(
-                          label: Text('matched_only'.tr()),
-                          selected: _showMatchedOnly,
-                          onSelected: (value) {
-                            HapticFeedback.lightImpact();
-                            setState(() {
-                              _showMatchedOnly = value;
-                            });
-                          },
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: FilterChip(
+                            label: Text('unmatched_only'.tr()),
+                            selected: _showUnmatchedOnly,
+                            onSelected: (value) {
+                              HapticFeedback.lightImpact();
+                              setState(() {
+                                _showUnmatchedOnly = value;
+                                if (value) _showMatchedOnly = false;
+                              });
+                            },
+                            selectedColor: Theme.of(context).colorScheme.errorContainer,
+                            checkmarkColor: Theme.of(context).colorScheme.onErrorContainer,
+                            labelStyle: TextStyle(
+                              color: _showUnmatchedOnly
+                                  ? Theme.of(context).colorScheme.onErrorContainer
+                                  : Theme.of(context).colorScheme.onSurface,
+                              fontWeight: _showUnmatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        tooltip: 'refresh'.tr(),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(smsListProvider.notifier).refresh();
-                        },
-                        style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        ),
-                      ),
+                      ],
                     ],
+                  ),
+                  // Filter chips row (shown when search is expanded)
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: _isSearchExpanded
+                        ? Column(
+                            children: [
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  FilterChip(
+                                    label: Text('matched_only'.tr()),
+                                    selected: _showMatchedOnly,
+                                    onSelected: (value) {
+                                      HapticFeedback.lightImpact();
+                                      setState(() {
+                                        _showMatchedOnly = value;
+                                        if (value) _showUnmatchedOnly = false;
+                                      });
+                                    },
+                                    selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                                    checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    labelStyle: TextStyle(
+                                      color: _showMatchedOnly
+                                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                                          : Theme.of(context).colorScheme.onSurface,
+                                      fontWeight: _showMatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  FilterChip(
+                                    label: Text('unmatched_only'.tr()),
+                                    selected: _showUnmatchedOnly,
+                                    onSelected: (value) {
+                                      HapticFeedback.lightImpact();
+                                      setState(() {
+                                        _showUnmatchedOnly = value;
+                                        if (value) _showMatchedOnly = false;
+                                      });
+                                    },
+                                    selectedColor: Theme.of(context).colorScheme.errorContainer,
+                                    checkmarkColor: Theme.of(context).colorScheme.onErrorContainer,
+                                    labelStyle: TextStyle(
+                                      color: _showUnmatchedOnly
+                                          ? Theme.of(context).colorScheme.onErrorContainer
+                                          : Theme.of(context).colorScheme.onSurface,
+                                      fontWeight: _showUnmatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        : const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 12),
                   // Stats row - wrapped to prevent overflow
@@ -271,38 +402,69 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
       },
       loading: () => Column(
         children: [
-          // Search bar skeleton
+          // Search and filter bar skeleton
           Container(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(
-                      child: Container(
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                    Container(
+                      width: 100,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 120,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Stats skeleton
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    Container(
+                      width: 80,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    Container(
+                      width: 80,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ],
@@ -331,14 +493,14 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
     if (_showMatchedOnly) {
       return 'no_matched_sms'.tr();
     }
-    if (_showMatchedSmsOnly) {
-      return 'no_matched_sms'.tr();
+    if (_showUnmatchedOnly) {
+      return 'no_unmatched_sms'.tr();
     }
     return 'no_sms_messages'.tr();
   }
 
   String? _getEmptyStateSubtitle() {
-    if (_debouncedSearchQuery.isNotEmpty || _showMatchedOnly || _showMatchedSmsOnly) {
+    if (_debouncedSearchQuery.isNotEmpty || _showMatchedOnly || _showUnmatchedOnly) {
       return null;
     }
     return 'no_sms_messages_description'.tr();
