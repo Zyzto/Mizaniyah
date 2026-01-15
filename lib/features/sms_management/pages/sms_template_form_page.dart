@@ -66,8 +66,10 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
     // Pre-fill sender pattern with exact sender name if provided
     if (widget.initialSender != null && widget.initialSender!.isNotEmpty) {
       // Escape regex special characters for exact match
-      final escapedSender = widget.initialSender!
-          .replaceAllMapped(RegExp(r'[.*+?^${}()|[\]\\]'), (match) => '\\${match.group(0)}');
+      final escapedSender = widget.initialSender!.replaceAllMapped(
+        RegExp(r'[.*+?^${}()|[\]\\]'),
+        (match) => '\\${match.group(0)}',
+      );
       _senderPatternController.text = escapedSender;
     }
 
@@ -125,10 +127,16 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
         _showSaveReminder = true;
       });
       // Log to verify pattern was received
-      Log.info('[TemplateForm] Pattern received: ${result.pattern.length} chars');
-      Log.debug('[TemplateForm] Pattern: ${result.pattern.substring(0, result.pattern.length > 50 ? 50 : result.pattern.length)}...');
-      Log.debug('[TemplateForm] Extraction rules: ${result.extractionRules.length} chars');
-      
+      Log.info(
+        '[TemplateForm] Pattern received: ${result.pattern.length} chars',
+      );
+      Log.debug(
+        '[TemplateForm] Pattern: ${result.pattern.substring(0, result.pattern.length > 50 ? 50 : result.pattern.length)}...',
+      );
+      Log.debug(
+        '[TemplateForm] Extraction rules: ${result.extractionRules.length} chars',
+      );
+
       // Auto-scroll to pattern field after a short delay
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _patternFieldKey.currentContext != null) {
@@ -139,13 +147,10 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
           );
         }
       });
-      
+
       // Show success message
-      ErrorSnackbar.showSuccess(
-        context,
-        'pattern_received_from_wizard'.tr(),
-      );
-      
+      ErrorSnackbar.showSuccess(context, 'pattern_received_from_wizard'.tr());
+
       // Hide the banner after 5 seconds
       Future.delayed(const Duration(seconds: 5), () {
         if (mounted) {
@@ -202,9 +207,7 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
         HapticFeedback.heavyImpact();
         ErrorSnackbar.show(
           context,
-          'template_validation_failed'.tr(args: [
-            validationErrors.join('\n'),
-          ]),
+          'template_validation_failed'.tr(args: [validationErrors.join('\n')]),
         );
         return;
       }
@@ -330,7 +333,9 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
                             'pattern_received_from_wizard'.tr(),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -338,7 +343,9 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
                             'click_save_to_create_template'.tr(),
                             style: TextStyle(
                               fontSize: 13,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
                             ),
                           ),
                         ],
@@ -357,7 +364,9 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
                 ),
               ),
             // Save reminder banner
-            if (_showSaveReminder && !_patternReceivedFromWizard && _patternController.text.trim().isNotEmpty)
+            if (_showSaveReminder &&
+                !_patternReceivedFromWizard &&
+                _patternController.text.trim().isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -365,7 +374,9 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -448,8 +459,8 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
               child: Text(
                 'pattern_helper'.tr(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -479,8 +490,8 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
               child: Text(
                 'extraction_rules_helper'.tr(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -508,8 +519,8 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
               child: Text(
                 'priority_helper'.tr(),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             const SizedBox(height: 24),

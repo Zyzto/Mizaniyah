@@ -127,7 +127,6 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
   SmsTextSelection? _editingSelection;
   final ScrollController _scrollController = ScrollController();
 
-
   @override
   void initState() {
     super.initState();
@@ -216,7 +215,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
       selection.start,
       selection.end > widget.text.length ? widget.text.length : selection.end,
     );
-    
+
     showDialog(
       context: context,
       builder: (context) => _LabelPickerDialog(
@@ -241,7 +240,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
               );
             });
           }
-          
+
           final updated = selection.copyWith(label: label);
           final newSelections = List<SmsTextSelection>.from(widget.selections);
           if (_editingSelection != null) {
@@ -262,18 +261,18 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
   // Validate label selection and provide warnings
   String? _validateLabelSelection(String label, String selectedText) {
     final trimmed = selectedText.trim();
-    
+
     // For amount label, check if it's actually a valid number
     if (label == 'amount') {
       // Try to parse as a number
       final cleaned = trimmed.replaceAll(',', '').replaceAll(' ', '');
       final parsed = double.tryParse(cleaned);
-      
+
       // If it's not a valid number at all, don't warn (might be text that will be extracted)
       if (parsed == null) {
         return null;
       }
-      
+
       // Only warn if it's exactly 4 digits with no decimal (likely card number, not amount)
       // But allow amounts like 1000, 2000, etc. by checking if it's a round number >= 1000
       if (RegExp(r'^\d{4}$').hasMatch(cleaned)) {
@@ -284,11 +283,11 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         // Otherwise, it might be a card number (like 2572)
         return 'label_validation_card_number_warning'.tr();
       }
-      
+
       // Don't warn for small amounts - they might be valid (like 5.00, 100, etc.)
       // Only warn if it's clearly not an amount (like a single digit or two digits that look like card parts)
     }
-    
+
     // Check if card_last4 label is used for a number that looks like an amount
     if (label == 'card_last4') {
       final cleaned = trimmed.replaceAll(',', '').replaceAll(' ', '');
@@ -301,7 +300,7 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         return 'label_validation_amount_warning'.tr();
       }
     }
-    
+
     return null;
   }
 
@@ -327,7 +326,6 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
     });
     _showLabelPicker(selection);
   }
-
 
   Widget _buildCompactHeader(BuildContext context) {
     return Padding(
@@ -370,12 +368,16 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
     final count = (hasStoreName ? 1 : 0) + (hasAmount ? 1 : 0);
 
     return Container(
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsetsDirectional.only(end: 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: allRequired
-            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+            ? Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : Theme.of(
+                context,
+              ).colorScheme.errorContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: allRequired
@@ -412,20 +414,21 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
 
   Widget _buildSelectionChip(SmsTextSelection selection) {
     final displayNames = _getLabelDisplayNames();
-    final color = _labelColors[selection.label] ??
-        Theme.of(context).colorScheme.primary;
+    final color =
+        _labelColors[selection.label] ?? Theme.of(context).colorScheme.primary;
     final selectedText = widget.text.substring(
       selection.start,
       selection.end > widget.text.length ? widget.text.length : selection.end,
     );
     // Truncate long text for preview
-    final previewText =
-        selectedText.length > 15 ? '${selectedText.substring(0, 15)}...' : selectedText;
+    final previewText = selectedText.length > 15
+        ? '${selectedText.substring(0, 15)}...'
+        : selectedText;
 
     return GestureDetector(
       onTap: () => _editSelection(selection),
       child: Container(
-        margin: const EdgeInsets.only(right: 8),
+        margin: const EdgeInsetsDirectional.only(end: 8),
         constraints: const BoxConstraints(minHeight: 48),
         child: Chip(
           label: Text(
@@ -529,17 +532,15 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
             _buildChipBar(context),
             const Divider(height: 16),
             // Text area - fills remaining space
-            Expanded(
-              child: _buildTextArea(),
-            ),
+            Expanded(child: _buildTextArea()),
           ],
         ),
         // Floating Create Selection button (FAB) - only show when text is actively selected
         if (_selectionStart != null &&
             _selectionEnd != null &&
             _selectionStart != _selectionEnd)
-          Positioned(
-            right: 16,
+          PositionedDirectional(
+            end: 16,
             bottom: 16,
             child: FloatingActionButton.extended(
               onPressed: () {
@@ -587,12 +588,16 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
         selection.start,
         selection.end,
       );
-      final color = _labelColors[selection.label] ?? Theme.of(context).colorScheme.primary;
+      final color =
+          _labelColors[selection.label] ??
+          Theme.of(context).colorScheme.primary;
       spans.add(
         TextSpan(
           text: selectedText,
           style: TextStyle(
-            backgroundColor: color.withValues(alpha: 0.4), // More visible background
+            backgroundColor: color.withValues(
+              alpha: 0.4,
+            ), // More visible background
             color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             // Remove underline, use background highlight only
@@ -646,7 +651,7 @@ class _LabelPickerDialog extends StatelessWidget {
     final maxWidth = screenWidth > 600 ? 600.0 : screenWidth * 0.9;
     // Ensure minWidth doesn't exceed maxWidth
     final minWidth = maxWidth < 400 ? maxWidth : 400.0;
-    
+
     return Dialog(
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -665,8 +670,8 @@ class _LabelPickerDialog extends StatelessWidget {
                   Text(
                     'select_label'.tr(),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -685,7 +690,9 @@ class _LabelPickerDialog extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -702,7 +709,9 @@ class _LabelPickerDialog extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontStyle: FontStyle.italic,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -768,7 +777,9 @@ class _LabelPickerDialog extends StatelessWidget {
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.w600,
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                     ),
                                   ),
                                   if (description.isNotEmpty) ...[
@@ -777,9 +788,9 @@ class _LabelPickerDialog extends StatelessWidget {
                                       description,
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                         height: 1.3,
                                       ),
                                       maxLines: 2,
@@ -791,11 +802,7 @@ class _LabelPickerDialog extends StatelessWidget {
                             ),
                             if (isSelected) ...[
                               const SizedBox(width: 8),
-                              Icon(
-                                Icons.check_circle,
-                                color: color,
-                                size: 24,
-                              ),
+                              Icon(Icons.check_circle, color: color, size: 24),
                             ],
                           ],
                         ),

@@ -202,7 +202,10 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildParsedDataRow('store_name'.tr(), _parsedData!.storeName),
+                    _buildParsedDataRow(
+                      'store_name'.tr(),
+                      _parsedData!.storeName,
+                    ),
                     _buildParsedDataRow(
                       'amount'.tr(),
                       _parsedData!.amount != null

@@ -42,18 +42,9 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
               });
             },
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'all',
-                child: Text('all'.tr()),
-              ),
-              PopupMenuItem(
-                value: 'active',
-                child: Text('active'.tr()),
-              ),
-              PopupMenuItem(
-                value: 'inactive',
-                child: Text('inactive'.tr()),
-              ),
+              PopupMenuItem(value: 'all', child: Text('all'.tr())),
+              PopupMenuItem(value: 'active', child: Text('active'.tr())),
+              PopupMenuItem(value: 'inactive', child: Text('inactive'.tr())),
             ],
           ),
           IconButton(
@@ -78,8 +69,8 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
               title: _filter == 'all'
                   ? 'no_sms_templates'.tr()
                   : _filter == 'active'
-                      ? 'no_active_templates'.tr()
-                      : 'no_inactive_templates'.tr(),
+                  ? 'no_active_templates'.tr()
+                  : 'no_inactive_templates'.tr(),
               subtitle: _filter == 'all'
                   ? 'add_first_template'.tr()
                   : 'no_templates_match_filter'.tr(),
@@ -130,8 +121,8 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
                       child: Text(
                         'template_library'.tr(),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     // Template cards
@@ -157,12 +148,9 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
   Widget _buildTemplateCard(BuildContext context, db.SmsTemplate template) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -250,7 +238,9 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'priority_label'.tr(args: [template.priority.toString()]),
+                        'priority_label'.tr(
+                          args: [template.priority.toString()],
+                        ),
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -348,8 +338,8 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
                     child: Text(
                       'test_template'.tr(),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -404,7 +394,8 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
     IconData icon, [
     Color? color,
   ]) {
-    final chipColor = color ?? Theme.of(context).colorScheme.surfaceContainerHighest;
+    final chipColor =
+        color ?? Theme.of(context).colorScheme.surfaceContainerHighest;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -418,9 +409,9 @@ class _SmsTemplatePageState extends ConsumerState<SmsTemplatePage> {
           const SizedBox(width: 4),
           Text(
             '$label: $value',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),

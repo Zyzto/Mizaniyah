@@ -37,9 +37,10 @@ class SmsWithStatus {
 
 /// Provider for SMS list with parsing status
 /// Uses progressive loading: shows SMS immediately, parses in background
-final smsListProvider = NotifierProvider<SmsListNotifier, AsyncValue<List<SmsWithStatus>>>(() {
-  return SmsListNotifier();
-});
+final smsListProvider =
+    NotifierProvider<SmsListNotifier, AsyncValue<List<SmsWithStatus>>>(() {
+      return SmsListNotifier();
+    });
 
 class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
   final SmsReaderService _smsReaderService = SmsReaderService.instance;
@@ -71,11 +72,9 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
       );
 
       // Show SMS immediately without parsing
-      final smsWithStatus = sms.map((s) => SmsWithStatus(
-        sms: s,
-        isMatched: false,
-        isParsing: true,
-      )).toList();
+      final smsWithStatus = sms
+          .map((s) => SmsWithStatus(sms: s, isMatched: false, isParsing: true))
+          .toList();
 
       state = AsyncValue.data(smsWithStatus);
       _loadedCount = sms.length;
@@ -83,18 +82,17 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
       // Parse in background
       _parseSmsInBackground(smsWithStatus);
     } catch (e, stackTrace) {
-      Log.error(
-        'Error loading SMS',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      Log.error('Error loading SMS', error: e, stackTrace: stackTrace);
       state = AsyncValue.error(e, stackTrace);
     } finally {
       _isLoading = false;
     }
   }
 
-  Future<void> _parseSmsInBackground(List<SmsWithStatus> smsList, {int startIndex = 0}) async {
+  Future<void> _parseSmsInBackground(
+    List<SmsWithStatus> smsList, {
+    int startIndex = 0,
+  }) async {
     // Prevent concurrent parsing
     if (_isParsing) return;
     _isParsing = true;
@@ -103,75 +101,83 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
       // Get active templates from DAO
       final smsTemplateDao = ref.read(smsTemplateDaoProvider);
       final templates = await smsTemplateDao.getActiveTemplates();
-    
-    if (templates.isEmpty) {
-      // No templates, mark all as not matched
-      _updateParsingResults(
-        smsList.map((s) => s.copyWith(isMatched: false, isParsing: false)).toList(),
-        startIndex: startIndex,
-      );
-      return;
-    }
 
-    // Parse in batches to avoid blocking
-    const batchSize = 10;
-    for (int i = 0; i < smsList.length; i += batchSize) {
-      final batch = smsList.sublist(
-        i,
-        (i + batchSize).clamp(0, smsList.length),
-      );
+      if (templates.isEmpty) {
+        // No templates, mark all as not matched
+        _updateParsingResults(
+          smsList
+              .map((s) => s.copyWith(isMatched: false, isParsing: false))
+              .toList(),
+          startIndex: startIndex,
+        );
+        return;
+      }
 
-      // Process batch
-      final results = <SmsWithStatus>[];
-      for (final smsWithStatus in batch) {
-        final body = smsWithStatus.sms.body ?? '';
-        if (body.isEmpty) {
-          results.add(smsWithStatus.copyWith(isMatched: false, isParsing: false));
-          continue;
-        }
-
-        // Check cache first
-        final cacheKey = '${smsWithStatus.sms.date}_${smsWithStatus.sms.address}';
-        if (_parsingCache.containsKey(cacheKey)) {
-          results.add(_parsingCache[cacheKey]!);
-          continue;
-        }
-
-        // Parse SMS
-        final match = SmsParsingService.findMatchingTemplate(body, templates);
-        final parsed = smsWithStatus.copyWith(
-          matchResult: match,
-          isMatched: match != null,
-          isParsing: false,
+      // Parse in batches to avoid blocking
+      const batchSize = 10;
+      for (int i = 0; i < smsList.length; i += batchSize) {
+        final batch = smsList.sublist(
+          i,
+          (i + batchSize).clamp(0, smsList.length),
         );
 
-        // Cache result
-        _parsingCache[cacheKey] = parsed;
-        results.add(parsed);
-      }
-
-      // Update state progressively
-      if (state.hasValue) {
-        final currentList = List<SmsWithStatus>.from(state.value!);
-        // Replace parsed items using correct starting index
-        for (int j = 0; j < results.length; j++) {
-          final index = startIndex + i + j;
-          if (index < currentList.length) {
-            currentList[index] = results[j];
+        // Process batch
+        final results = <SmsWithStatus>[];
+        for (final smsWithStatus in batch) {
+          final body = smsWithStatus.sms.body ?? '';
+          if (body.isEmpty) {
+            results.add(
+              smsWithStatus.copyWith(isMatched: false, isParsing: false),
+            );
+            continue;
           }
-        }
-        state = AsyncValue.data(currentList);
-      }
 
-      // Small delay to allow UI to update
-      await Future.delayed(const Duration(milliseconds: 50));
-    }
+          // Check cache first
+          final cacheKey =
+              '${smsWithStatus.sms.date}_${smsWithStatus.sms.address}';
+          if (_parsingCache.containsKey(cacheKey)) {
+            results.add(_parsingCache[cacheKey]!);
+            continue;
+          }
+
+          // Parse SMS
+          final match = SmsParsingService.findMatchingTemplate(body, templates);
+          final parsed = smsWithStatus.copyWith(
+            matchResult: match,
+            isMatched: match != null,
+            isParsing: false,
+          );
+
+          // Cache result
+          _parsingCache[cacheKey] = parsed;
+          results.add(parsed);
+        }
+
+        // Update state progressively
+        if (state.hasValue) {
+          final currentList = List<SmsWithStatus>.from(state.value!);
+          // Replace parsed items using correct starting index
+          for (int j = 0; j < results.length; j++) {
+            final index = startIndex + i + j;
+            if (index < currentList.length) {
+              currentList[index] = results[j];
+            }
+          }
+          state = AsyncValue.data(currentList);
+        }
+
+        // Small delay to allow UI to update
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
     } finally {
       _isParsing = false;
     }
   }
 
-  void _updateParsingResults(List<SmsWithStatus> results, {int startIndex = 0}) {
+  void _updateParsingResults(
+    List<SmsWithStatus> results, {
+    int startIndex = 0,
+  }) {
     if (state.hasValue) {
       final currentList = List<SmsWithStatus>.from(state.value!);
       // Merge results using correct starting index
@@ -198,11 +204,9 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
 
       if (sms.isEmpty) return; // No more SMS
 
-      final smsWithStatus = sms.map((s) => SmsWithStatus(
-        sms: s,
-        isMatched: false,
-        isParsing: true,
-      )).toList();
+      final smsWithStatus = sms
+          .map((s) => SmsWithStatus(sms: s, isMatched: false, isParsing: true))
+          .toList();
 
       final currentList = List<SmsWithStatus>.from(state.value!);
       final startIndex = currentList.length;
@@ -213,11 +217,7 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
       // Parse in background with correct starting index
       _parseSmsInBackground(smsWithStatus, startIndex: startIndex);
     } catch (e, stackTrace) {
-      Log.error(
-        'Error loading more SMS',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      Log.error('Error loading more SMS', error: e, stackTrace: stackTrace);
     } finally {
       _isLoading = false;
     }
@@ -255,11 +255,9 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
         );
       }
 
-      final smsWithStatus = sms.map((s) => SmsWithStatus(
-        sms: s,
-        isMatched: false,
-        isParsing: true,
-      )).toList();
+      final smsWithStatus = sms
+          .map((s) => SmsWithStatus(sms: s, isMatched: false, isParsing: true))
+          .toList();
 
       state = AsyncValue.data(smsWithStatus);
       _loadedCount = sms.length;
@@ -267,11 +265,7 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
       // Parse in background
       _parseSmsInBackground(smsWithStatus);
     } catch (e, stackTrace) {
-      Log.error(
-        'Error filtering SMS',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      Log.error('Error filtering SMS', error: e, stackTrace: stackTrace);
       state = AsyncValue.error(e, stackTrace);
     } finally {
       _isLoading = false;

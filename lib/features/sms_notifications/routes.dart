@@ -7,7 +7,8 @@ List<RouteBase> getSmsNotificationRoutes() {
   return [
     GoRoute(
       path: RoutePaths.smsNotifications,
-      builder: (context, state) => const SizedBox.shrink(), // Handled by MainScaffold
+      builder: (context, state) =>
+          const SizedBox.shrink(), // Handled by MainScaffold
     ),
   ];
 }

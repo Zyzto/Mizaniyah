@@ -15,11 +15,7 @@ class SmsReaderPage extends ConsumerStatefulWidget {
   final String? initialSender;
   final String? initialBody;
 
-  const SmsReaderPage({
-    super.key,
-    this.initialSender,
-    this.initialBody,
-  });
+  const SmsReaderPage({super.key, this.initialSender, this.initialBody});
 
   @override
   ConsumerState<SmsReaderPage> createState() => _SmsReaderPageState();

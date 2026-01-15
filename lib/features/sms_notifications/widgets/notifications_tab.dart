@@ -11,18 +11,19 @@ import '../../../core/widgets/error_state.dart';
 import '../../../core/navigation/route_paths.dart';
 
 /// Provider for notification history stream
-final notificationHistoryProvider = StreamProvider<List<NotificationHistoryData>>((ref) async* {
-  ref.keepAlive();
-  final dao = ref.watch(notificationHistoryDaoProvider);
-  try {
-    await for (final notifications in dao.watchAllNotifications()) {
-      yield notifications;
-    }
-  } catch (e) {
-    // Error handling is done by the DAO
-    yield [];
-  }
-});
+final notificationHistoryProvider =
+    StreamProvider<List<NotificationHistoryData>>((ref) async* {
+      ref.keepAlive();
+      final dao = ref.watch(notificationHistoryDaoProvider);
+      try {
+        await for (final notifications in dao.watchAllNotifications()) {
+          yield notifications;
+        }
+      } catch (e) {
+        // Error handling is done by the DAO
+        yield [];
+      }
+    });
 
 /// Notifications history tab
 class NotificationsTab extends ConsumerStatefulWidget {
@@ -32,13 +33,18 @@ class NotificationsTab extends ConsumerStatefulWidget {
   ConsumerState<NotificationsTab> createState() => _NotificationsTabState();
 }
 
-class _NotificationsTabState extends ConsumerState<NotificationsTab> {
+class _NotificationsTabState extends ConsumerState<NotificationsTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   String _selectedFilter = 'all'; // 'all', 'sms_confirmation', 'unread'
   DateTime? _startDate;
   DateTime? _endDate;
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final notificationsAsync = ref.watch(notificationHistoryProvider);
 
     return Column(
@@ -107,18 +113,12 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
           Expanded(
             child: SegmentedButton<String>(
               segments: [
-                ButtonSegment(
-                  value: 'all',
-                  label: Text('all'.tr()),
-                ),
+                ButtonSegment(value: 'all', label: Text('all'.tr())),
                 ButtonSegment(
                   value: 'sms_confirmation',
                   label: Text('sms'.tr()),
                 ),
-                ButtonSegment(
-                  value: 'unread',
-                  label: Text('unread'.tr()),
-                ),
+                ButtonSegment(value: 'unread', label: Text('unread'.tr())),
               ],
               selected: {_selectedFilter},
               onSelectionChanged: (Set<String> newSelection) {
@@ -209,7 +209,8 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
 
   void _handleNotificationTap(NotificationHistoryData notification) async {
     // Store navigation paths before async operation
-    final shouldNavigateToAccounts = notification.notificationType == 'sms_confirmation' &&
+    final shouldNavigateToAccounts =
+        notification.notificationType == 'sms_confirmation' &&
         notification.confirmationId != null;
     final transactionId = notification.transactionId;
 
@@ -225,9 +226,7 @@ class _NotificationsTabState extends ConsumerState<NotificationsTab> {
       context.go(RoutePaths.accounts);
     } else if (transactionId != null) {
       // Navigate to transaction detail
-      context.push(
-        RoutePaths.transactionDetail(transactionId),
-      );
+      context.push(RoutePaths.transactionDetail(transactionId));
     }
   }
 
@@ -259,8 +258,8 @@ class _NotificationCard extends StatelessWidget {
       key: Key('notification_${notification.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsetsDirectional.only(end: 20),
         color: colorScheme.error,
         child: const Icon(Icons.delete, color: Colors.white),
       ),

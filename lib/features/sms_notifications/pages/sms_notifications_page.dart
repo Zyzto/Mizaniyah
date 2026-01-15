@@ -7,10 +7,7 @@ import '../widgets/notifications_tab.dart';
 class SmsNotificationsPage extends ConsumerStatefulWidget {
   final TabController tabController;
 
-  const SmsNotificationsPage({
-    super.key,
-    required this.tabController,
-  });
+  const SmsNotificationsPage({super.key, required this.tabController});
 
   @override
   ConsumerState<SmsNotificationsPage> createState() =>

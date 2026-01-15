@@ -67,7 +67,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
     if (_showMatchedOnly) {
       filtered = filtered.where((item) => item.isMatched).toList();
     } else if (_showUnmatchedOnly) {
-      filtered = filtered.where((item) => !item.isMatched && !item.isParsing).toList();
+      filtered = filtered
+          .where((item) => !item.isMatched && !item.isParsing)
+          .toList();
     }
 
     // Filter by search query (use debounced query)
@@ -126,7 +128,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                 color: Theme.of(context).colorScheme.surface,
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.1),
                   ),
                 ),
               ),
@@ -174,7 +178,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                                           },
                                         ),
                                   filled: true,
-                                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  fillColor: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide.none,
@@ -209,7 +215,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                                 );
                               },
                               style: IconButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -229,16 +237,28 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                                 if (value) _showUnmatchedOnly = false;
                               });
                             },
-                            selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                            checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                            selectedColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            checkmarkColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
                             labelStyle: TextStyle(
                               color: _showMatchedOnly
-                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontWeight: _showMatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: _showMatchedOnly
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -254,16 +274,28 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                                 if (value) _showMatchedOnly = false;
                               });
                             },
-                            selectedColor: Theme.of(context).colorScheme.errorContainer,
-                            checkmarkColor: Theme.of(context).colorScheme.onErrorContainer,
+                            selectedColor: Theme.of(
+                              context,
+                            ).colorScheme.errorContainer,
+                            checkmarkColor: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
                             labelStyle: TextStyle(
                               color: _showUnmatchedOnly
-                                  ? Theme.of(context).colorScheme.onErrorContainer
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer
                                   : Theme.of(context).colorScheme.onSurface,
-                              fontWeight: _showUnmatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: _showUnmatchedOnly
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
                         ),
                       ],
@@ -289,16 +321,30 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                                         if (value) _showUnmatchedOnly = false;
                                       });
                                     },
-                                    selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                                    checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    selectedColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
+                                    checkmarkColor: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
                                     labelStyle: TextStyle(
                                       color: _showMatchedOnly
-                                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                                          : Theme.of(context).colorScheme.onSurface,
-                                      fontWeight: _showMatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimaryContainer
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                      fontWeight: _showMatchedOnly
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   const SizedBox(width: 8),
                                   FilterChip(
@@ -311,16 +357,30 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                                         if (value) _showMatchedOnly = false;
                                       });
                                     },
-                                    selectedColor: Theme.of(context).colorScheme.errorContainer,
-                                    checkmarkColor: Theme.of(context).colorScheme.onErrorContainer,
+                                    selectedColor: Theme.of(
+                                      context,
+                                    ).colorScheme.errorContainer,
+                                    checkmarkColor: Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer,
                                     labelStyle: TextStyle(
                                       color: _showUnmatchedOnly
-                                          ? Theme.of(context).colorScheme.onErrorContainer
-                                          : Theme.of(context).colorScheme.onSurface,
-                                      fontWeight: _showUnmatchedOnly ? FontWeight.w600 : FontWeight.normal,
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.onErrorContainer
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                      fontWeight: _showUnmatchedOnly
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
                                 ],
                               ),
@@ -413,7 +473,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -422,7 +484,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                       width: 100,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
@@ -431,7 +495,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                       width: 120,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
@@ -447,7 +513,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                       width: 80,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -455,7 +523,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                       width: 80,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -463,7 +533,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
                       width: 80,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -473,9 +545,7 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
             ),
           ),
           // List skeleton
-          Expanded(
-            child: SkeletonList(itemCount: 5, itemHeight: 140),
-          ),
+          const Expanded(child: SkeletonList(itemCount: 5, itemHeight: 140)),
         ],
       ),
       error: (error, stack) => ErrorState(
@@ -500,7 +570,9 @@ class _AllSmsTabState extends ConsumerState<AllSmsTab>
   }
 
   String? _getEmptyStateSubtitle() {
-    if (_debouncedSearchQuery.isNotEmpty || _showMatchedOnly || _showUnmatchedOnly) {
+    if (_debouncedSearchQuery.isNotEmpty ||
+        _showMatchedOnly ||
+        _showUnmatchedOnly) {
       return null;
     }
     return 'no_sms_messages_description'.tr();
@@ -625,16 +697,16 @@ class _SmsListItemWithStatus extends StatelessWidget {
                       color: smsWithStatus.isMatched
                           ? colorScheme.primaryContainer
                           : smsWithStatus.isParsing
-                              ? colorScheme.surfaceContainerHighest
-                              : colorScheme.surfaceContainerHighest,
+                          ? colorScheme.surfaceContainerHighest
+                          : colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       smsWithStatus.isParsing
                           ? Icons.hourglass_empty
                           : smsWithStatus.isMatched
-                              ? Icons.check_circle
-                              : Icons.sms_outlined,
+                          ? Icons.check_circle
+                          : Icons.sms_outlined,
                       size: 20,
                       color: smsWithStatus.isMatched
                           ? colorScheme.onPrimaryContainer
@@ -690,9 +762,7 @@ class _SmsListItemWithStatus extends StatelessWidget {
               // Message preview
               Text(
                 bodyPreview,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  height: 1.4,
-                ),
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -716,7 +786,8 @@ class _SmsListItemWithStatus extends StatelessWidget {
                           parsedData.storeName!,
                         ),
                       if (parsedData.amount != null) ...[
-                        if (parsedData.storeName != null) const SizedBox(height: 8),
+                        if (parsedData.storeName != null)
+                          const SizedBox(height: 8),
                         _buildParsedRow(
                           context,
                           Icons.attach_money,
@@ -728,7 +799,8 @@ class _SmsListItemWithStatus extends StatelessWidget {
                         ),
                       ],
                       if (parsedData.cardLast4Digits != null) ...[
-                        if (parsedData.amount != null) const SizedBox(height: 8),
+                        if (parsedData.amount != null)
+                          const SizedBox(height: 8),
                         _buildParsedRow(
                           context,
                           Icons.credit_card_outlined,
@@ -744,7 +816,7 @@ class _SmsListItemWithStatus extends StatelessWidget {
               if (!smsWithStatus.isMatched && !smsWithStatus.isParsing) ...[
                 const SizedBox(height: 12),
                 Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: TextButton.icon(
                     onPressed: onCreateTemplate,
                     icon: const Icon(Icons.add_circle_outline, size: 18),
@@ -785,9 +857,9 @@ class _SmsListItemWithStatus extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -900,9 +972,7 @@ class _SmsDetailsSheet extends StatelessWidget {
                       ),
                       child: SelectableText(
                         smsWithStatus.sms.body ?? '',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          height: 1.5,
-                        ),
+                        style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
                       ),
                     ),
                     if (parsedData != null) ...[
@@ -931,7 +1001,8 @@ class _SmsDetailsSheet extends StatelessWidget {
                                 parsedData.storeName!,
                               ),
                             if (parsedData.amount != null) ...[
-                              if (parsedData.storeName != null) const SizedBox(height: 12),
+                              if (parsedData.storeName != null)
+                                const SizedBox(height: 12),
                               _buildParsedDetailRow(
                                 context,
                                 'amount'.tr(),
@@ -942,7 +1013,8 @@ class _SmsDetailsSheet extends StatelessWidget {
                               ),
                             ],
                             if (parsedData.cardLast4Digits != null) ...[
-                              if (parsedData.amount != null) const SizedBox(height: 12),
+                              if (parsedData.amount != null)
+                                const SizedBox(height: 12),
                               _buildParsedDetailRow(
                                 context,
                                 'card'.tr(),
@@ -950,7 +1022,8 @@ class _SmsDetailsSheet extends StatelessWidget {
                               ),
                             ],
                             if (confidence != null) ...[
-                              if (parsedData.cardLast4Digits != null) const SizedBox(height: 12),
+                              if (parsedData.cardLast4Digits != null)
+                                const SizedBox(height: 12),
                               _buildParsedDetailRow(
                                 context,
                                 'confidence'.tr(),
@@ -1014,10 +1087,7 @@ class _SmsDetailsSheet extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -1036,17 +1106,17 @@ class _SmsDetailsSheet extends StatelessWidget {
           width: 100,
           child: Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
       ],

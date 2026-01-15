@@ -25,12 +25,17 @@ class PendingConfirmationsTab extends ConsumerStatefulWidget {
 }
 
 class _PendingConfirmationsTabState
-    extends ConsumerState<PendingConfirmationsTab> {
+    extends ConsumerState<PendingConfirmationsTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final Set<int> _selectedIds = {};
   bool _isSelectionMode = false;
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     // Use StreamProvider for reactive updates without refetching on navigation
     final confirmationsAsync = ref.watch(pendingSmsConfirmationsProvider);
 
@@ -345,8 +350,8 @@ class _PendingConfirmationCardState extends State<_PendingConfirmationCard> {
       key: Key('confirmation_${widget.confirmation.id}'),
       direction: DismissDirection.horizontal,
       background: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsetsDirectional.only(start: 20),
         color: colorScheme.errorContainer,
         child: Row(
           children: [
@@ -360,8 +365,8 @@ class _PendingConfirmationCardState extends State<_PendingConfirmationCard> {
         ),
       ),
       secondaryBackground: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsetsDirectional.only(end: 20),
         color: colorScheme.primaryContainer,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
