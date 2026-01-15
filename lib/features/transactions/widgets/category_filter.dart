@@ -45,7 +45,7 @@ class CategoryFilter extends ConsumerWidget {
               // Category filters
               ...categories.map((category) {
                 return Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsetsDirectional.only(end: 8),
                   child: _FilterChip(
                     label: CategoryTranslations.getTranslatedName(category),
                     selected: selectedCategoryId == category.id,

@@ -33,7 +33,8 @@ class StatisticsPage extends ConsumerWidget {
                     budgets: budgets,
                   );
                 },
-                loading: () => const SkeletonList(itemCount: 3, itemHeight: 120),
+                loading: () =>
+                    const SkeletonList(itemCount: 3, itemHeight: 120),
                 error: (error, stack) => ErrorState(
                   title: 'error_loading_budgets'.tr(),
                   message: error.toString(),
@@ -227,7 +228,9 @@ class _SpendingByCategoryCard extends StatelessWidget {
                         children: [
                           Text(
                             category != null
-                                ? CategoryTranslations.getTranslatedName(category)
+                                ? CategoryTranslations.getTranslatedName(
+                                    category,
+                                  )
                                 : 'unknown_category'.tr(),
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
@@ -287,8 +290,8 @@ class _BudgetVsActualCard extends StatelessWidget {
               final color = percentage >= 100
                   ? colorScheme.error
                   : percentage >= 80
-                      ? colorScheme.tertiary
-                      : colorScheme.primary;
+                  ? colorScheme.tertiary
+                  : colorScheme.primary;
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16),
@@ -299,8 +302,9 @@ class _BudgetVsActualCard extends StatelessWidget {
                       category != null
                           ? CategoryTranslations.getTranslatedName(category)
                           : 'unknown_category'.tr(),
-                      style: Theme.of(context).textTheme.bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -329,7 +333,8 @@ class _BudgetVsActualCard extends StatelessWidget {
                             remaining >= 0
                                 ? '${CurrencyFormatter.formatCompact(remaining)} ${'remaining'.tr()}'
                                 : '${CurrencyFormatter.formatCompact(-remaining)} ${'over'.tr()}',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
                                   color: color,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -379,8 +384,9 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],

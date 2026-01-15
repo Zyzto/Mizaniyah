@@ -26,8 +26,6 @@ Future<SettingsProviders> initializeMizaniyahSettings() async {
     return await initializeSettings(registry: registry, storage: storage);
   } catch (e) {
     // Re-throw with more context
-    throw Exception(
-      'Failed to initialize settings framework: $e',
-    );
+    throw Exception('Failed to initialize settings framework: $e');
   }
 }

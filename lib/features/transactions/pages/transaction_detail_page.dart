@@ -89,11 +89,7 @@ class TransactionDetailPage extends ConsumerWidget {
             transaction.source == 'sms' ? 'sms'.tr() : 'manual'.tr(),
           ),
           if (transaction.notes != null && transaction.notes!.isNotEmpty)
-            _buildDetailRow(
-              context,
-              'notes_optional'.tr(),
-              transaction.notes!,
-            ),
+            _buildDetailRow(context, 'notes_optional'.tr(), transaction.notes!),
         ],
       ),
     );
@@ -118,7 +114,11 @@ class TransactionDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryDetail(BuildContext context, WidgetRef ref, int categoryId) {
+  Widget _buildCategoryDetail(
+    BuildContext context,
+    WidgetRef ref,
+    int categoryId,
+  ) {
     final categoryAsync = ref.watch(categoryProvider(categoryId));
     return categoryAsync.when(
       data: (category) {
@@ -153,12 +153,7 @@ class TransactionDetailPage extends ConsumerWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyLarge,
-            ),
-          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyLarge)),
         ],
       ),
     );

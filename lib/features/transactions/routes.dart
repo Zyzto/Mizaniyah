@@ -57,10 +57,7 @@ List<RouteBase> getTransactionFormRoutes() {
 class TransactionDetailPageLoader extends StatelessWidget {
   final int transactionId;
 
-  const TransactionDetailPageLoader({
-    super.key,
-    required this.transactionId,
-  });
+  const TransactionDetailPageLoader({super.key, required this.transactionId});
 
   @override
   Widget build(BuildContext context) {
@@ -98,10 +95,7 @@ class TransactionDetailPageLoader extends StatelessWidget {
 class TransactionFormPageLoader extends StatelessWidget {
   final int transactionId;
 
-  const TransactionFormPageLoader({
-    super.key,
-    required this.transactionId,
-  });
+  const TransactionFormPageLoader({super.key, required this.transactionId});
 
   @override
   Widget build(BuildContext context) {

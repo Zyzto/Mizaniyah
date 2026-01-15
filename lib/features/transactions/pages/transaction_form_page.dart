@@ -142,10 +142,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
     } catch (e) {
       if (!mounted || !context.mounted) return;
       HapticFeedback.heavyImpact();
-      ErrorSnackbar.show(
-        context,
-        'transaction_save_failed'.tr(),
-      );
+      ErrorSnackbar.show(context, 'transaction_save_failed'.tr());
     } finally {
       if (mounted) {
         setState(() {

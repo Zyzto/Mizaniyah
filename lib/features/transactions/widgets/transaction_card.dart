@@ -94,9 +94,7 @@ class TransactionCard extends ConsumerWidget {
                   // Remaining Budget
                   remainingBudgetAsync?.when(
                         data: (remaining) {
-                          if (remaining == null) {
-                            return const SizedBox.shrink();
-                          }
+                          // remaining is non-nullable from provider
                           final statusColor = budgetStatusColorAsync?.value;
                           final color = _getBudgetColor(context, statusColor);
                           return Container(

@@ -10,11 +10,7 @@ class ThemeColorPalette {
       name: 'Purple',
       value: 0xFF6750A4,
     ),
-    ThemeColorOption(
-      color: Color(0xFF1976D2),
-      name: 'Blue',
-      value: 0xFF1976D2,
-    ),
+    ThemeColorOption(color: Color(0xFF1976D2), name: 'Blue', value: 0xFF1976D2),
     ThemeColorOption(
       color: Color(0xFF2E7D32),
       name: 'Green',
@@ -25,26 +21,10 @@ class ThemeColorPalette {
       name: 'Orange',
       value: 0xFFF57C00,
     ),
-    ThemeColorOption(
-      color: Color(0xFFD32F2F),
-      name: 'Red',
-      value: 0xFFD32F2F,
-    ),
-    ThemeColorOption(
-      color: Color(0xFFC2185B),
-      name: 'Pink',
-      value: 0xFFC2185B,
-    ),
-    ThemeColorOption(
-      color: Color(0xFF00796B),
-      name: 'Teal',
-      value: 0xFF00796B,
-    ),
-    ThemeColorOption(
-      color: Color(0xFF0097A7),
-      name: 'Cyan',
-      value: 0xFF0097A7,
-    ),
+    ThemeColorOption(color: Color(0xFFD32F2F), name: 'Red', value: 0xFFD32F2F),
+    ThemeColorOption(color: Color(0xFFC2185B), name: 'Pink', value: 0xFFC2185B),
+    ThemeColorOption(color: Color(0xFF00796B), name: 'Teal', value: 0xFF00796B),
+    ThemeColorOption(color: Color(0xFF0097A7), name: 'Cyan', value: 0xFF0097A7),
     ThemeColorOption(
       color: Color(0xFF303F9F),
       name: 'Indigo',
@@ -60,11 +40,7 @@ class ThemeColorPalette {
       name: 'Brown',
       value: 0xFF5D4037,
     ),
-    ThemeColorOption(
-      color: Color(0xFF616161),
-      name: 'Grey',
-      value: 0xFF616161,
-    ),
+    ThemeColorOption(color: Color(0xFF616161), name: 'Grey', value: 0xFF616161),
   ];
 
   /// Get color by value
@@ -113,9 +89,7 @@ class ThemeColorPickerDialog extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Container(
         constraints: BoxConstraints(
           maxWidth: 500,
@@ -353,10 +327,7 @@ class _CustomColorSectionState extends State<_CustomColorSection> {
                     decoration: BoxDecoration(
                       color: currentColor,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: colorScheme.outline,
-                        width: 2,
-                      ),
+                      border: Border.all(color: colorScheme.outline, width: 2),
                       boxShadow: [
                         BoxShadow(
                           color: currentColor.withValues(alpha: 0.3),
@@ -457,9 +428,7 @@ class _HSVColorPickerState extends State<_HSVColorPicker> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(16),
         color: colorScheme.surfaceContainerHighest,
       ),
@@ -473,10 +442,7 @@ class _HSVColorPickerState extends State<_HSVColorPicker> {
             decoration: BoxDecoration(
               color: currentColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: colorScheme.outline,
-                width: 2,
-              ),
+              border: Border.all(color: colorScheme.outline, width: 2),
               boxShadow: [
                 BoxShadow(
                   color: currentColor.withValues(alpha: 0.4),
@@ -585,11 +551,7 @@ class _SliderRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
