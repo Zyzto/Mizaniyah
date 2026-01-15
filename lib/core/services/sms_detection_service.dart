@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:another_telephony/telephony.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:mizaniyah/core/services/sms_detection/sms_matcher.dart';
 import 'package:mizaniyah/core/services/sms_detection/sms_transaction_creator.dart';
 import 'package:mizaniyah/core/services/sms_detection/sms_confirmation_handler.dart';
@@ -69,10 +70,7 @@ class SmsDetectionService with Loggable {
     _smsMatcher = SmsMatcher(smsTemplateDao);
 
     if (transactionDao != null && cardDao != null) {
-      _transactionCreator = SmsTransactionCreator(
-        transactionDao,
-        cardDao,
-      );
+      _transactionCreator = SmsTransactionCreator(transactionDao, cardDao);
     }
 
     _confirmationHandler = SmsConfirmationHandler(pendingSmsDao);
@@ -89,11 +87,13 @@ class SmsDetectionService with Loggable {
     try {
       _telephony = Telephony.instance;
 
-      // Request SMS permissions
-      final permissionsGranted =
-          await _telephony!.requestPhoneAndSmsPermissions;
-      if (permissionsGranted == false) {
-        logWarning('SMS permissions not granted, SMS detection will not work');
+      // Check and request SMS permissions
+      final hasPermissions = await _checkAndRequestSmsPermissions();
+      if (!hasPermissions) {
+        logWarning(
+          'SMS permissions not granted, SMS detection will not work. '
+          'Please grant SMS permissions in app settings.',
+        );
         _isInitialized = true;
         return;
       }
@@ -137,8 +137,98 @@ class SmsDetectionService with Loggable {
     return service;
   }
 
+  /// Check if SMS permissions are granted
+  Future<bool> _checkSmsPermissions() async {
+    if (kIsWeb) {
+      return false;
+    }
+
+    try {
+      final smsStatus = await Permission.sms.status;
+      return smsStatus.isGranted;
+    } catch (e, stackTrace) {
+      logError(
+        'Failed to check SMS permissions',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  /// Check and request SMS permissions with user-friendly error handling
+  Future<bool> _checkAndRequestSmsPermissions() async {
+    if (kIsWeb) {
+      return false;
+    }
+
+    try {
+      // First check if already granted
+      if (await _checkSmsPermissions()) {
+        return true;
+      }
+
+      // Request permissions using both methods for compatibility
+      // Try permission_handler first (more reliable)
+      final smsStatus = await Permission.sms.request();
+
+      if (smsStatus.isGranted) {
+        logInfo('SMS permissions granted via permission_handler');
+        return true;
+      }
+
+      // Fallback to telephony's permission request
+      if (_telephony != null) {
+        final telephonyGranted =
+            await _telephony!.requestPhoneAndSmsPermissions;
+        if (telephonyGranted == true) {
+          logInfo('SMS permissions granted via telephony');
+          return true;
+        }
+      }
+
+      // Permission denied
+      if (smsStatus.isPermanentlyDenied) {
+        logWarning(
+          'SMS permissions permanently denied. '
+          'Please enable SMS permissions in app settings.',
+        );
+      } else {
+        logWarning(
+          'SMS permissions denied. '
+          'Please grant SMS permissions to enable transaction detection.',
+        );
+      }
+
+      return false;
+    } catch (e, stackTrace) {
+      logError(
+        'Failed to request SMS permissions',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
   /// Start listening for SMS (public method to allow starting/stopping based on settings)
   Future<void> startListening() async {
+    // Check permissions before starting
+    final hasPermissions = await _checkSmsPermissions();
+    if (!hasPermissions) {
+      logWarning(
+        'Cannot start SMS listening: permissions not granted. '
+        'Requesting permissions...',
+      );
+      final granted = await _checkAndRequestSmsPermissions();
+      if (!granted) {
+        logError(
+          'Failed to start SMS listening: permissions not granted after request',
+        );
+        return;
+      }
+    }
+
     await _startListening();
   }
 
@@ -146,6 +236,13 @@ class SmsDetectionService with Loggable {
   Future<void> _startListening() async {
     if (_isListening || _telephony == null) {
       logWarning('SMS listening already active or telephony not initialized');
+      return;
+    }
+
+    // Double-check permissions
+    final hasPermissions = await _checkSmsPermissions();
+    if (!hasPermissions) {
+      logError('Cannot start SMS listening: permissions not granted');
       return;
     }
 
@@ -168,6 +265,7 @@ class SmsDetectionService with Loggable {
   }
 
   /// Handle incoming SMS
+  /// Processes SMS in background to prevent UI blocking
   Future<void> _handleSms(SmsMessage message) async {
     final sender = message.address ?? '';
     final body = message.body ?? '';
@@ -180,13 +278,14 @@ class SmsDetectionService with Loggable {
     }
 
     try {
-      // Match SMS to template and parse transaction data
+      // Match SMS to template and parse transaction data (runs in background isolate)
       final matchResult = await _smsMatcher!.matchSms(sender, body);
       if (matchResult == null) {
         return; // No match found, silently ignore
       }
 
       // Handle auto-create or pending confirmation
+      // This runs on main isolate but is fast (DB operations are async)
       await _processMatchedSms(
         matchResult: matchResult,
         smsBody: body,
@@ -209,12 +308,13 @@ class SmsDetectionService with Loggable {
     final parsedData = matchResult.parsedData;
 
     // Create pending confirmation first
-    final confirmationId = await _confirmationHandler!.createPendingConfirmation(
-      smsBody: smsBody,
-      smsSender: smsSender,
-      parsedData: parsedData,
-      confidence: confidence,
-    );
+    final confirmationId = await _confirmationHandler!
+        .createPendingConfirmation(
+          smsBody: smsBody,
+          smsSender: smsSender,
+          parsedData: parsedData,
+          confidence: confidence,
+        );
 
     // Auto-create transaction if confidence is high enough
     // If auto-confirm is enabled, it will auto-create for high confidence transactions
@@ -225,8 +325,7 @@ class SmsDetectionService with Loggable {
         confidence >= SmsDetectionConstants.autoCreateConfidenceThreshold;
 
     if (isHighConfidence && _transactionCreator != null) {
-      final transactionId =
-          await _transactionCreator!.createTransactionFromSms(
+      final transactionId = await _transactionCreator!.createTransactionFromSms(
         parsedData,
         confidence,
       );
@@ -234,9 +333,7 @@ class SmsDetectionService with Loggable {
       if (transactionId != null) {
         // Delete pending confirmation since we auto-created
         await _confirmationHandler!.deleteConfirmation(confirmationId);
-        logInfo(
-          'Transaction auto-created successfully, skipping notification',
-        );
+        logInfo('Transaction auto-created successfully, skipping notification');
         return; // Don't show notification
       } else {
         logWarning(

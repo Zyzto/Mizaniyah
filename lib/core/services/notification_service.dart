@@ -6,6 +6,7 @@ import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:drift/drift.dart' as drift;
 import '../database/daos/notification_history_dao.dart';
 import '../database/app_database.dart';
+import '../constants/app_constants.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin? _notifications = kIsWeb
@@ -53,9 +54,9 @@ class NotificationService {
             >();
         if (androidPlugin != null) {
           try {
-            final androidChannel = AndroidNotificationChannel(
-              'sms_transactions',
-              'SMS Transactions',
+            final androidChannel = const AndroidNotificationChannel(
+              AppConstants.notificationChannelSmsTransactions,
+              AppConstants.notificationChannelSmsTransactionsName,
               description: 'Notifications for detected SMS transactions',
               importance: Importance.high,
               enableVibration: true,
@@ -100,24 +101,32 @@ class NotificationService {
     if (payload != null && payload.isNotEmpty) {
       try {
         // Parse payload: "sms_confirmation:{id}"
-        if (payload.startsWith('sms_confirmation:')) {
-          final idStr = payload.substring('sms_confirmation:'.length);
+        if (payload.startsWith(
+          NotificationConstants.payloadSmsConfirmationPrefix,
+        )) {
+          final idStr = payload.substring(
+            NotificationConstants.payloadSmsConfirmationPrefix.length,
+          );
           final id = int.tryParse(idStr);
-          
+
           // Mark notification as tapped in history
           // TODO: After running build_runner, implement notification lookup by confirmationId
           if (id != null && _notificationHistoryDao != null) {
             // Find notification by confirmationId and mark as tapped
             // This requires querying by confirmationId first, then marking as tapped
             // Implementation will be added after build_runner generates the code
-            Log.debug('Notification tap tracking ready (requires build_runner)');
+            Log.debug(
+              'Notification tap tracking ready (requires build_runner)',
+            );
           }
-          
+
           if (id != null && _router != null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               try {
                 _router!.go('/accounts'); // Navigate to SMS notifications page
-                Log.info('Navigated to SMS notifications from notification tap');
+                Log.info(
+                  'Navigated to SMS notifications from notification tap',
+                );
               } catch (e, stackTrace) {
                 Log.error(
                   'Failed to navigate using GoRouter',
@@ -187,9 +196,9 @@ class NotificationService {
     }
 
     try {
-      final androidDetails = AndroidNotificationDetails(
-        'sms_transactions',
-        'SMS Transactions',
+      final androidDetails = const AndroidNotificationDetails(
+        AppConstants.notificationChannelSmsTransactions,
+        AppConstants.notificationChannelSmsTransactionsName,
         channelDescription: 'Notifications for detected SMS transactions',
         importance: Importance.high,
         priority: Priority.high,
@@ -211,7 +220,8 @@ class NotificationService {
 
       final title = 'Transaction Detected';
       final body = '$storeName: ${amount.toStringAsFixed(2)} $currency';
-      final payload = 'sms_confirmation:$confirmationId';
+      final payload =
+          '${NotificationConstants.payloadSmsConfirmationPrefix}$confirmationId';
 
       await _notifications!.show(
         confirmationId,
@@ -227,7 +237,7 @@ class NotificationService {
           await _notificationHistoryDao!.insertNotification(
             NotificationHistoryCompanion.insert(
               confirmationId: drift.Value(confirmationId),
-              notificationType: 'sms_confirmation',
+              notificationType: NotificationConstants.typeSmsConfirmation,
               title: title,
               body: body,
               payload: drift.Value(payload),

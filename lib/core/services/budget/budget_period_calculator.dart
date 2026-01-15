@@ -17,7 +17,9 @@ class BudgetPeriodCalculator with Loggable {
       case BudgetConstants.periodYearly:
         return _calculateYearlyPeriod(now, startDate);
       default:
-        logWarning('Unknown budget period: ${budget.period}, defaulting to monthly');
+        logWarning(
+          'Unknown budget period: ${budget.period}, defaulting to monthly',
+        );
         return _calculateMonthlyPeriod(now, startDate);
     }
   }

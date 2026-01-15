@@ -30,7 +30,7 @@ class SmsConfirmationHandler with Loggable {
       };
 
       final expiresAt = DateTime.now().add(
-        Duration(hours: SmsDetectionConstants.confirmationExpirationHours),
+        const Duration(hours: SmsDetectionConstants.confirmationExpirationHours),
       );
 
       final confirmation = db.PendingSmsConfirmationsCompanion(
@@ -40,8 +40,9 @@ class SmsConfirmationHandler with Loggable {
         expiresAt: drift.Value(expiresAt),
       );
 
-      final confirmationId =
-          await _pendingSmsDao.insertConfirmation(confirmation);
+      final confirmationId = await _pendingSmsDao.insertConfirmation(
+        confirmation,
+      );
 
       logInfo(
         'Created pending confirmation with id=$confirmationId, confidence=$confidence',

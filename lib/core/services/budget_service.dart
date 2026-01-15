@@ -13,11 +13,9 @@ class BudgetService with Loggable {
   final BudgetPeriodCalculator _periodCalculator;
   final BudgetStatusCalculator _statusCalculator;
 
-  BudgetService(
-    this._budgetDao,
-    this._transactionDao,
-  )   : _periodCalculator = BudgetPeriodCalculator(),
-        _statusCalculator = BudgetStatusCalculator();
+  BudgetService(this._budgetDao, this._transactionDao)
+    : _periodCalculator = BudgetPeriodCalculator(),
+      _statusCalculator = BudgetStatusCalculator();
 
   /// Get the current period start and end dates for a budget
   (DateTime start, DateTime end) getBudgetPeriodDates(db.Budget budget) {

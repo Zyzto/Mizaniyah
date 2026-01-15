@@ -11,10 +11,7 @@ class SmsTransactionCreator with Loggable {
   final TransactionDao _transactionDao;
   final CardDao _cardDao;
 
-  SmsTransactionCreator(
-    this._transactionDao,
-    this._cardDao,
-  );
+  SmsTransactionCreator(this._transactionDao, this._cardDao);
 
   /// Create a transaction from parsed SMS data
   /// Returns transaction ID if successful, null otherwise
@@ -42,7 +39,8 @@ class SmsTransactionCreator with Loggable {
         ),
         storeName: drift.Value(parsedData.storeName!),
         cardId: drift.Value(cardId),
-        categoryId: const drift.Value.absent(), // Category can be assigned later
+        categoryId:
+            const drift.Value.absent(), // Category can be assigned later
         date: drift.Value(DateTime.now()),
         source: const drift.Value(SmsDetectionConstants.smsTransactionSource),
         notes: drift.Value(
@@ -50,8 +48,9 @@ class SmsTransactionCreator with Loggable {
         ),
       );
 
-      final transactionId =
-          await _transactionDao.insertTransaction(transaction);
+      final transactionId = await _transactionDao.insertTransaction(
+        transaction,
+      );
       logInfo('Auto-created transaction with id=$transactionId');
 
       return transactionId;

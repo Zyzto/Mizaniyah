@@ -40,7 +40,9 @@ class SmsMatcher with Loggable {
 
       logInfo('Found ${templates.length} template(s) for sender: $sender');
 
-      // Try to parse SMS with templates
+      // Parse SMS with templates
+      // Note: Template matching is fast enough to run on main isolate
+      // Heavy regex operations are already optimized in SmsParsingService
       final match = SmsParsingService.findMatchingTemplate(body, templates);
 
       if (match == null) {
@@ -70,11 +72,7 @@ class SmsMatcher with Loggable {
         template: template,
       );
     } catch (e, stackTrace) {
-      logError(
-        'Failed to match SMS',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      logError('Failed to match SMS', error: e, stackTrace: stackTrace);
       return null;
     }
   }
