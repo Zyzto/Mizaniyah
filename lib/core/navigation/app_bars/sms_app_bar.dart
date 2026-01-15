@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../core/navigation/route_paths.dart';
+import '../../../features/sms_notifications/widgets/batch_processing_dialog.dart';
 
 /// AppBar for the SMS notifications page
 PreferredSizeWidget buildSmsNotificationsAppBar(
@@ -36,6 +37,18 @@ PreferredSizeWidget buildSmsNotificationsAppBar(
         : null,
     actions: isMainPage
         ? [
+            IconButton(
+              icon: const Icon(Icons.batch_prediction_outlined),
+              tooltip: 'batch_process_sms'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const BatchProcessingDialog(),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               tooltip: 'settings'.tr(),

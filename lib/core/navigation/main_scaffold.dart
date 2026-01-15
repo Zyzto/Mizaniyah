@@ -39,12 +39,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
     with TickerProviderStateMixin {
   TabController? _accountsTabController;
   TabController? _budgetTabController;
-  
+
   // Keep track of the three main pages to maintain their state
   final _homePage = const HomePage();
   AccountsPage? _accountsPage;
   BudgetsPage? _budgetsPage;
-  
+
   // Track current index for IndexedStack
   int _currentIndex = 0;
 
@@ -62,7 +62,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
       }
     });
   }
-  
+
   /// Initialize all main pages early to start loading data
   void _initializePages() {
     // Always create controllers and pages for all three main tabs
@@ -85,18 +85,18 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
       _prefetchAdjacentScreens(widget.selectedIndex);
     }
   }
-  
+
   /// Prefetch data for adjacent screens to avoid skeleton flashing
   /// This ensures data starts loading before the user navigates to adjacent screens
   /// Uses a smarter approach: actually watch providers briefly to start streams,
   /// then let IndexedStack maintain the watch
   void _prefetchAdjacentScreens(int currentIndex) {
     if (!mounted) return;
-    
+
     // Use a post-frame callback to avoid blocking the UI
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       // Prefetch providers for adjacent screens
       // For StreamProviders: ref.read() gets current state, but we need to ensure
       // the stream is actually started. The IndexedStack pages will maintain the watch.
@@ -251,10 +251,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
   Widget _buildMainContent() {
     // For main navigation pages (home, accounts, budget), use IndexedStack
     // to keep all pages alive and avoid skeleton flashing
-    final isMainPage = widget.location == RoutePaths.home ||
+    final isMainPage =
+        widget.location == RoutePaths.home ||
         widget.location == RoutePaths.accounts ||
         widget.location == RoutePaths.budget;
-    
+
     if (isMainPage) {
       // Use IndexedStack to keep all three main pages alive
       // This prevents rebuilding and skeleton flashing when switching tabs
@@ -271,7 +272,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
         ],
       );
     }
-    
+
     // For other routes (settings, statistics, form pages, etc.), use the child directly
     // This allows GoRouter to handle sub-routes normally without IndexedStack
     return widget.child;
