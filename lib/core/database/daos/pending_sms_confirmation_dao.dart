@@ -92,6 +92,22 @@ class PendingSmsConfirmationDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  Future<bool> updateConfirmation(
+    PendingSmsConfirmationsCompanion confirmation,
+  ) async {
+    final id = confirmation.id.value;
+    return executeWithErrorHandling<bool>(
+      operationName: 'updateConfirmation',
+      operation: () async {
+        final result = await update(
+          db.pendingSmsConfirmations,
+        ).replace(confirmation);
+        logInfo('updateConfirmation(id=$id) updated successfully');
+        return result;
+      },
+    );
+  }
+
   Future<int> deleteConfirmation(int id) async {
     return executeWithErrorHandling<int>(
       operationName: 'deleteConfirmation',

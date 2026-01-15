@@ -29,6 +29,8 @@ class Transactions extends Table {
   TextColumn get source => text().withDefault(
     const Constant('manual'),
   )(); // 'manual' or 'sms' (validated at DAO level)
+  TextColumn get smsHash => text()
+      .nullable()(); // Hash of sender + body + date for duplicate detection
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }

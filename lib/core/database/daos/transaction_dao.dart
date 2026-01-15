@@ -280,4 +280,29 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       onError: () => 0.0,
     );
   }
+
+  /// Check if a transaction with the given SMS hash already exists
+  /// Returns the existing transaction if found, null otherwise
+  Future<Transaction?> findDuplicateBySmsHash(String smsHash) async {
+    return executeWithErrorHandling<Transaction?>(
+      operationName: 'findDuplicateBySmsHash',
+      operation: () async {
+        if (smsHash.isEmpty) {
+          return null;
+        }
+        final result =
+            await (select(db.transactions)
+                  ..where((t) => t.smsHash.equals(smsHash))
+                  ..limit(1))
+                .getSingleOrNull();
+        if (result != null) {
+          logInfo(
+            'Found duplicate transaction with smsHash=$smsHash, id=${result.id}',
+          );
+        }
+        return result;
+      },
+      onError: () => null,
+    );
+  }
 }

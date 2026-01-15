@@ -11,9 +11,6 @@ part of 'database_provider.dart';
 /// Centralized database provider for Riverpod 3.0
 /// All DAO providers should depend on this provider
 
-// Ref type definition
-typedef DatabaseRef = Ref;
-
 @ProviderFor(database)
 const databaseProvider = DatabaseProvider._();
 
@@ -58,4 +55,4 @@ final class DatabaseProvider
   }
 }
 
-String _$databaseHash() => r'9e3e9d42bfa33041c3d2a8f9096ed0f56131ccdd';
+String _$databaseHash() => r'1aba9e7cd64cc6c91417b96dd6d80cd49f7f3013';

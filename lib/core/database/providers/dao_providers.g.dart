@@ -10,16 +10,6 @@ part of 'dao_providers.dart';
 // ignore_for_file: type=lint, type=warning
 /// DAO providers - direct access to data layer without repository indirection
 
-// Ref type definitions
-typedef TransactionDaoRef = Ref;
-typedef AccountDaoRef = Ref;
-typedef CardDaoRef = Ref;
-typedef CategoryDaoRef = Ref;
-typedef BudgetDaoRef = Ref;
-typedef SmsTemplateDaoRef = Ref;
-typedef PendingSmsConfirmationDaoRef = Ref;
-typedef NotificationHistoryDaoRef = Ref;
-
 @ProviderFor(transactionDao)
 const transactionDaoProvider = TransactionDaoProvider._();
 
@@ -62,7 +52,7 @@ final class TransactionDaoProvider
   }
 }
 
-String _$transactionDaoHash() => r'6dd777ae8ce182566fa701a25581c2e6069342a2';
+String _$transactionDaoHash() => r'1b3b7f1bd1fbc425b83365d025067d036a0959c0';
 
 @ProviderFor(accountDao)
 const accountDaoProvider = AccountDaoProvider._();
@@ -103,7 +93,7 @@ final class AccountDaoProvider
   }
 }
 
-String _$accountDaoHash() => r'5dd420d7504692da1189327d8d39b85fe8ac8ba8';
+String _$accountDaoHash() => r'66177bd74c5dc7fd269b3703a294263c417ed4fb';
 
 @ProviderFor(cardDao)
 const cardDaoProvider = CardDaoProvider._();
@@ -144,7 +134,7 @@ final class CardDaoProvider
   }
 }
 
-String _$cardDaoHash() => r'80fdad4e6d8d7bd96d7eb8ed73e436be6a7cdbb1';
+String _$cardDaoHash() => r'd22eeb83504151746a218fc185da887c7bec221d';
 
 @ProviderFor(categoryDao)
 const categoryDaoProvider = CategoryDaoProvider._();
@@ -185,7 +175,7 @@ final class CategoryDaoProvider
   }
 }
 
-String _$categoryDaoHash() => r'56856da532ebc5208aa3ff3aba14ef2ec9e5efd4';
+String _$categoryDaoHash() => r'13119f0980bd19c66251f44867bce63c26786937';
 
 @ProviderFor(budgetDao)
 const budgetDaoProvider = BudgetDaoProvider._();
@@ -226,7 +216,7 @@ final class BudgetDaoProvider
   }
 }
 
-String _$budgetDaoHash() => r'89ea6f08da88803f674732100f79fb0e595c601c';
+String _$budgetDaoHash() => r'01d666cd72256a674edaeac569a74908c48656a2';
 
 @ProviderFor(smsTemplateDao)
 const smsTemplateDaoProvider = SmsTemplateDaoProvider._();
@@ -267,7 +257,7 @@ final class SmsTemplateDaoProvider
   }
 }
 
-String _$smsTemplateDaoHash() => r'79185becc84bafe6ea7f1417e37b3f775a209c03';
+String _$smsTemplateDaoHash() => r'b4bbc9d76ea5bc6978459b41ad54dbfde5c53a57';
 
 @ProviderFor(pendingSmsConfirmationDao)
 const pendingSmsConfirmationDaoProvider = PendingSmsConfirmationDaoProvider._();
@@ -315,7 +305,7 @@ final class PendingSmsConfirmationDaoProvider
 }
 
 String _$pendingSmsConfirmationDaoHash() =>
-    r'e02267112a823c976d5db56d5b5a6f4db85b2143';
+    r'f1652b0192272946d78f0eca385f3b0b9d90060e';
 
 @ProviderFor(notificationHistoryDao)
 const notificationHistoryDaoProvider = NotificationHistoryDaoProvider._();
@@ -363,4 +353,52 @@ final class NotificationHistoryDaoProvider
 }
 
 String _$notificationHistoryDaoHash() =>
-    r'25b5868191d7d86fcbfc877b61dbb5ea8a30c53a';
+    r'5b1fa2bcfa5e6e60aba8c90d2ca3e8cb2a65d53b';
+
+@ProviderFor(categoryMappingDao)
+const categoryMappingDaoProvider = CategoryMappingDaoProvider._();
+
+final class CategoryMappingDaoProvider
+    extends
+        $FunctionalProvider<
+          CategoryMappingDao,
+          CategoryMappingDao,
+          CategoryMappingDao
+        >
+    with $Provider<CategoryMappingDao> {
+  const CategoryMappingDaoProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'categoryMappingDaoProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$categoryMappingDaoHash();
+
+  @$internal
+  @override
+  $ProviderElement<CategoryMappingDao> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CategoryMappingDao create(Ref ref) {
+    return categoryMappingDao(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CategoryMappingDao value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CategoryMappingDao>(value),
+    );
+  }
+}
+
+String _$categoryMappingDaoHash() =>
+    r'e8d44f9c8dfc9ce60b99b2cbf4325d1b104d851b';

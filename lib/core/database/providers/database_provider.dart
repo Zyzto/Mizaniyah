@@ -15,6 +15,6 @@ db.AppDatabase getDatabase() {
 /// Centralized database provider for Riverpod 3.0
 /// All DAO providers should depend on this provider
 @riverpod
-db.AppDatabase database(DatabaseRef ref) {
+db.AppDatabase database(Ref ref) {
   return getDatabase();
 }

@@ -87,10 +87,7 @@ class DatabaseBatchOperations with Loggable {
       int deleted = 0;
       await _database.batch((batch) {
         for (final id in ids) {
-          batch.customStatement(
-            'DELETE FROM transactions WHERE id = ?',
-            [id],
-          );
+          batch.customStatement('DELETE FROM transactions WHERE id = ?', [id]);
           deleted++;
         }
       });
