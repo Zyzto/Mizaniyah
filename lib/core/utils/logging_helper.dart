@@ -14,11 +14,7 @@ class LoggingHelper {
     // Schedule logging on next microtask to avoid blocking
     scheduleMicrotask(() {
       try {
-        Log.info(
-          message,
-          error: error,
-          stackTrace: stackTrace,
-        );
+        Log.info(message, error: error, stackTrace: stackTrace);
       } catch (e) {
         // Silently fail - logging should never break the app
       }
@@ -45,11 +41,7 @@ class LoggingHelper {
   }) {
     scheduleMicrotask(() {
       try {
-        Log.warning(
-          message,
-          error: error,
-          stackTrace: stackTrace,
-        );
+        Log.warning(message, error: error, stackTrace: stackTrace);
       } catch (e) {
         // Silently fail
       }
@@ -65,11 +57,7 @@ class LoggingHelper {
   }) {
     scheduleMicrotask(() {
       try {
-        Log.error(
-          message,
-          error: error,
-          stackTrace: stackTrace,
-        );
+        Log.error(message, error: error, stackTrace: stackTrace);
       } catch (e) {
         // Silently fail
       }
@@ -85,11 +73,7 @@ class LoggingHelper {
   }) {
     scheduleMicrotask(() {
       try {
-        Log.severe(
-          message,
-          error: error,
-          stackTrace: stackTrace,
-        );
+        Log.severe(message, error: error, stackTrace: stackTrace);
       } catch (e) {
         // Silently fail
       }
