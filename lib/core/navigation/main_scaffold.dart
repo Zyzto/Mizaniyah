@@ -5,8 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../features/accounts/pages/accounts_page.dart';
 import '../../features/budgets/pages/budgets_page.dart';
+import '../../features/home/pages/home_page.dart';
 import '../../core/widgets/floating_nav_bar.dart';
 import '../../features/transactions/providers/transaction_providers.dart';
+import '../../features/accounts/providers/account_providers.dart';
+import '../../features/budgets/providers/budget_providers.dart';
+import '../../features/categories/providers/category_providers.dart';
+import '../../features/sms_templates/providers/sms_template_providers.dart';
+import '../../core/services/provider_cache_warming_service.dart';
 import 'route_paths.dart';
 import 'app_bars/home_app_bar.dart';
 import 'app_bars/accounts_app_bar.dart';
@@ -33,11 +39,38 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
     with TickerProviderStateMixin {
   TabController? _accountsTabController;
   TabController? _budgetTabController;
+  
+  // Keep track of the three main pages to maintain their state
+  final _homePage = const HomePage();
+  AccountsPage? _accountsPage;
+  BudgetsPage? _budgetsPage;
+  
+  // Track current index for IndexedStack
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.selectedIndex;
+    _initializePages();
     _updateTabControllers();
+    // Warm up all providers early for better performance
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ProviderCacheWarmingService.warmUpProviders(ref);
+        _prefetchAdjacentScreens(widget.selectedIndex);
+      }
+    });
+  }
+  
+  /// Initialize all main pages early to start loading data
+  void _initializePages() {
+    // Always create controllers and pages for all three main tabs
+    // This ensures data starts loading immediately
+    _accountsTabController ??= TabController(length: 2, vsync: this);
+    _budgetTabController ??= TabController(length: 2, vsync: this);
+    _accountsPage ??= AccountsPage(tabController: _accountsTabController!);
+    _budgetsPage ??= BudgetsPage(tabController: _budgetTabController!);
   }
 
   @override
@@ -46,46 +79,61 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
     if (oldWidget.location != widget.location) {
       _updateTabControllers();
     }
+    if (oldWidget.selectedIndex != widget.selectedIndex) {
+      _currentIndex = widget.selectedIndex;
+      // Prefetch data for adjacent screens when switching tabs
+      _prefetchAdjacentScreens(widget.selectedIndex);
+    }
+  }
+  
+  /// Prefetch data for adjacent screens to avoid skeleton flashing
+  /// This ensures data starts loading before the user navigates to adjacent screens
+  /// Uses a smarter approach: actually watch providers briefly to start streams,
+  /// then let IndexedStack maintain the watch
+  void _prefetchAdjacentScreens(int currentIndex) {
+    if (!mounted) return;
+    
+    // Use a post-frame callback to avoid blocking the UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
+      // Prefetch providers for adjacent screens
+      // For StreamProviders: ref.read() gets current state, but we need to ensure
+      // the stream is actually started. The IndexedStack pages will maintain the watch.
+      // For FutureProviders: ref.read() triggers the future if not already started
+      switch (currentIndex) {
+        case 0: // Home - prefetch Accounts and Budget
+          // Trigger providers to start loading (if not already)
+          // These will be watched by the IndexedStack pages, ensuring streams start
+          ref.read(accountsProvider);
+          ref.read(cardsByAccountProvider(null));
+          ref.read(activeBudgetsProvider);
+          ref.read(categoriesProvider);
+          // Also prefetch SMS-related providers for Accounts tab
+          ref.read(smsTemplatesProvider);
+          ref.read(pendingSmsConfirmationsProvider);
+          break;
+        case 1: // Accounts - prefetch Home and Budget
+          ref.read(transactionsProvider);
+          ref.read(activeBudgetsProvider);
+          ref.read(categoriesProvider);
+          break;
+        case 2: // Budget - prefetch Home and Accounts
+          ref.read(transactionsProvider);
+          ref.read(accountsProvider);
+          ref.read(cardsByAccountProvider(null));
+          // Also prefetch SMS-related providers for Accounts tab
+          ref.read(smsTemplatesProvider);
+          ref.read(pendingSmsConfirmationsProvider);
+          break;
+      }
+    });
   }
 
   void _updateTabControllers() {
-    // Dispose old controllers only if they're no longer needed
-    // Use post-frame callback to ensure widgets have finished using them
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      // Dispose accounts controller if we're not on accounts route
-      if (!widget.location.startsWith(RoutePaths.accounts) &&
-          _accountsTabController != null) {
-        try {
-          _accountsTabController!.dispose();
-        } catch (e) {
-          // Controller might already be disposed, ignore
-        }
-        _accountsTabController = null;
-      }
-
-      // Dispose budget controller if we're not on budget route
-      if (!widget.location.startsWith(RoutePaths.budget) &&
-          _budgetTabController != null) {
-        try {
-          _budgetTabController!.dispose();
-        } catch (e) {
-          // Controller might already be disposed, ignore
-        }
-        _budgetTabController = null;
-      }
-    });
-
-    // Create new controllers based on current route
-    // Accounts: 2 tabs (Accounts, SMS Templates)
-    if (widget.location.startsWith(RoutePaths.accounts)) {
-      _accountsTabController ??= TabController(length: 2, vsync: this);
-    }
-    // Budget: 2 tabs (Budgets, Categories)
-    if (widget.location.startsWith(RoutePaths.budget)) {
-      _budgetTabController ??= TabController(length: 2, vsync: this);
-    }
+    // Controllers are now always created in initState
+    // No need to dispose them as they're kept alive for IndexedStack
+    // This ensures smooth navigation without rebuilding
   }
 
   @override
@@ -107,15 +155,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
 
   @override
   Widget build(BuildContext context) {
-    // Ensure controllers exist for current route
-    if (widget.location.startsWith(RoutePaths.accounts) &&
-        _accountsTabController == null) {
-      _accountsTabController = TabController(length: 2, vsync: this);
-    }
-    if (widget.location.startsWith(RoutePaths.budget) &&
-        _budgetTabController == null) {
-      _budgetTabController = TabController(length: 2, vsync: this);
-    }
+    // Ensure pages are initialized
+    _initializePages();
 
     // Watch transactions to determine if FAB should be shown
     final transactionsAsync = ref.watch(transactionsProvider);
@@ -138,11 +179,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
           // Main content with bottom padding for floating nav bar (only if nav bar is visible)
           Padding(
             padding: EdgeInsets.only(bottom: showNavBar ? 100 : 0),
-            child: widget.location.startsWith(RoutePaths.accounts)
-                ? AccountsPage(tabController: _accountsTabController!)
-                : widget.location.startsWith(RoutePaths.budget)
-                ? BudgetsPage(tabController: _budgetTabController!)
-                : widget.child,
+            child: _buildMainContent(),
           ),
           // Floating navigation bar - only show on 3 main pages
           if (showNavBar)
@@ -187,8 +224,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
           // Floating Action Button - positioned above nav bar
           // Only show when on transactions route and there are transactions
           if (showFab)
-            Positioned(
-              right: 16,
+            PositionedDirectional(
+              end: 16,
               bottom: 100,
               child: SafeArea(
                 child: FloatingActionButton(
@@ -204,6 +241,40 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
         ],
       ),
     );
+  }
+
+  /// Build main content using IndexedStack to keep all pages alive
+  /// This is the key optimization that prevents skeleton flashing:
+  /// - All three main pages are kept alive in memory
+  /// - Pages maintain their state and scroll position
+  /// - Data providers are already loaded when switching tabs
+  Widget _buildMainContent() {
+    // For main navigation pages (home, accounts, budget), use IndexedStack
+    // to keep all pages alive and avoid skeleton flashing
+    final isMainPage = widget.location == RoutePaths.home ||
+        widget.location == RoutePaths.accounts ||
+        widget.location == RoutePaths.budget;
+    
+    if (isMainPage) {
+      // Use IndexedStack to keep all three main pages alive
+      // This prevents rebuilding and skeleton flashing when switching tabs
+      // The pages are built once and maintained in memory
+      return IndexedStack(
+        index: _currentIndex,
+        children: [
+          // Home page (index 0) - shows transactions
+          _homePage,
+          // Accounts page (index 1) - shows accounts and SMS templates
+          _accountsPage!,
+          // Budget page (index 2) - shows budgets and categories
+          _budgetsPage!,
+        ],
+      );
+    }
+    
+    // For other routes (settings, statistics, form pages, etc.), use the child directly
+    // This allows GoRouter to handle sub-routes normally without IndexedStack
+    return widget.child;
   }
 
   PreferredSizeWidget? _buildAppBar(BuildContext context, WidgetRef ref) {

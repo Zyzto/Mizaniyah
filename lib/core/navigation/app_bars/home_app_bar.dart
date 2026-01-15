@@ -17,44 +17,47 @@ PreferredSizeWidget buildHomeAppBar(
   final searchNotifier = ref.read(transactionSearchQueryProvider.notifier);
 
   // Only show actions on the main home page (not sub-routes)
-  final isMainPage = location == RoutePaths.home || location == RoutePaths.transactions;
+  final isMainPage =
+      location == RoutePaths.home || location == RoutePaths.transactions;
 
   return AppBar(
     automaticallyImplyLeading: false,
     title: const SizedBox.shrink(),
-    actions: isMainPage ? [
-      IconButton(
-        icon: const Icon(Icons.analytics_outlined),
-        tooltip: 'statistics'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          context.push(RoutePaths.statistics);
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.search),
-        tooltip: 'search'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          showSearch(
-            context: context,
-            delegate: TransactionSearchDelegate(
-              initialQuery: searchQuery,
-              onQueryChanged: (query) {
-                searchNotifier.updateQuery(query);
+    actions: isMainPage
+        ? [
+            IconButton(
+              icon: const Icon(Icons.analytics_outlined),
+              tooltip: 'statistics'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                context.push(RoutePaths.statistics);
               },
             ),
-          );
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.settings_outlined),
-        tooltip: 'settings'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          context.push(RoutePaths.settings);
-        },
-      ),
-    ] : [],
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: 'search'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                showSearch(
+                  context: context,
+                  delegate: TransactionSearchDelegate(
+                    initialQuery: searchQuery,
+                    onQueryChanged: (query) {
+                      searchNotifier.updateQuery(query);
+                    },
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'settings'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                context.push(RoutePaths.settings);
+              },
+            ),
+          ]
+        : [],
   );
 }

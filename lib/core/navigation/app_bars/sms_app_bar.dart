@@ -18,29 +18,33 @@ PreferredSizeWidget buildSmsNotificationsAppBar(
   return AppBar(
     automaticallyImplyLeading: false,
     title: const SizedBox.shrink(),
-    bottom: isMainPage ? TabBar(
-      controller: tabController,
-      tabs: [
-        Tab(
-          icon: const Icon(Icons.pending_outlined),
-          text: 'pending_confirmations'.tr(),
-        ),
-        Tab(icon: const Icon(Icons.sms_outlined), text: 'all_sms'.tr()),
-        Tab(
-          icon: const Icon(Icons.notifications_outlined),
-          text: 'notifications'.tr(),
-        ),
-      ],
-    ) : null,
-    actions: isMainPage ? [
-      IconButton(
-        icon: const Icon(Icons.settings_outlined),
-        tooltip: 'settings'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          context.push(RoutePaths.settings);
-        },
-      ),
-    ] : [],
+    bottom: isMainPage
+        ? TabBar(
+            controller: tabController,
+            tabs: [
+              Tab(
+                icon: const Icon(Icons.pending_outlined),
+                text: 'pending_confirmations'.tr(),
+              ),
+              Tab(icon: const Icon(Icons.sms_outlined), text: 'all_sms'.tr()),
+              Tab(
+                icon: const Icon(Icons.notifications_outlined),
+                text: 'notifications'.tr(),
+              ),
+            ],
+          )
+        : null,
+    actions: isMainPage
+        ? [
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'settings'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                context.push(RoutePaths.settings);
+              },
+            ),
+          ]
+        : [],
   );
 }

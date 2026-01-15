@@ -17,19 +17,21 @@ PreferredSizeWidget buildBudgetAppBar(
     automaticallyImplyLeading: false,
     title: const SizedBox.shrink(),
     toolbarHeight: 0,
-    bottom: isMainPage ? TabBar(
-      controller: tabController,
-      tabs: [
-        Tab(
-          icon: const Icon(Icons.account_balance_outlined),
-          text: 'budgets'.tr(),
-        ),
-        Tab(
-          icon: const Icon(Icons.category_outlined),
-          text: 'categories'.tr(),
-        ),
-      ],
-    ) : null,
-    actions: [],
+    bottom: isMainPage
+        ? TabBar(
+            controller: tabController,
+            tabs: [
+              Tab(
+                icon: const Icon(Icons.account_balance_outlined),
+                text: 'budgets'.tr(),
+              ),
+              Tab(
+                icon: const Icon(Icons.category_outlined),
+                text: 'categories'.tr(),
+              ),
+            ],
+          )
+        : null,
+    actions: const [],
   );
 }

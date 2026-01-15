@@ -24,80 +24,82 @@ PreferredSizeWidget buildTransactionsAppBar(
   return AppBar(
     automaticallyImplyLeading: false,
     title: const SizedBox.shrink(),
-    actions: isMainPage ? [
-      IconButton(
-        icon: const Icon(Icons.category_outlined),
-        tooltip: 'categories'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          context.push(RoutePaths.categories);
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.analytics_outlined),
-        tooltip: 'statistics'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          context.push(RoutePaths.statistics);
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.search),
-        tooltip: 'search'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          showSearch(
-            context: context,
-            delegate: TransactionSearchDelegate(
-              initialQuery: searchQuery,
-              onQueryChanged: (query) {
-                searchNotifier.updateQuery(query);
+    actions: isMainPage
+        ? [
+            IconButton(
+              icon: const Icon(Icons.category_outlined),
+              tooltip: 'categories'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                context.push(RoutePaths.categories);
               },
             ),
-          );
-        },
-      ),
-      PopupMenuButton<String>(
-        onSelected: (value) {
-          HapticFeedback.lightImpact();
-          if (value == 'export_transactions') {
-            _exportTransactions(context, ref);
-          } else if (value == 'export_all') {
-            _exportAll(context, ref);
-          }
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'export_transactions',
-            child: Row(
-              children: [
-                const Icon(Icons.file_download),
-                const SizedBox(width: 8),
-                Text('export_transactions'.tr()),
+            IconButton(
+              icon: const Icon(Icons.analytics_outlined),
+              tooltip: 'statistics'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                context.push(RoutePaths.statistics);
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: 'search'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                showSearch(
+                  context: context,
+                  delegate: TransactionSearchDelegate(
+                    initialQuery: searchQuery,
+                    onQueryChanged: (query) {
+                      searchNotifier.updateQuery(query);
+                    },
+                  ),
+                );
+              },
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                HapticFeedback.lightImpact();
+                if (value == 'export_transactions') {
+                  _exportTransactions(context, ref);
+                } else if (value == 'export_all') {
+                  _exportAll(context, ref);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'export_transactions',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.file_download),
+                      const SizedBox(width: 8),
+                      Text('export_transactions'.tr()),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'export_all',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.download),
+                      const SizedBox(width: 8),
+                      Text('export_all'.tr()),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-          PopupMenuItem(
-            value: 'export_all',
-            child: Row(
-              children: [
-                const Icon(Icons.download),
-                const SizedBox(width: 8),
-                Text('export_all'.tr()),
-              ],
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'settings'.tr(),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                context.push(RoutePaths.settings);
+              },
             ),
-          ),
-        ],
-      ),
-      IconButton(
-        icon: const Icon(Icons.settings_outlined),
-        tooltip: 'settings'.tr(),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          context.push(RoutePaths.settings);
-        },
-      ),
-    ] : [],
+          ]
+        : [],
   );
 }
 

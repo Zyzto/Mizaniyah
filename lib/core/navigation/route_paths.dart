@@ -5,10 +5,11 @@ class RoutePaths {
   static const String home = '/home';
   static const String accounts = '/accounts';
   static const String budget = '/budget';
-  
+
   // Legacy/alias for backward compatibility
   static const String transactions = '/home'; // Home defaults to transactions
-  static const String smsNotifications = '/accounts'; // SMS Templates is in Accounts tab
+  static const String smsNotifications =
+      '/accounts'; // SMS Templates is in Accounts tab
 
   // Transactions
   static const String transactionsAdd = '/transactions/add';

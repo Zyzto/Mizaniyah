@@ -17,19 +17,18 @@ PreferredSizeWidget buildAccountsAppBar(
     automaticallyImplyLeading: false,
     title: const SizedBox.shrink(),
     toolbarHeight: 0,
-    bottom: isMainPage ? TabBar(
-      controller: tabController,
-      tabs: [
-        Tab(
-          icon: const Icon(Icons.account_balance_wallet_outlined),
-          text: 'accounts'.tr(),
-        ),
-        Tab(
-          icon: const Icon(Icons.sms_outlined),
-          text: 'sms'.tr(),
-        ),
-      ],
-    ) : null,
-    actions: [],
+    bottom: isMainPage
+        ? TabBar(
+            controller: tabController,
+            tabs: [
+              Tab(
+                icon: const Icon(Icons.account_balance_wallet_outlined),
+                text: 'accounts'.tr(),
+              ),
+              Tab(icon: const Icon(Icons.sms_outlined), text: 'sms'.tr()),
+            ],
+          )
+        : null,
+    actions: const [],
   );
 }
