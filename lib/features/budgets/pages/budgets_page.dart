@@ -15,16 +15,17 @@ import '../../../core/navigation/route_paths.dart';
 class BudgetsPage extends ConsumerStatefulWidget {
   final TabController tabController;
 
-  const BudgetsPage({
-    super.key,
-    required this.tabController,
-  });
+  const BudgetsPage({super.key, required this.tabController});
 
   @override
   ConsumerState<BudgetsPage> createState() => _BudgetsPageState();
 }
 
-class _BudgetsPageState extends ConsumerState<BudgetsPage> {
+class _BudgetsPageState extends ConsumerState<BudgetsPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
@@ -43,21 +44,21 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final currentTabIndex = widget.tabController.index;
-    
+
     return Stack(
       children: [
         TabBarView(
           controller: widget.tabController,
-          children: [
-            _buildBudgetsTab(),
-            const CategoriesTab(),
-          ],
+          children: [_buildBudgetsTab(), const CategoriesTab()],
         ),
         // FAB for budgets tab
-        if (currentTabIndex == 0) ...(_buildBudgetsFab() != null ? [_buildBudgetsFab()!] : []),
+        if (currentTabIndex == 0)
+          ...(_buildBudgetsFab() != null ? [_buildBudgetsFab()!] : []),
         // FAB for categories tab
-        if (currentTabIndex == 1) ...(_buildCategoriesFab() != null ? [_buildCategoriesFab()!] : []),
+        if (currentTabIndex == 1)
+          ...(_buildCategoriesFab() != null ? [_buildCategoriesFab()!] : []),
       ],
     );
   }
@@ -102,11 +103,11 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage> {
 
   Widget? _buildBudgetsFab() {
     final budgetsAsync = ref.watch(activeBudgetsProvider);
-    
+
     return budgetsAsync.maybeWhen(
       data: (budgets) {
         if (budgets.isEmpty) return null; // Hide FAB when empty
-        
+
         return Positioned(
           bottom: 100, // Position above floating nav bar
           right: 16,
@@ -128,11 +129,11 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage> {
 
   Widget? _buildCategoriesFab() {
     final categoriesAsync = ref.watch(categoriesProvider);
-    
+
     return categoriesAsync.maybeWhen(
       data: (categories) {
         if (categories.isEmpty) return null; // Hide FAB when empty
-        
+
         return Positioned(
           bottom: 100, // Position above floating nav bar
           right: 16,

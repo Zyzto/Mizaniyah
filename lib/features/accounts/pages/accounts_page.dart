@@ -16,25 +16,23 @@ import '../../../core/navigation/route_paths.dart';
 class AccountsPage extends ConsumerStatefulWidget {
   final TabController tabController;
 
-  const AccountsPage({
-    super.key,
-    required this.tabController,
-  });
+  const AccountsPage({super.key, required this.tabController});
 
   @override
   ConsumerState<AccountsPage> createState() => _AccountsPageState();
 }
 
-class _AccountsPageState extends ConsumerState<AccountsPage> {
+class _AccountsPageState extends ConsumerState<AccountsPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return TabBarView(
       controller: widget.tabController,
-      children: [
-        _buildAccountsTab(),
-        const SmsTemplatesTab(),
-      ],
+      children: [_buildAccountsTab(), const SmsTemplatesTab()],
     );
   }
 
@@ -65,30 +63,33 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
                       // Accounts with cards
-                      ...accounts.map((account) => AccountItem(
-                            account: account,
-                            onAccountTap: () {
-                              HapticFeedback.lightImpact();
-                              context.push('/accounts/${account.id}/edit');
-                            },
-                            onAddCard: () {
-                              HapticFeedback.lightImpact();
-                              context.push('/accounts/${account.id}/card/add');
-                            },
-                          )),
+                      ...accounts.map(
+                        (account) => AccountItem(
+                          account: account,
+                          onAccountTap: () {
+                            HapticFeedback.lightImpact();
+                            context.push('/accounts/${account.id}/edit');
+                          },
+                          onAddCard: () {
+                            HapticFeedback.lightImpact();
+                            context.push('/accounts/${account.id}/card/add');
+                          },
+                        ),
+                      ),
                       // Cards without account
                       if (hasCardsWithoutAccount) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                           child: Text(
                             'cards_without_account'.tr(),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
                         ...cardsWithoutAccount.map((card) {
-                          final cardStatsAsync = ref.watch(cardStatisticsProvider(card.id));
+                          final cardStatsAsync = ref.watch(
+                            cardStatisticsProvider(card.id),
+                          );
                           return cardStatsAsync.when(
                             data: (stats) => AccountCard(
                               card: card,
@@ -103,7 +104,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                             error: (error, stack) => ErrorState(
                               title: 'error_loading_card_stats'.tr(),
                               message: error.toString(),
-                              onRetry: () => ref.invalidate(cardStatisticsProvider(card.id)),
+                              onRetry: () => ref.invalidate(
+                                cardStatisticsProvider(card.id),
+                              ),
                             ),
                           );
                         }),

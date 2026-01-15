@@ -41,10 +41,7 @@ List<RouteBase> getCategoryFormRoutes() {
 class CategoryFormPageLoader extends StatelessWidget {
   final int categoryId;
 
-  const CategoryFormPageLoader({
-    super.key,
-    required this.categoryId,
-  });
+  const CategoryFormPageLoader({super.key, required this.categoryId});
 
   @override
   Widget build(BuildContext context) {

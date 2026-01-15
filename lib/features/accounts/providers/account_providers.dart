@@ -31,14 +31,20 @@ final activeAccountsProvider = Provider<AsyncValue<List<db.Account>>>((ref) {
 });
 
 /// Provider for a specific account by ID - kept alive
-final accountProvider = FutureProvider.family<db.Account?, int>((ref, accountId) async {
+final accountProvider = FutureProvider.family<db.Account?, int>((
+  ref,
+  accountId,
+) async {
   ref.keepAlive();
   final dao = ref.watch(accountDaoProvider);
   return await dao.getAccountById(accountId);
 });
 
 /// Stream provider for cards by account ID - persisted and reactive
-final cardsByAccountProvider = StreamProvider.family<List<db.Card>, int?>((ref, accountId) async* {
+final cardsByAccountProvider = StreamProvider.family<List<db.Card>, int?>((
+  ref,
+  accountId,
+) async* {
   ref.keepAlive();
   final cardDao = ref.watch(cardDaoProvider);
   try {

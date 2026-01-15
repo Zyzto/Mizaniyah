@@ -20,7 +20,11 @@ class CategoriesTab extends ConsumerStatefulWidget {
   ConsumerState<CategoriesTab> createState() => _CategoriesTabState();
 }
 
-class _CategoriesTabState extends ConsumerState<CategoriesTab> {
+class _CategoriesTabState extends ConsumerState<CategoriesTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool _isEditMode = false;
   final Set<int> _selectedCategoryIds = <int>{};
 
@@ -46,6 +50,7 @@ class _CategoriesTabState extends ConsumerState<CategoriesTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final categoriesAsync = ref.watch(categoriesProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
 
@@ -65,9 +70,7 @@ class _CategoriesTabState extends ConsumerState<CategoriesTab> {
           data: (transactions) {
             final theme = Theme.of(context);
             // Group categories by predefined vs custom
-            final predefined = categories
-                .where((c) => c.isPredefined)
-                .toList();
+            final predefined = categories.where((c) => c.isPredefined).toList();
             final custom = categories.where((c) => !c.isPredefined).toList();
 
             return ListView(
@@ -93,7 +96,8 @@ class _CategoriesTabState extends ConsumerState<CategoriesTab> {
                         onTap: () => _navigateToEdit(context, category),
                         isEditMode: _isEditMode,
                         isSelected: _selectedCategoryIds.contains(category.id),
-                        onSelectionChanged: (selected) => _toggleSelection(category.id),
+                        onSelectionChanged: (selected) =>
+                            _toggleSelection(category.id),
                       ),
                     );
                   }),
@@ -119,7 +123,8 @@ class _CategoriesTabState extends ConsumerState<CategoriesTab> {
                         onTap: () => _navigateToEdit(context, category),
                         isEditMode: _isEditMode,
                         isSelected: _selectedCategoryIds.contains(category.id),
-                        onSelectionChanged: (selected) => _toggleSelection(category.id),
+                        onSelectionChanged: (selected) =>
+                            _toggleSelection(category.id),
                       ),
                     );
                   }),

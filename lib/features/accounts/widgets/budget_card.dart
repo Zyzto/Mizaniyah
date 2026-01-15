@@ -5,8 +5,8 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/category_translations.dart';
-import '../../budgets/providers/budget_providers.dart';
 import '../../categories/providers/category_providers.dart';
+import '../../../core/services/providers/budget_service_provider.dart';
 
 class BudgetCard extends ConsumerWidget {
   final db.Budget budget;
@@ -32,7 +32,7 @@ class BudgetCard extends ConsumerWidget {
 
     // Calculate spent and remaining in parallel to avoid nested FutureBuilders
     // Memoize the future to prevent recalculation on every rebuild
-    final budgetFuture = Future.wait([
+    final budgetFuture = Future.wait<double>([
       budgetService.calculateSpentAmount(budget),
       budgetService.calculateRemainingBudget(budget),
     ]).then((results) => (spent: results[0], remaining: results[1]));
@@ -41,9 +41,9 @@ class BudgetCard extends ConsumerWidget {
       future: budgetFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: const Padding(
+          return const Card(
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Padding(
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),
             ),

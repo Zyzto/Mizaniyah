@@ -15,11 +15,7 @@ class CardFormPage extends ConsumerStatefulWidget {
   final int? accountId; // Account to add card to (null for standalone card)
   final db.Card? card; // Card to edit (if editing)
 
-  const CardFormPage({
-    super.key,
-    this.accountId,
-    this.card,
-  });
+  const CardFormPage({super.key, this.accountId, this.card});
 
   @override
   ConsumerState<CardFormPage> createState() => _CardFormPageState();
@@ -56,9 +52,7 @@ class _CardFormPageState extends ConsumerState<CardFormPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.card == null ? 'add_card'.tr() : 'edit_card'.tr(),
-        ),
+        title: Text(widget.card == null ? 'add_card'.tr() : 'edit_card'.tr()),
       ),
       body: Form(
         key: _formKey,
@@ -132,9 +126,7 @@ class _CardFormPageState extends ConsumerState<CardFormPage> {
               textInputAction: TextInputAction.done,
               maxLength: 4,
               semanticLabel: 'last_4_digits'.tr(),
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'last_4_digits_required'.tr();
@@ -209,10 +201,7 @@ class _CardFormPageState extends ConsumerState<CardFormPage> {
     } catch (e) {
       if (!mounted || !context.mounted) return;
       HapticFeedback.heavyImpact();
-      ErrorSnackbar.show(
-        context,
-        'card_save_failed'.tr(args: [e.toString()]),
-      );
+      ErrorSnackbar.show(context, 'card_save_failed'.tr(args: [e.toString()]));
     } finally {
       if (mounted) {
         setState(() {

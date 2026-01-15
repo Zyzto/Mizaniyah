@@ -61,7 +61,9 @@ class _AccountItemState extends ConsumerState<AccountItem> {
                   },
                 ),
                 IconButton(
-                  icon: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
+                  icon: Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  ),
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     setState(() {
@@ -94,7 +96,9 @@ class _AccountItemState extends ConsumerState<AccountItem> {
                 }
                 return Column(
                   children: cards.map((card) {
-                    final cardStatsAsync = ref.watch(cardStatisticsProvider(card.id));
+                    final cardStatsAsync = ref.watch(
+                      cardStatisticsProvider(card.id),
+                    );
                     return cardStatsAsync.when(
                       data: (stats) => CardItem(
                         card: card,

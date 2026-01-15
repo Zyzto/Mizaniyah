@@ -130,9 +130,7 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.category == null
-              ? 'new_category'.tr()
-              : 'edit_category'.tr(),
+          widget.category == null ? 'new_category'.tr() : 'edit_category'.tr(),
         ),
       ),
       body: Form(
@@ -165,7 +163,10 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
               ),
               title: Text('icon'.tr()),
               subtitle: Text(_selectedIconName ?? 'none'.tr()),
-              trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant,
+              ),
               onTap: () async {
                 HapticFeedback.lightImpact();
                 final iconName = await showDialog<String?>(
@@ -194,7 +195,10 @@ class _CategoryFormPageState extends ConsumerState<CategoryFormPage> {
               subtitle: Text(
                 '#${_selectedColor.toRadixString(16).padLeft(8, '0').toUpperCase()}',
               ),
-              trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant,
+              ),
               onTap: () async {
                 HapticFeedback.lightImpact();
                 final colorValue = await showDialog<int>(

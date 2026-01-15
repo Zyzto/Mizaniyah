@@ -72,10 +72,7 @@ class _BudgetsPageLoaderState extends State<BudgetsPageLoader>
 class BudgetFormPageLoader extends StatelessWidget {
   final int budgetId;
 
-  const BudgetFormPageLoader({
-    super.key,
-    required this.budgetId,
-  });
+  const BudgetFormPageLoader({super.key, required this.budgetId});
 
   @override
   Widget build(BuildContext context) {

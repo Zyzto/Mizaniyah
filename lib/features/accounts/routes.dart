@@ -13,7 +13,8 @@ List<RouteBase> getAccountRoutes() {
   return [
     GoRoute(
       path: RoutePaths.accounts,
-      builder: (context, state) => const SizedBox.shrink(), // Handled by MainScaffold
+      builder: (context, state) =>
+          const SizedBox.shrink(), // Handled by MainScaffold
     ),
   ];
 }
@@ -61,10 +62,7 @@ List<RouteBase> getAccountFormRoutes() {
 class AccountFormPageLoader extends StatelessWidget {
   final int accountId;
 
-  const AccountFormPageLoader({
-    super.key,
-    required this.accountId,
-  });
+  const AccountFormPageLoader({super.key, required this.accountId});
 
   @override
   Widget build(BuildContext context) {
@@ -100,10 +98,7 @@ class AccountFormPageLoader extends StatelessWidget {
 class CardFormPageLoader extends StatelessWidget {
   final int cardId;
 
-  const CardFormPageLoader({
-    super.key,
-    required this.cardId,
-  });
+  const CardFormPageLoader({super.key, required this.cardId});
 
   @override
   Widget build(BuildContext context) {

@@ -115,7 +115,9 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
                   items: categories.map((category) {
                     return DropdownMenuItem<int>(
                       value: category.id,
-                      child: Text(CategoryTranslations.getTranslatedName(category)),
+                      child: Text(
+                        CategoryTranslations.getTranslatedName(category),
+                      ),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -217,7 +219,9 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
               EnhancedTextFormField(
                 labelText: 'rollover_percentage'.tr(),
                 hintText: '100.0',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 textInputAction: TextInputAction.next,
                 semanticLabel: 'rollover_percentage'.tr(),
                 inputFormatters: [
@@ -229,7 +233,9 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
                       return 'percentage_required'.tr();
                     }
                     final percentage = double.tryParse(value);
-                    if (percentage == null || percentage < 0 || percentage > 100) {
+                    if (percentage == null ||
+                        percentage < 0 ||
+                        percentage > 100) {
                       return 'percentage_range'.tr();
                     }
                     _rolloverPercentage = percentage;
@@ -334,7 +340,10 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
     } catch (e) {
       if (!mounted || !context.mounted) return;
       HapticFeedback.heavyImpact();
-      ErrorSnackbar.show(context, 'budget_save_failed'.tr(args: [e.toString()]));
+      ErrorSnackbar.show(
+        context,
+        'budget_save_failed'.tr(args: [e.toString()]),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -387,7 +396,10 @@ class _BudgetFormPageState extends ConsumerState<BudgetFormPage> {
     } catch (e) {
       if (!mounted || !context.mounted) return;
       HapticFeedback.heavyImpact();
-      ErrorSnackbar.show(context, 'budget_delete_failed'.tr(args: [e.toString()]));
+      ErrorSnackbar.show(
+        context,
+        'budget_delete_failed'.tr(args: [e.toString()]),
+      );
     }
   }
 }

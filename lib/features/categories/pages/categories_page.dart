@@ -67,7 +67,9 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
             ? Text(
                 _selectedCategoryIds.isEmpty
                     ? 'select_items'.tr()
-                    : 'selected_count'.tr(args: [_selectedCategoryIds.length.toString()]),
+                    : 'selected_count'.tr(
+                        args: [_selectedCategoryIds.length.toString()],
+                      ),
               )
             : Text('categories'.tr()),
         automaticallyImplyLeading: false,
@@ -116,7 +118,7 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                   .where((c) => c.isPredefined)
                   .toList();
               final custom = categories.where((c) => !c.isPredefined).toList();
-              
+
               // Sort custom categories by sortOrder, then by createdAt
               custom.sort((a, b) {
                 final orderCompare = a.sortOrder.compareTo(b.sortOrder);
@@ -154,8 +156,11 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                 transactionCount: transactionCount,
                                 onTap: () => _navigateToEdit(context, category),
                                 isEditMode: _isEditMode,
-                                isSelected: _selectedCategoryIds.contains(category.id),
-                                onSelectionChanged: (selected) => _toggleSelection(category.id),
+                                isSelected: _selectedCategoryIds.contains(
+                                  category.id,
+                                ),
+                                onSelectionChanged: (selected) =>
+                                    _toggleSelection(category.id),
                               ),
                             );
                           }),
@@ -180,8 +185,11 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
                                 transactionCount: transactionCount,
                                 onTap: () => _navigateToEdit(context, category),
                                 isEditMode: _isEditMode,
-                                isSelected: _selectedCategoryIds.contains(category.id),
-                                onSelectionChanged: (selected) => _toggleSelection(category.id),
+                                isSelected: _selectedCategoryIds.contains(
+                                  category.id,
+                                ),
+                                onSelectionChanged: (selected) =>
+                                    _toggleSelection(category.id),
                               ),
                             );
                           }),
@@ -223,7 +231,6 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
     HapticFeedback.lightImpact();
     context.push('/categories/${category.id}/edit');
   }
-
 
   Widget _buildReorderableList(
     BuildContext context,
@@ -289,32 +296,24 @@ class _CategoriesPageState extends ConsumerState<CategoriesPage> {
       }
     } catch (e) {
       if (mounted) {
-        ErrorSnackbar.show(
-          context,
-          'failed_to_update_order'.tr(),
-        );
+        ErrorSnackbar.show(context, 'failed_to_update_order'.tr());
       }
     }
   }
 
-  Future<void> _bulkDelete(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _bulkDelete(BuildContext context, WidgetRef ref) async {
     if (_selectedCategoryIds.isEmpty) return;
 
     // Check if any selected categories are used in transactions
     final transactions = await ref.read(transactionsProvider.future);
-    final usedCategories = _selectedCategoryIds.where((id) =>
-        transactions.any((t) => t.categoryId == id)).toList();
+    final usedCategories = _selectedCategoryIds
+        .where((id) => transactions.any((t) => t.categoryId == id))
+        .toList();
 
     if (usedCategories.isNotEmpty) {
       if (context.mounted) {
         HapticFeedback.mediumImpact();
-        ErrorSnackbar.show(
-          context,
-          'category_in_use'.tr(),
-        );
+        ErrorSnackbar.show(context, 'category_in_use'.tr());
       }
       return;
     }

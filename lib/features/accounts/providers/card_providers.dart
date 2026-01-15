@@ -47,8 +47,10 @@ final cardProvider = FutureProvider.family<db.Card?, int>((ref, id) async {
 });
 
 /// Provider for card statistics (transaction count and total spent) - kept alive
-final cardStatisticsProvider =
-    FutureProvider.family<CardStatistics, int>((ref, cardId) async {
+final cardStatisticsProvider = FutureProvider.family<CardStatistics, int>((
+  ref,
+  cardId,
+) async {
   ref.keepAlive();
   final transactionDao = ref.watch(transactionDaoProvider);
   try {

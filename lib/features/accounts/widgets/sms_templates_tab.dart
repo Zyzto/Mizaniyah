@@ -26,7 +26,10 @@ class SmsTemplatesTab extends ConsumerStatefulWidget {
 }
 
 class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   late TabController _tabController;
   bool _isIOS = false;
 
@@ -37,10 +40,7 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
     _isIOS = !kIsWeb && Platform.isIOS;
     // On iOS: Pending, Templates, and Notifications (3 tabs, no SMS reading)
     // On Android: Pending, Templates, SMS, and Notifications (4 tabs)
-    _tabController = TabController(
-      length: _isIOS ? 3 : 4,
-      vsync: this,
-    );
+    _tabController = TabController(length: _isIOS ? 3 : 4, vsync: this);
   }
 
   @override
@@ -51,6 +51,7 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Column(
       children: [
         TabBar(
@@ -67,10 +68,7 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
               text: 'sms_templates'.tr(),
             ),
             if (!_isIOS)
-              Tab(
-                icon: const Icon(Icons.sms_outlined),
-                text: 'all_sms'.tr(),
-              ),
+              Tab(icon: const Icon(Icons.sms_outlined), text: 'all_sms'.tr()),
             Tab(
               icon: const Icon(Icons.notifications_outlined),
               text: 'notifications'.tr(),
@@ -123,8 +121,8 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
                   Text(
                     'sms_templates'.tr(),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.add),
@@ -135,7 +133,9 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
               ),
             ),
             // Template cards
-            ...templates.map((template) => _buildTemplateCard(context, template)),
+            ...templates.map(
+              (template) => _buildTemplateCard(context, template),
+            ),
           ],
         );
       },
@@ -150,10 +150,7 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
 
   Widget _buildTemplateCard(BuildContext context, db.SmsTemplate template) {
     return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -258,8 +255,8 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
                     child: Text(
                       'test_template'.tr(),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(

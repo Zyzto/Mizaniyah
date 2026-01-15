@@ -115,9 +115,7 @@ class IconPickerDialog extends StatelessWidget {
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
-                        color: isSelected
-                            ? colorScheme.primaryContainer
-                            : null,
+                        color: isSelected ? colorScheme.primaryContainer : null,
                       ),
                       child: Icon(
                         icon,

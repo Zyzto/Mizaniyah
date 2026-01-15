@@ -54,8 +54,8 @@ class CardItem extends StatelessWidget {
                     Text(
                       '****${card.last4Digits}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -71,8 +71,8 @@ class CardItem extends StatelessWidget {
                   Text(
                     CurrencyFormatter.formatCompact(totalSpent),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),

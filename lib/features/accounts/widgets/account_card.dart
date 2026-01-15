@@ -70,9 +70,8 @@ class AccountCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${'total_spent'.tr()}: ${CurrencyFormatter.formatCompact(totalSpent)}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
