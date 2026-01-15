@@ -52,7 +52,7 @@ void main() async {
   // Initialize logging service
   try {
     await LoggingService.init(
-      LoggingConfig(
+      const LoggingConfig(
         appName: 'Mizaniyah',
         logFileName: 'mizaniyah.log',
         crashLogFileName: 'mizaniyah_crashes.log',

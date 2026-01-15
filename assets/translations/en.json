@@ -412,5 +412,18 @@
   "normal": "Normal",
   "large": "Large",
   "extra_large": "Extra Large",
-  "sms_message": "SMS Message"
+  "sms_message": "SMS Message",
+  "US Dollar": "US Dollar",
+  "Euro": "Euro",
+  "British Pound": "British Pound",
+  "Japanese Yen": "Japanese Yen",
+  "Australian Dollar": "Australian Dollar",
+  "Canadian Dollar": "Canadian Dollar",
+  "Swiss Franc": "Swiss Franc",
+  "Chinese Yuan": "Chinese Yuan",
+  "Indian Rupee": "Indian Rupee",
+  "Singapore Dollar": "Singapore Dollar",
+  "UAE Dirham": "UAE Dirham",
+  "Saudi Riyal": "Saudi Riyal",
+  "Egyptian Pound": "Egyptian Pound"
 }
