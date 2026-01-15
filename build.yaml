@@ -1,0 +1,11 @@
+targets:
+  $default:
+    builders:
+      riverpod_generator|riverpod_generator:
+        enabled: true
+        options:
+          # Generate providers with .autoDispose by default
+          # Set to false if you want to keep providers alive
+          auto_dispose: false
+      drift_dev|drift_dev:
+        enabled: true

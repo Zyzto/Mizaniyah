@@ -36,7 +36,7 @@ void main() {
     test('calculateRemainingBudget returns correct remaining amount', () async {
       // Create a category
       final categoryId = await categoryDao.insertCategory(
-        db.CategoriesCompanion(
+        const db.CategoriesCompanion(
           name: drift.Value('Test Category'),
           color: drift.Value(0xFF000000),
         ),
@@ -46,7 +46,7 @@ void main() {
       final budgetId = await budgetDao.insertBudget(
         db.BudgetsCompanion(
           categoryId: drift.Value(categoryId),
-          amount: drift.Value(1000.0),
+          amount: const drift.Value(1000.0),
           period: const drift.Value('monthly'),
           startDate: drift.Value(DateTime(2024, 1, 1)),
         ),
@@ -67,7 +67,7 @@ void main() {
       () async {
         // Create a category
         final categoryId = await categoryDao.insertCategory(
-          db.CategoriesCompanion(
+          const db.CategoriesCompanion(
             name: drift.Value('Test Category'),
             color: drift.Value(0xFF000000),
           ),
@@ -77,7 +77,7 @@ void main() {
         final budgetId = await budgetDao.insertBudget(
           db.BudgetsCompanion(
             categoryId: drift.Value(categoryId),
-            amount: drift.Value(1000.0),
+            amount: const drift.Value(1000.0),
             period: const drift.Value('monthly'),
             startDate: drift.Value(DateTime(2024, 1, 1)),
           ),
@@ -93,9 +93,9 @@ void main() {
         // Add transaction that uses 50% of budget
         await transactionDao.insertTransaction(
           db.TransactionsCompanion(
-            amount: drift.Value(500.0),
+            amount: const drift.Value(500.0),
             currencyCode: const drift.Value('USD'),
-            storeName: drift.Value('Test Store'),
+            storeName: const drift.Value('Test Store'),
             categoryId: drift.Value(categoryId),
             date: drift.Value(DateTime.now()),
           ),
@@ -108,9 +108,9 @@ void main() {
         // Add more to reach 80%
         await transactionDao.insertTransaction(
           db.TransactionsCompanion(
-            amount: drift.Value(300.0),
+            amount: const drift.Value(300.0),
             currencyCode: const drift.Value('USD'),
-            storeName: drift.Value('Test Store 2'),
+            storeName: const drift.Value('Test Store 2'),
             categoryId: drift.Value(categoryId),
             date: drift.Value(DateTime.now()),
           ),
@@ -123,9 +123,9 @@ void main() {
         // Add more to exceed budget
         await transactionDao.insertTransaction(
           db.TransactionsCompanion(
-            amount: drift.Value(300.0),
+            amount: const drift.Value(300.0),
             currencyCode: const drift.Value('USD'),
-            storeName: drift.Value('Test Store 3'),
+            storeName: const drift.Value('Test Store 3'),
             categoryId: drift.Value(categoryId),
             date: drift.Value(DateTime.now()),
           ),
