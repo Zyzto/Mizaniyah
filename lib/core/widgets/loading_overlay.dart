@@ -17,7 +17,7 @@ class LoadingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Stack(
       children: [
         child,
@@ -32,15 +32,10 @@ class LoadingOverlay extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(
-                        color: colorScheme.primary,
-                      ),
+                      CircularProgressIndicator(color: colorScheme.primary),
                       if (message != null) ...[
                         const SizedBox(height: 16),
-                        Text(
-                          message!,
-                          style: theme.textTheme.bodyMedium,
-                        ),
+                        Text(message!, style: theme.textTheme.bodyMedium),
                       ],
                     ],
                   ),

@@ -6,10 +6,7 @@ class CurrencyFormatter {
   /// Format amount with currency code
   /// Example: format(100.5, 'USD') -> "100.50 USD"
   static String format(double amount, String currencyCode) {
-    final formatter = NumberFormat.currency(
-      symbol: '',
-      decimalDigits: 2,
-    );
+    final formatter = NumberFormat.currency(symbol: '', decimalDigits: 2);
     return '${formatter.format(amount)} $currencyCode';
   }
 
@@ -24,10 +21,7 @@ class CurrencyFormatter {
   /// Format amount for compact display (no currency code)
   /// Example: formatCompact(100.5) -> "100.50"
   static String formatCompact(double amount) {
-    final formatter = NumberFormat.currency(
-      symbol: '',
-      decimalDigits: 2,
-    );
+    final formatter = NumberFormat.currency(symbol: '', decimalDigits: 2);
     return formatter.format(amount);
   }
 }

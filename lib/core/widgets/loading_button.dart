@@ -39,10 +39,7 @@ class _LoadingButtonState extends State<LoadingButton>
       duration: const Duration(milliseconds: 150),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -70,20 +67,27 @@ class _LoadingButtonState extends State<LoadingButton>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final buttonStyle = widget.style ??
+    final buttonStyle =
+        widget.style ??
         (widget.isDestructive
             ? FilledButton.styleFrom(
                 backgroundColor: colorScheme.error,
                 foregroundColor: colorScheme.onError,
                 minimumSize: const Size(double.infinity, 48),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               )
             : FilledButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

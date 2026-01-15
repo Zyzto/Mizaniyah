@@ -6,10 +6,7 @@ class Memoizer<K, V> {
   final LinkedHashMap<K, V> _cache;
   final int? maxSize;
 
-  Memoizer(
-    this._compute, {
-    this.maxSize,
-  }) : _cache = LinkedHashMap<K, V>();
+  Memoizer(this._compute, {this.maxSize}) : _cache = LinkedHashMap<K, V>();
 
   /// Get or compute the value for the given key
   V get(K key) {

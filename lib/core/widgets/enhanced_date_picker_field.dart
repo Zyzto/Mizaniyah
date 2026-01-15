@@ -49,10 +49,7 @@ class _EnhancedDatePickerFieldState extends State<EnhancedDatePickerField>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _validate();
   }
@@ -93,9 +90,9 @@ class _EnhancedDatePickerFieldState extends State<EnhancedDatePickerField>
       helpText: widget.labelText ?? 'Select date',
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme,
-          ),
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: Theme.of(context).colorScheme),
           child: child!,
         );
       },
@@ -141,8 +138,8 @@ class _EnhancedDatePickerFieldState extends State<EnhancedDatePickerField>
                     color: _hasError
                         ? colorScheme.error
                         : _selectedDate != null
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
                   ),
                   errorText: _errorText,
                   errorMaxLines: 2,
@@ -160,23 +157,19 @@ class _EnhancedDatePickerFieldState extends State<EnhancedDatePickerField>
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: _hasError ? colorScheme.error : colorScheme.primary,
+                      color: _hasError
+                          ? colorScheme.error
+                          : colorScheme.primary,
                       width: 2,
                     ),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: colorScheme.error,
-                      width: 2,
-                    ),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: colorScheme.error,
-                      width: 2,
-                    ),
+                    borderSide: BorderSide(color: colorScheme.error, width: 2),
                   ),
                   filled: true,
                   fillColor: colorScheme.surface,

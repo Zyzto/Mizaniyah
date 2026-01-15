@@ -32,11 +32,7 @@ class EmptyState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 80,
-                color: iconColor.withValues(alpha: 0.6),
-              ),
+              Icon(icon, size: 80, color: iconColor.withValues(alpha: 0.6)),
               const SizedBox(height: 24),
               Text(
                 title,

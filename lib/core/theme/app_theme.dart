@@ -72,10 +72,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData lightTheme({
-    Color? seedColor,
-    String? fontSizeScale,
-  }) {
+  static ThemeData lightTheme({Color? seedColor, String? fontSizeScale}) {
     // Card styling constants
     const double cardElevation = 2.0;
     const double cardBorderRadius = 12.0;
@@ -151,10 +148,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData darkTheme({
-    Color? seedColor,
-    String? fontSizeScale,
-  }) {
+  static ThemeData darkTheme({Color? seedColor, String? fontSizeScale}) {
     // Card styling constants
     const double cardElevation = 2.0;
     const double cardBorderRadius = 12.0;

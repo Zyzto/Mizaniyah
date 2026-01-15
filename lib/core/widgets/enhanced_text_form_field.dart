@@ -69,10 +69,7 @@ class _EnhancedTextFormFieldState extends State<EnhancedTextFormField>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -159,22 +156,21 @@ class _EnhancedTextFormFieldState extends State<EnhancedTextFormField>
                 hintText: widget.hintText,
                 helperText: widget.helperText,
                 prefixIcon: widget.prefixIcon,
-                suffixIcon: widget.suffixIcon ??
+                suffixIcon:
+                    widget.suffixIcon ??
                     (_hasError && _errorText != null
-                        ? Icon(
-                            Icons.error_outline,
-                            color: colorScheme.error,
-                          )
+                        ? Icon(Icons.error_outline, color: colorScheme.error)
                         : _isFocused
-                            ? Icon(
-                                Icons.check_circle_outline,
-                                color: colorScheme.primary,
-                                size: 20,
-                              )
-                            : null),
+                        ? Icon(
+                            Icons.check_circle_outline,
+                            color: colorScheme.primary,
+                            size: 20,
+                          )
+                        : null),
                 errorText: _errorText,
                 errorMaxLines: 2,
-                counterText: widget.showCharacterCount &&
+                counterText:
+                    widget.showCharacterCount &&
                         widget.maxLength != null &&
                         widget.controller != null
                     ? '${widget.controller!.text.length}/${widget.maxLength}'
@@ -199,17 +195,11 @@ class _EnhancedTextFormFieldState extends State<EnhancedTextFormField>
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.error,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: colorScheme.error, width: 2),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.error,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: colorScheme.error, width: 2),
                 ),
                 filled: true,
                 fillColor: _isFocused

@@ -43,7 +43,8 @@ class _EnhancedCurrencyFieldState extends State<EnhancedCurrencyField>
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ??
+    _controller =
+        widget.controller ??
         TextEditingController(
           text: widget.initialValue?.toStringAsFixed(2) ?? '',
         );
@@ -54,10 +55,7 @@ class _EnhancedCurrencyFieldState extends State<EnhancedCurrencyField>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -147,7 +145,9 @@ class _EnhancedCurrencyFieldState extends State<EnhancedCurrencyField>
               controller: _controller,
               focusNode: _focusNode,
               enabled: widget.enabled,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textInputAction: TextInputAction.next,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
@@ -183,17 +183,14 @@ class _EnhancedCurrencyFieldState extends State<EnhancedCurrencyField>
                         tooltip: 'Clear',
                       )
                     : _hasError && _errorText != null
-                        ? Icon(
-                            Icons.error_outline,
-                            color: colorScheme.error,
-                          )
-                        : _isFocused
-                            ? Icon(
-                                Icons.check_circle_outline,
-                                color: colorScheme.primary,
-                                size: 20,
-                              )
-                            : null,
+                    ? Icon(Icons.error_outline, color: colorScheme.error)
+                    : _isFocused
+                    ? Icon(
+                        Icons.check_circle_outline,
+                        color: colorScheme.primary,
+                        size: 20,
+                      )
+                    : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -214,17 +211,11 @@ class _EnhancedCurrencyFieldState extends State<EnhancedCurrencyField>
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.error,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: colorScheme.error, width: 2),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.error,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: colorScheme.error, width: 2),
                 ),
                 filled: true,
                 fillColor: _isFocused

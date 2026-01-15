@@ -10,15 +10,12 @@ class ErrorSnackbar {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
-              Icons.error_outline,
-              color: colorScheme.onErrorContainer,
-            ),
+            Icon(Icons.error_outline, color: colorScheme.onErrorContainer),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
           ],
@@ -27,9 +24,7 @@ class ErrorSnackbar {
         duration: duration,
         action: action,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -42,7 +37,7 @@ class ErrorSnackbar {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -59,9 +54,7 @@ class ErrorSnackbar {
         duration: duration,
         action: action,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -74,15 +67,12 @@ class ErrorSnackbar {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
-              Icons.info_outline,
-              color: colorScheme.onSecondaryContainer,
-            ),
+            Icon(Icons.info_outline, color: colorScheme.onSecondaryContainer),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
           ],
@@ -91,9 +81,7 @@ class ErrorSnackbar {
         duration: duration,
         action: action,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
