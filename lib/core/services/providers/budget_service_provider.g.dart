@@ -9,9 +9,6 @@ part of 'budget_service_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-// Ref type definition
-typedef BudgetServiceRef = Ref;
-
 @ProviderFor(budgetService)
 const budgetServiceProvider = BudgetServiceProvider._();
 
@@ -51,4 +48,4 @@ final class BudgetServiceProvider
   }
 }
 
-String _$budgetServiceHash() => r'dfe4627a5e090e6adc3ae6d9e6b305a21b64ab7d';
+String _$budgetServiceHash() => r'3a4064e9b040095b3e8abcf3e4c7627213f4fc0a';

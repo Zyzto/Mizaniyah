@@ -30,7 +30,9 @@ class SmsConfirmationHandler with Loggable {
       };
 
       final expiresAt = DateTime.now().add(
-        const Duration(hours: SmsDetectionConstants.confirmationExpirationHours),
+        const Duration(
+          hours: SmsDetectionConstants.confirmationExpirationHours,
+        ),
       );
 
       final confirmation = db.PendingSmsConfirmationsCompanion(

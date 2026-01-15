@@ -5,7 +5,7 @@ import '../../database/providers/dao_providers.dart';
 part 'budget_service_provider.g.dart';
 
 @riverpod
-BudgetService budgetService(BudgetServiceRef ref) {
+BudgetService budgetService(Ref ref) {
   final budgetDao = ref.watch(budgetDaoProvider);
   final transactionDao = ref.watch(transactionDaoProvider);
   return BudgetService(budgetDao, transactionDao);

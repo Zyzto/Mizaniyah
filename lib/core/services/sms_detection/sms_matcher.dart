@@ -2,6 +2,8 @@ import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
 import 'package:mizaniyah/core/database/daos/sms_template_dao.dart';
 import 'package:mizaniyah/core/services/sms_parsing_service.dart';
+import 'package:mizaniyah/core/services/sms_detection/sender_filter_service.dart';
+import 'package:mizaniyah/core/services/sms_detection/keyword_filter_service.dart';
 
 /// Result of SMS matching operation
 class SmsMatchResult {
@@ -19,8 +21,15 @@ class SmsMatchResult {
 /// Service responsible for matching SMS messages to templates
 class SmsMatcher with Loggable {
   final SmsTemplateDao _smsTemplateDao;
+  final SenderFilterService? _senderFilterService;
+  final KeywordFilterService? _keywordFilterService;
 
-  SmsMatcher(this._smsTemplateDao);
+  SmsMatcher(
+    this._smsTemplateDao, {
+    SenderFilterService? senderFilterService,
+    KeywordFilterService? keywordFilterService,
+  }) : _senderFilterService = senderFilterService,
+       _keywordFilterService = keywordFilterService;
 
   /// Match SMS to templates and parse transaction data
   /// Returns SmsMatchResult if match found, null otherwise
@@ -28,6 +37,20 @@ class SmsMatcher with Loggable {
     logDebug('Matching SMS from sender: $sender');
 
     try {
+      // Check sender filter first
+      if (_senderFilterService != null &&
+          _senderFilterService.shouldFilterSender(sender)) {
+        logDebug('SMS from sender $sender filtered by sender filter');
+        return null;
+      }
+
+      // Check keyword filter
+      if (_keywordFilterService != null &&
+          _keywordFilterService.shouldFilterSms(body)) {
+        logDebug('SMS filtered by keyword filter');
+        return null;
+      }
+
       // Get active templates that match the sender
       final templates = await _smsTemplateDao.getActiveTemplatesBySender(
         sender,
@@ -62,12 +85,23 @@ class SmsMatcher with Loggable {
         return null;
       }
 
+      // Add sender and body to parsed data for duplicate detection
+      final enrichedParsedData = ParsedSmsData(
+        storeName: parsedData.storeName,
+        amount: parsedData.amount,
+        currency: parsedData.currency,
+        cardLast4Digits: parsedData.cardLast4Digits,
+        transactionDate: parsedData.transactionDate,
+        smsSender: sender,
+        smsBody: body,
+      );
+
       logInfo(
         'Successfully matched SMS: store=${parsedData.storeName}, amount=${parsedData.amount}, confidence=$confidence',
       );
 
       return SmsMatchResult(
-        parsedData: parsedData,
+        parsedData: enrichedParsedData,
         confidence: confidence,
         template: template,
       );

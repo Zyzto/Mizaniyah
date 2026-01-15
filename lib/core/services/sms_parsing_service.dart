@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:mizaniyah/core/database/app_database.dart' as db;
 
@@ -8,12 +9,18 @@ class ParsedSmsData {
   final double? amount;
   final String? currency;
   final String? cardLast4Digits;
+  final DateTime? transactionDate; // Extracted transaction date from SMS
+  final String? smsSender; // Original SMS sender for duplicate detection
+  final String? smsBody; // Original SMS body for duplicate detection
 
   ParsedSmsData({
     this.storeName,
     this.amount,
     this.currency,
     this.cardLast4Digits,
+    this.transactionDate,
+    this.smsSender,
+    this.smsBody,
   });
 
   Map<String, dynamic> toJson() => {
@@ -21,6 +28,9 @@ class ParsedSmsData {
     'amount': amount,
     'currency': currency,
     'card_last4': cardLast4Digits,
+    'transaction_date': transactionDate?.toIso8601String(),
+    'sms_sender': smsSender,
+    'sms_body': smsBody,
   };
 
   factory ParsedSmsData.fromJson(Map<String, dynamic> json) => ParsedSmsData(
@@ -28,7 +38,24 @@ class ParsedSmsData {
     amount: json['amount'] as double?,
     currency: json['currency'] as String?,
     cardLast4Digits: json['card_last4'] as String?,
+    transactionDate: json['transaction_date'] != null
+        ? DateTime.tryParse(json['transaction_date'] as String)
+        : null,
+    smsSender: json['sms_sender'] as String?,
+    smsBody: json['sms_body'] as String?,
   );
+
+  /// Generate hash for duplicate detection
+  /// Uses sender + body + transaction date (or current date if not available)
+  String generateSmsHash() {
+    final dateStr =
+        transactionDate?.toIso8601String().split('T')[0] ??
+        DateTime.now().toIso8601String().split('T')[0];
+    final hashInput = '${smsSender ?? ''}|${smsBody ?? ''}|$dateStr';
+    final bytes = utf8.encode(hashInput);
+    final hash = sha256.convert(bytes);
+    return hash.toString();
+  }
 }
 
 /// SMS Parsing Service
@@ -96,6 +123,126 @@ class SmsParsingService with Loggable {
     }
 
     return null;
+  }
+
+  /// Parse date string in various formats
+  /// Supports: "Jan 15", "15/01/2024", "2024-01-15", "15 Jan 2024", etc.
+  static DateTime? _parseDate(String dateStr) {
+    if (dateStr.isEmpty) return null;
+
+    try {
+      // Try ISO format first
+      final isoDate = DateTime.tryParse(dateStr);
+      if (isoDate != null) {
+        // Validate: don't allow future dates, and reasonable range (last 5 years to today)
+        final now = DateTime.now();
+        final fiveYearsAgo = DateTime(now.year - 5, 1, 1);
+        if (isoDate.isAfter(now)) {
+          Log.warning('Parsed date is in the future: $dateStr');
+          return null;
+        }
+        if (isoDate.isBefore(fiveYearsAgo)) {
+          Log.warning('Parsed date is too old: $dateStr');
+          return null;
+        }
+        return isoDate;
+      }
+
+      // Try common formats
+      final cleaned = dateStr.trim();
+
+      // Format: "DD/MM/YYYY" or "DD-MM-YYYY"
+      final slashPattern = RegExp(r'(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})');
+      final slashMatch = slashPattern.firstMatch(cleaned);
+      if (slashMatch != null) {
+        final day = int.parse(slashMatch.group(1)!);
+        final month = int.parse(slashMatch.group(2)!);
+        final yearStr = slashMatch.group(3)!;
+        final year = yearStr.length == 2
+            ? 2000 +
+                  int.parse(yearStr) // Assume 20XX for 2-digit years
+            : int.parse(yearStr);
+
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+          final date = DateTime(year, month, day);
+          final now = DateTime.now();
+          if (!date.isAfter(now) &&
+              date.isAfter(DateTime(now.year - 5, 1, 1))) {
+            return date;
+          }
+        }
+      }
+
+      // Format: "MMM DD" or "DD MMM" (assume current year)
+      final monthNames = {
+        'jan': 1,
+        'feb': 2,
+        'mar': 3,
+        'apr': 4,
+        'may': 5,
+        'jun': 6,
+        'jul': 7,
+        'aug': 8,
+        'sep': 9,
+        'oct': 10,
+        'nov': 11,
+        'dec': 12,
+      };
+
+      final monthPattern = RegExp(
+        r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})',
+        caseSensitive: false,
+      );
+      final monthMatch = monthPattern.firstMatch(cleaned);
+      if (monthMatch != null) {
+        final monthName = monthMatch.group(1)!.toLowerCase();
+        final day = int.parse(monthMatch.group(2)!);
+        final month = monthNames[monthName];
+        if (month != null && day >= 1 && day <= 31) {
+          final now = DateTime.now();
+          var year = now.year;
+          // If month is in the future, assume last year
+          if (month > now.month || (month == now.month && day > now.day)) {
+            year = now.year - 1;
+          }
+          final date = DateTime(year, month, day);
+          if (!date.isAfter(now) &&
+              date.isAfter(DateTime(now.year - 5, 1, 1))) {
+            return date;
+          }
+        }
+      }
+
+      // Try reverse: "DD MMM"
+      final reversePattern = RegExp(
+        r'(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)',
+        caseSensitive: false,
+      );
+      final reverseMatch = reversePattern.firstMatch(cleaned);
+      if (reverseMatch != null) {
+        final day = int.parse(reverseMatch.group(1)!);
+        final monthName = reverseMatch.group(2)!.toLowerCase();
+        final month = monthNames[monthName];
+        if (month != null && day >= 1 && day <= 31) {
+          final now = DateTime.now();
+          var year = now.year;
+          if (month > now.month || (month == now.month && day > now.day)) {
+            year = now.year - 1;
+          }
+          final date = DateTime(year, month, day);
+          if (!date.isAfter(now) &&
+              date.isAfter(DateTime(now.year - 5, 1, 1))) {
+            return date;
+          }
+        }
+      }
+
+      Log.debug('Could not parse date string: $dateStr');
+      return null;
+    } catch (e) {
+      Log.warning('Error parsing date: $dateStr, error: $e');
+      return null;
+    }
   }
 
   /// Parse SMS using pattern and extraction rules
@@ -170,6 +317,18 @@ class SmsParsingService with Loggable {
         );
       }
 
+      // Extract transaction date (supports various date formats)
+      DateTime? transactionDate;
+      if (extractionRules.containsKey('transaction_date') ||
+          extractionRules.containsKey('date')) {
+        final dateRule =
+            extractionRules['transaction_date'] ?? extractionRules['date'];
+        final dateStr = _extractField(smsBody, dateRule, mainMatch);
+        if (dateStr != null) {
+          transactionDate = _parseDate(dateStr);
+        }
+      }
+
       // Validate that we extracted at least amount and store name
       if (amount == null || storeName == null || storeName.isEmpty) {
         Log.warning(
@@ -183,6 +342,7 @@ class SmsParsingService with Loggable {
         amount: amount,
         currency: currency ?? 'USD', // Default currency
         cardLast4Digits: cardLast4Digits,
+        transactionDate: transactionDate,
       );
     } catch (e, stackTrace) {
       Log.error(
@@ -190,6 +350,7 @@ class SmsParsingService with Loggable {
         error: e,
         stackTrace: stackTrace,
       );
+      // Try graceful degradation - return null to let caller handle
       return null;
     }
   }

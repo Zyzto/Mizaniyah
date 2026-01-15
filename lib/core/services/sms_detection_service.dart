@@ -7,6 +7,8 @@ import 'package:mizaniyah/core/services/sms_detection/sms_matcher.dart';
 import 'package:mizaniyah/core/services/sms_detection/sms_transaction_creator.dart';
 import 'package:mizaniyah/core/services/sms_detection/sms_confirmation_handler.dart';
 import 'package:mizaniyah/core/services/sms_detection/sms_detection_constants.dart';
+import 'package:mizaniyah/core/services/sms_detection/category_assigner.dart';
+import 'package:mizaniyah/core/database/daos/category_mapping_dao.dart';
 import 'package:mizaniyah/core/database/daos/sms_template_dao.dart';
 import 'package:mizaniyah/core/database/daos/card_dao.dart';
 import 'package:mizaniyah/core/database/daos/pending_sms_confirmation_dao.dart';
@@ -50,6 +52,8 @@ class SmsDetectionService with Loggable {
   bool _isInitialized = false;
   bool _isListening = false;
   bool _autoConfirm = false;
+  double _confidenceThreshold =
+      SmsDetectionConstants.defaultAutoCreateConfidenceThreshold;
 
   /// Initialize the SMS detection service
   /// Prefer using the factory constructor for new code
@@ -121,14 +125,20 @@ class SmsDetectionService with Loggable {
     TransactionDao? transactionDao,
     CardDao? cardDao,
     CategoryDao? categoryDao,
+    CategoryMappingDao? categoryMappingDao,
   }) {
     final service = SmsDetectionService._();
     service._smsMatcher = SmsMatcher(smsTemplateDao);
 
     if (transactionDao != null && cardDao != null) {
+      CategoryAssigner? categoryAssigner;
+      if (categoryMappingDao != null) {
+        categoryAssigner = CategoryAssigner(categoryMappingDao);
+      }
       service._transactionCreator = SmsTransactionCreator(
         transactionDao,
         cardDao,
+        categoryAssigner: categoryAssigner,
       );
     }
 
@@ -321,25 +331,33 @@ class SmsDetectionService with Loggable {
     // If auto-confirm is disabled, it will still auto-create for high confidence (default behavior)
     // The auto-confirm setting only affects whether we skip the confirmation dialog
     // for high-confidence transactions (currently always auto-creates high confidence)
-    final isHighConfidence =
-        confidence >= SmsDetectionConstants.autoCreateConfidenceThreshold;
+    final isHighConfidence = confidence >= _confidenceThreshold;
 
     if (isHighConfidence && _transactionCreator != null) {
-      final transactionId = await _transactionCreator!.createTransactionFromSms(
-        parsedData,
-        confidence,
-      );
+      try {
+        final transactionId = await _transactionCreator!
+            .createTransactionFromSms(parsedData, confidence);
 
-      if (transactionId != null) {
-        // Delete pending confirmation since we auto-created
-        await _confirmationHandler!.deleteConfirmation(confirmationId);
-        logInfo('Transaction auto-created successfully, skipping notification');
-        return; // Don't show notification
-      } else {
+        if (transactionId != null) {
+          // Delete pending confirmation since we auto-created
+          await _confirmationHandler!.deleteConfirmation(confirmationId);
+          logInfo(
+            'Transaction auto-created successfully, skipping notification',
+          );
+          return; // Don't show notification
+        } else {
+          logWarning(
+            'Failed to auto-create transaction, keeping as pending confirmation',
+          );
+          // Continue to show notification for manual confirmation
+        }
+      } on DuplicateTransactionException catch (e) {
         logWarning(
-          'Failed to auto-create transaction, keeping as pending confirmation',
+          'Duplicate transaction detected, skipping auto-create: ${e.smsHash}',
         );
-        // Continue to show notification for manual confirmation
+        // Delete pending confirmation since transaction already exists
+        await _confirmationHandler!.deleteConfirmation(confirmationId);
+        return; // Don't show notification for duplicates
       }
     }
 
@@ -354,6 +372,12 @@ class SmsDetectionService with Loggable {
   void setAutoConfirm(bool autoConfirm) {
     _autoConfirm = autoConfirm;
     logInfo('Auto-confirm transactions set to: $autoConfirm');
+  }
+
+  /// Set confidence threshold for auto-creating transactions
+  void setConfidenceThreshold(double threshold) {
+    _confidenceThreshold = threshold.clamp(0.0, 1.0);
+    logInfo('Confidence threshold set to: $_confidenceThreshold');
   }
 
   /// Stop listening for SMS

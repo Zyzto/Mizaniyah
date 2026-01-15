@@ -12,9 +12,13 @@ final smsDetectionManagerProvider = Provider<void>((ref) {
   final autoConfirm = ref.watch(
     settings.provider(autoConfirmTransactionsSettingDef),
   );
+  final confidenceThreshold = ref.watch(
+    settings.provider(confidenceThresholdSettingDef),
+  );
 
-  // Update auto-confirm setting in service
+  // Update settings in service
   SmsDetectionService.instance.setAutoConfirm(autoConfirm);
+  SmsDetectionService.instance.setConfidenceThreshold(confidenceThreshold);
 
   // Start or stop listening based on setting
   if (smsDetectionEnabled) {

@@ -1,7 +1,14 @@
 /// Constants for SMS detection service
 class SmsDetectionConstants {
-  /// Minimum confidence score (0.0-1.0) required for auto-creating transactions
-  static const double autoCreateConfidenceThreshold = 0.7;
+  /// Default minimum confidence score (0.0-1.0) required for auto-creating transactions
+  /// This is a fallback - actual threshold comes from user settings
+  static const double defaultAutoCreateConfidenceThreshold = 0.7;
+
+  /// Get the auto-create confidence threshold
+  /// This should be overridden by user settings in production
+  static double getAutoCreateConfidenceThreshold([double? userThreshold]) {
+    return userThreshold ?? defaultAutoCreateConfidenceThreshold;
+  }
 
   /// Hours until pending confirmation expires
   static const int confirmationExpirationHours = 24;

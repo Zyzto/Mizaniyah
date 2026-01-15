@@ -13,25 +13,25 @@ class ProviderCacheWarmingService {
   static void warmUpProviders(WidgetRef ref) {
     // Warm up providers for all three main tabs
     // This ensures data is loading even before user navigates
-    
+
     // Home tab providers
     ref.read(transactionsProvider);
-    
+
     // Accounts tab providers
     ref.read(accountsProvider);
     ref.read(cardsByAccountProvider(null));
     ref.read(smsTemplatesProvider);
     ref.read(pendingSmsConfirmationsProvider);
-    
+
     // Budget tab providers
     ref.read(activeBudgetsProvider);
     ref.read(categoriesProvider);
-    
+
     // Note: We use ref.read() here to trigger providers without watching
     // The actual pages will watch these providers when built, maintaining
     // the streams and ensuring reactive updates
   }
-  
+
   /// Warm up providers for a specific screen
   /// Useful when navigating to ensure data is ready
   static void warmUpForScreen(WidgetRef ref, String screen) {
