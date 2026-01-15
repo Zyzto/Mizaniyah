@@ -14,62 +14,68 @@ class DataIntegrityService with Loggable {
     logDebug('Cleaning up orphaned transactions');
     try {
       // Find transactions with invalid category references
-      final orphanedByCategory = await _database.customSelect(
-        '''
+      final orphanedByCategory = await _database
+          .customSelect(
+            '''
         SELECT id FROM transactions 
         WHERE category_id IS NOT NULL 
         AND category_id NOT IN (SELECT id FROM categories)
         ''',
-        readsFrom: {_database.transactions, _database.categories},
-      ).get();
+            readsFrom: {_database.transactions, _database.categories},
+          )
+          .get();
 
       // Find transactions with invalid card references
-      final orphanedByCard = await _database.customSelect(
-        '''
+      final orphanedByCard = await _database
+          .customSelect(
+            '''
         SELECT id FROM transactions 
         WHERE card_id IS NOT NULL 
         AND card_id NOT IN (SELECT id FROM cards)
         ''',
-        readsFrom: {_database.transactions, _database.cards},
-      ).get();
+            readsFrom: {_database.transactions, _database.cards},
+          )
+          .get();
 
       // Find transactions with invalid budget references
-      final orphanedByBudget = await _database.customSelect(
-        '''
+      final orphanedByBudget = await _database
+          .customSelect(
+            '''
         SELECT id FROM transactions 
         WHERE budget_id IS NOT NULL 
         AND budget_id NOT IN (SELECT id FROM budgets)
         ''',
-        readsFrom: {_database.transactions, _database.budgets},
-      ).get();
+            readsFrom: {_database.transactions, _database.budgets},
+          )
+          .get();
 
       int cleaned = 0;
 
       // Set orphaned foreign keys to NULL
       for (final row in orphanedByCategory) {
-        await (_database.update(_database.transactions)
-              ..where((t) => t.id.equals(row.read<int>('id'))))
-            .write(db.TransactionsCompanion(
-              categoryId: const drift.Value.absent(),
-            ));
+        await (_database.update(
+          _database.transactions,
+        )..where((t) => t.id.equals(row.read<int>('id')))).write(
+          const db.TransactionsCompanion(categoryId: drift.Value.absent()),
+        );
         cleaned++;
       }
 
       for (final row in orphanedByCard) {
-        await (_database.update(_database.transactions)
-              ..where((t) => t.id.equals(row.read<int>('id'))))
-            .write(db.TransactionsCompanion(
-              cardId: const drift.Value.absent(),
-            ));
+        await (_database.update(
+          _database.transactions,
+        )..where((t) => t.id.equals(row.read<int>('id')))).write(
+          const db.TransactionsCompanion(cardId: drift.Value.absent()),
+        );
         cleaned++;
       }
 
       for (final row in orphanedByBudget) {
-        await (_database.update(_database.transactions)
-              ..where((t) => t.id.equals(row.read<int>('id'))))
-            .write(db.TransactionsCompanion(
-              budgetId: const drift.Value.absent(),
-            ));
+        await (_database.update(
+          _database.transactions,
+        )..where((t) => t.id.equals(row.read<int>('id')))).write(
+          const db.TransactionsCompanion(budgetId: drift.Value.absent()),
+        );
         cleaned++;
       }
 
@@ -93,36 +99,42 @@ class DataIntegrityService with Loggable {
 
     try {
       // Check for orphaned transactions
-      final orphanedCount = await _database.customSelect(
-        '''
+      final orphanedCount = await _database
+          .customSelect(
+            '''
         SELECT COUNT(*) as count FROM transactions 
         WHERE (category_id IS NOT NULL AND category_id NOT IN (SELECT id FROM categories))
            OR (card_id IS NOT NULL AND card_id NOT IN (SELECT id FROM cards))
            OR (budget_id IS NOT NULL AND budget_id NOT IN (SELECT id FROM budgets))
         ''',
-        readsFrom: {
-          _database.transactions,
-          _database.categories,
-          _database.cards,
-          _database.budgets,
-        },
-      ).getSingle();
+            readsFrom: {
+              _database.transactions,
+              _database.categories,
+              _database.cards,
+              _database.budgets,
+            },
+          )
+          .getSingle();
 
       results['orphaned_transactions'] = orphanedCount.read<int>('count');
 
       // Check for invalid amounts
-      final invalidAmounts = await _database.customSelect(
-        'SELECT COUNT(*) as count FROM transactions WHERE amount <= 0',
-        readsFrom: {_database.transactions},
-      ).getSingle();
+      final invalidAmounts = await _database
+          .customSelect(
+            'SELECT COUNT(*) as count FROM transactions WHERE amount <= 0',
+            readsFrom: {_database.transactions},
+          )
+          .getSingle();
 
       results['invalid_amounts'] = invalidAmounts.read<int>('count');
 
       // Check for invalid budget amounts
-      final invalidBudgets = await _database.customSelect(
-        'SELECT COUNT(*) as count FROM budgets WHERE amount <= 0',
-        readsFrom: {_database.budgets},
-      ).getSingle();
+      final invalidBudgets = await _database
+          .customSelect(
+            'SELECT COUNT(*) as count FROM budgets WHERE amount <= 0',
+            readsFrom: {_database.budgets},
+          )
+          .getSingle();
 
       results['invalid_budget_amounts'] = invalidBudgets.read<int>('count');
 
@@ -151,11 +163,7 @@ class DataIntegrityService with Loggable {
 
       logInfo('Database maintenance completed');
     } catch (e, stackTrace) {
-      logError(
-        'Database maintenance failed',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      logError('Database maintenance failed', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }

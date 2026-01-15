@@ -26,8 +26,9 @@ class Transactions extends Table {
   )();
   DateTimeColumn get date => dateTime()();
   TextColumn get notes => text().nullable()();
-  TextColumn get source =>
-      text().withDefault(const Constant('manual'))(); // 'manual' or 'sms' (validated at DAO level)
+  TextColumn get source => text().withDefault(
+    const Constant('manual'),
+  )(); // 'manual' or 'sms' (validated at DAO level)
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }

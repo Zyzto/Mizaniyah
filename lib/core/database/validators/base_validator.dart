@@ -34,11 +34,7 @@ abstract class BaseValidator {
   }
 
   /// Validate exact string length
-  static void validateExactLength(
-    String value,
-    int length,
-    String fieldName,
-  ) {
+  static void validateExactLength(String value, int length, String fieldName) {
     if (value.length != length) {
       throw ArgumentError('$fieldName must be exactly $length characters');
     }

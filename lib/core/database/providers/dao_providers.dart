@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../daos/transaction_dao.dart';
 import '../daos/account_dao.dart';
 import '../daos/card_dao.dart';
@@ -9,43 +9,55 @@ import '../daos/pending_sms_confirmation_dao.dart';
 import '../daos/notification_history_dao.dart';
 import 'database_provider.dart';
 
+part 'dao_providers.g.dart';
+
 /// DAO providers - direct access to data layer without repository indirection
-final transactionDaoProvider = Provider<TransactionDao>((ref) {
+@riverpod
+TransactionDao transactionDao(TransactionDaoRef ref) {
   final database = ref.watch(databaseProvider);
   return TransactionDao(database);
-});
+}
 
-final accountDaoProvider = Provider<AccountDao>((ref) {
+@riverpod
+AccountDao accountDao(AccountDaoRef ref) {
   final database = ref.watch(databaseProvider);
   return AccountDao(database);
-});
+}
 
-final cardDaoProvider = Provider<CardDao>((ref) {
+@riverpod
+CardDao cardDao(CardDaoRef ref) {
   final database = ref.watch(databaseProvider);
   return CardDao(database);
-});
+}
 
-final categoryDaoProvider = Provider<CategoryDao>((ref) {
+@riverpod
+CategoryDao categoryDao(CategoryDaoRef ref) {
   final database = ref.watch(databaseProvider);
   return CategoryDao(database);
-});
+}
 
-final budgetDaoProvider = Provider<BudgetDao>((ref) {
+@riverpod
+BudgetDao budgetDao(BudgetDaoRef ref) {
   final database = ref.watch(databaseProvider);
   return BudgetDao(database);
-});
+}
 
-final smsTemplateDaoProvider = Provider<SmsTemplateDao>((ref) {
+@riverpod
+SmsTemplateDao smsTemplateDao(SmsTemplateDaoRef ref) {
   final database = ref.watch(databaseProvider);
   return SmsTemplateDao(database);
-});
+}
 
-final pendingSmsConfirmationDaoProvider = Provider<PendingSmsConfirmationDao>((ref) {
+@riverpod
+PendingSmsConfirmationDao pendingSmsConfirmationDao(
+  PendingSmsConfirmationDaoRef ref,
+) {
   final database = ref.watch(databaseProvider);
   return PendingSmsConfirmationDao(database);
-});
+}
 
-final notificationHistoryDaoProvider = Provider<NotificationHistoryDao>((ref) {
+@riverpod
+NotificationHistoryDao notificationHistoryDao(NotificationHistoryDaoRef ref) {
   final database = ref.watch(databaseProvider);
   return NotificationHistoryDao(database);
-});
+}

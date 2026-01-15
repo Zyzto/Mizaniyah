@@ -127,9 +127,7 @@ class PendingSmsConfirmationDao extends DatabaseAccessor<AppDatabase>
         final now = DateTime.now();
         final query = selectOnly(db.pendingSmsConfirmations)
           ..addColumns([db.pendingSmsConfirmations.id.count()])
-          ..where(
-            db.pendingSmsConfirmations.expiresAt.isBiggerThanValue(now),
-          );
+          ..where(db.pendingSmsConfirmations.expiresAt.isBiggerThanValue(now));
 
         final result = await query.getSingle();
         final count = result.read(db.pendingSmsConfirmations.id.count()) ?? 0;

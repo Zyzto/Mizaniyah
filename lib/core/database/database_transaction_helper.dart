@@ -10,9 +10,7 @@ class DatabaseTransactionHelper with Loggable {
 
   /// Execute multiple database operations in a transaction
   /// If any operation fails, all changes are rolled back
-  Future<T> transaction<T>(
-    Future<T> Function() action,
-  ) async {
+  Future<T> transaction<T>(Future<T> Function() action) async {
     logDebug('Starting database transaction');
     try {
       final result = await _database.transaction(action);

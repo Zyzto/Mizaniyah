@@ -54,11 +54,19 @@ class AppDatabase extends _$AppDatabase with Loggable {
           // Enable foreign key constraints
           await customStatement('PRAGMA foreign_keys = ON');
           // Optimize for performance
-          await customStatement('PRAGMA journal_mode = WAL'); // Write-Ahead Logging
-          await customStatement('PRAGMA synchronous = NORMAL'); // Balance safety/performance
+          await customStatement(
+            'PRAGMA journal_mode = WAL',
+          ); // Write-Ahead Logging
+          await customStatement(
+            'PRAGMA synchronous = NORMAL',
+          ); // Balance safety/performance
           await customStatement('PRAGMA cache_size = -64000'); // 64MB cache
-          await customStatement('PRAGMA temp_store = MEMORY'); // Use memory for temp tables
-          await customStatement('PRAGMA mmap_size = 268435456'); // 256MB memory-mapped I/O
+          await customStatement(
+            'PRAGMA temp_store = MEMORY',
+          ); // Use memory for temp tables
+          await customStatement(
+            'PRAGMA mmap_size = 268435456',
+          ); // 256MB memory-mapped I/O
           logInfo('Database connection optimized');
         } catch (e, stackTrace) {
           logWarning(
@@ -102,6 +110,22 @@ class AppDatabase extends _$AppDatabase with Loggable {
               'CREATE INDEX IF NOT EXISTS idx_transactions_date_amount '
               'ON transactions(date, amount)',
             );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_transactions_source_date '
+              'ON transactions(source, date)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_sms_templates_sender_active '
+              'ON sms_templates(sender_pattern, is_active)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_pending_sms_confirmations_created_at '
+              'ON pending_sms_confirmations(created_at)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_cards_account_id '
+              'ON cards(account_id)',
+            );
 
             logInfo('Database indexes created successfully');
           } catch (e, stackTrace) {
@@ -126,6 +150,22 @@ class AppDatabase extends _$AppDatabase with Loggable {
             await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_transactions_date_amount '
               'ON transactions(date, amount)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_transactions_source_date '
+              'ON transactions(source, date)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_sms_templates_sender_active '
+              'ON sms_templates(sender_pattern, is_active)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_pending_sms_confirmations_created_at '
+              'ON pending_sms_confirmations(created_at)',
+            );
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_cards_account_id '
+              'ON cards(account_id)',
             );
           } catch (e, stackTrace) {
             logWarning(
@@ -202,7 +242,9 @@ class AppDatabase extends _$AppDatabase with Loggable {
         }
         // Remove banks feature and make SMS independent in version 6
         if (from < 6) {
-          logInfo('Performing fresh start migration to version 6 - removing banks');
+          logInfo(
+            'Performing fresh start migration to version 6 - removing banks',
+          );
           // Fresh start: drop all tables and recreate
           await m.deleteTable('pending_sms_confirmations');
           await m.deleteTable('sms_templates');
@@ -219,11 +261,13 @@ class AppDatabase extends _$AppDatabase with Loggable {
           logInfo('Adding sortOrder column to categories table in version 7');
           try {
             // Check if column already exists
-            final result = await m.database.customSelect(
-              "PRAGMA table_info(categories)",
-            ).get();
-            final hasSortOrder = result.any((row) => row.data['name'] == 'sort_order');
-            
+            final result = await m.database
+                .customSelect('PRAGMA table_info(categories)')
+                .get();
+            final hasSortOrder = result.any(
+              (row) => row.data['name'] == 'sort_order',
+            );
+
             if (!hasSortOrder) {
               // Add the sortOrder column with default value
               await m.database.customStatement(
@@ -239,7 +283,7 @@ class AppDatabase extends _$AppDatabase with Loggable {
             }
           } catch (e, stackTrace) {
             // Check if it's a duplicate column error
-            if (e.toString().contains('duplicate column') || 
+            if (e.toString().contains('duplicate column') ||
                 e.toString().contains('sort_order')) {
               logWarning(
                 'sortOrder column already exists, continuing migration',
@@ -265,21 +309,23 @@ class AppDatabase extends _$AppDatabase with Loggable {
               await m.createTable(accounts);
               logInfo('Accounts table created');
             } catch (e) {
-              if (e.toString().contains('already exists') || 
+              if (e.toString().contains('already exists') ||
                   e.toString().contains('duplicate')) {
                 logInfo('Accounts table already exists, skipping');
               } else {
                 rethrow;
               }
             }
-            
+
             // Check if account_id column already exists
             try {
-              final result = await m.database.customSelect(
-                "PRAGMA table_info(cards)",
-              ).get();
-              final hasAccountId = result.any((row) => row.data['name'] == 'account_id');
-              
+              final result = await m.database
+                  .customSelect('PRAGMA table_info(cards)')
+                  .get();
+              final hasAccountId = result.any(
+                (row) => row.data['name'] == 'account_id',
+              );
+
               if (!hasAccountId) {
                 // Add accountId column to Cards table (nullable for backward compatibility)
                 await m.database.customStatement(
@@ -291,15 +337,17 @@ class AppDatabase extends _$AppDatabase with Loggable {
               }
             } catch (e) {
               // Check if it's a duplicate column error
-              if (e.toString().contains('duplicate column') || 
+              if (e.toString().contains('duplicate column') ||
                   e.toString().contains('account_id')) {
-                logWarning('accountId column already exists, continuing migration');
+                logWarning(
+                  'accountId column already exists, continuing migration',
+                );
                 // Continue migration - column already exists
               } else {
                 rethrow;
               }
             }
-            
+
             logInfo('Accounts table and accountId column migration completed');
           } catch (e, stackTrace) {
             logError(

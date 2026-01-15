@@ -15,11 +15,7 @@ mixin BaseDaoMixin on Loggable {
       logInfo('$operationName() completed successfully');
       return result;
     } catch (e, stackTrace) {
-      logError(
-        '$operationName() failed',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      logError('$operationName() failed', error: e, stackTrace: stackTrace);
       if (onError != null) {
         return onError() as T;
       }
@@ -42,12 +38,7 @@ mixin BaseDaoMixin on Loggable {
   }
 
   /// Validate that a number is within a range
-  void validateNumberRange(
-    num value,
-    num min,
-    num max,
-    String fieldName,
-  ) {
+  void validateNumberRange(num value, num min, num max, String fieldName) {
     if (value < min || value > max) {
       throw ArgumentError('$fieldName must be between $min and $max');
     }

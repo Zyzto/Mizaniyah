@@ -15,9 +15,9 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<List<NotificationHistoryData>>(
       operationName: 'getAllNotifications',
       operation: () async {
-        final result = await (select(notificationHistory)
-              ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
-            .get();
+        final result = await (select(
+          notificationHistory,
+        )..orderBy([(n) => OrderingTerm.desc(n.createdAt)])).get();
         logInfo(
           'getAllNotifications() returned ${result.length} notifications',
         );
@@ -29,9 +29,9 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<NotificationHistoryData>> watchAllNotifications() {
     logDebug('watchAllNotifications() called');
-    return (select(notificationHistory)
-          ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
-        .watch();
+    return (select(
+      notificationHistory,
+    )..orderBy([(n) => OrderingTerm.desc(n.createdAt)])).watch();
   }
 
   Future<List<NotificationHistoryData>> getNotificationsByDateRange(
@@ -41,10 +41,13 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<List<NotificationHistoryData>>(
       operationName: 'getNotificationsByDateRange',
       operation: () async {
-        final result = await (select(notificationHistory)
-              ..where((n) => n.createdAt.isBetweenValues(startDate, endDate))
-              ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
-            .get();
+        final result =
+            await (select(notificationHistory)
+                  ..where(
+                    (n) => n.createdAt.isBetweenValues(startDate, endDate),
+                  )
+                  ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
+                .get();
         logInfo(
           'getNotificationsByDateRange() returned ${result.length} notifications',
         );
@@ -60,10 +63,11 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<List<NotificationHistoryData>>(
       operationName: 'getNotificationsByType',
       operation: () async {
-        final result = await (select(notificationHistory)
-              ..where((n) => n.notificationType.equals(notificationType))
-              ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
-            .get();
+        final result =
+            await (select(notificationHistory)
+                  ..where((n) => n.notificationType.equals(notificationType))
+                  ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
+                .get();
         logInfo(
           'getNotificationsByType() returned ${result.length} notifications',
         );
@@ -77,9 +81,9 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<NotificationHistoryData?>(
       operationName: 'getNotificationById',
       operation: () async {
-        final result = await (select(notificationHistory)
-              ..where((n) => n.id.equals(id)))
-            .getSingleOrNull();
+        final result = await (select(
+          notificationHistory,
+        )..where((n) => n.id.equals(id))).getSingleOrNull();
         logDebug(
           'getNotificationById(id=$id) returned ${result != null ? "notification" : "null"}',
         );
@@ -120,11 +124,12 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<bool>(
       operationName: 'markAsTapped',
       operation: () async {
-        final result = await (update(notificationHistory)
-              ..where((n) => n.id.equals(id)))
-            .write(
-          NotificationHistoryCompanion(wasTapped: const Value(true)),
-        );
+        final result =
+            await (update(
+              notificationHistory,
+            )..where((n) => n.id.equals(id))).write(
+              const NotificationHistoryCompanion(wasTapped: Value(true)),
+            );
         logInfo('markAsTapped(id=$id) updated successfully');
         return result > 0;
       },
@@ -136,11 +141,12 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<bool>(
       operationName: 'markAsDismissed',
       operation: () async {
-        final result = await (update(notificationHistory)
-              ..where((n) => n.id.equals(id)))
-            .write(
-          NotificationHistoryCompanion(wasDismissed: const Value(true)),
-        );
+        final result =
+            await (update(
+              notificationHistory,
+            )..where((n) => n.id.equals(id))).write(
+              const NotificationHistoryCompanion(wasDismissed: Value(true)),
+            );
         logInfo('markAsDismissed(id=$id) updated successfully');
         return result > 0;
       },
@@ -152,9 +158,9 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<int>(
       operationName: 'deleteNotification',
       operation: () async {
-        final result = await (delete(notificationHistory)
-              ..where((n) => n.id.equals(id)))
-            .go();
+        final result = await (delete(
+          notificationHistory,
+        )..where((n) => n.id.equals(id))).go();
         logInfo('deleteNotification(id=$id) deleted $result rows');
         return result;
       },
@@ -165,9 +171,9 @@ class NotificationHistoryDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<int>(
       operationName: 'deleteOldNotifications',
       operation: () async {
-        final result = await (delete(notificationHistory)
-              ..where((n) => n.createdAt.isSmallerThanValue(beforeDate)))
-            .go();
+        final result = await (delete(
+          notificationHistory,
+        )..where((n) => n.createdAt.isSmallerThanValue(beforeDate))).go();
         logInfo(
           'deleteOldNotifications() deleted $result notifications before $beforeDate',
         );

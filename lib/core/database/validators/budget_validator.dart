@@ -13,9 +13,7 @@ class BudgetValidator {
 
     final period = budget.period.value;
     if (!validPeriods.contains(period)) {
-      throw ArgumentError(
-        'Period must be one of: ${validPeriods.join(", ")}',
-      );
+      throw ArgumentError('Period must be one of: ${validPeriods.join(", ")}');
     }
 
     final rolloverPercentage = budget.rolloverPercentage.value;

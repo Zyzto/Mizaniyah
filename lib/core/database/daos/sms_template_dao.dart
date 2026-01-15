@@ -37,10 +37,11 @@ class SmsTemplateDao extends DatabaseAccessor<AppDatabase>
       operation: () async {
         // Get all active templates (we'll filter by sender pattern in memory)
         // This is acceptable since we typically have few templates
-        final allActive = await (select(db.smsTemplates)
-              ..where((t) => t.isActive.equals(true))
-              ..orderBy([(t) => OrderingTerm.desc(t.priority)]))
-            .get();
+        final allActive =
+            await (select(db.smsTemplates)
+                  ..where((t) => t.isActive.equals(true))
+                  ..orderBy([(t) => OrderingTerm.desc(t.priority)]))
+                .get();
 
         // Filter templates that match the sender
         final filtered = allActive.where((t) {
@@ -56,7 +57,9 @@ class SmsTemplateDao extends DatabaseAccessor<AppDatabase>
             );
             return templatePattern.hasMatch(sender);
           } catch (e) {
-            logWarning('Invalid sender pattern in template ${t.id}: ${t.senderPattern}');
+            logWarning(
+              'Invalid sender pattern in template ${t.id}: ${t.senderPattern}',
+            );
             return false; // Invalid pattern, skip this template
           }
         }).toList();

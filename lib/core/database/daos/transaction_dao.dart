@@ -26,9 +26,9 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<Transaction>> watchAllTransactions() {
     logDebug('watchAllTransactions() called');
-    return (select(db.transactions)
-          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
-        .watch();
+    return (select(
+      db.transactions,
+    )..orderBy([(t) => OrderingTerm.desc(t.date)])).watch();
   }
 
   /// Get transactions filtered by category and/or search query (optimized)
@@ -114,11 +114,12 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<List<Transaction>>(
       operationName: 'getTransactionsByDateRange',
       operation: () async {
-        final result = await (select(db.transactions)
-              ..where((t) => t.date.isBiggerOrEqualValue(start))
-              ..where((t) => t.date.isSmallerOrEqualValue(end))
-              ..orderBy([(t) => OrderingTerm.desc(t.date)]))
-            .get();
+        final result =
+            await (select(db.transactions)
+                  ..where((t) => t.date.isBiggerOrEqualValue(start))
+                  ..where((t) => t.date.isSmallerOrEqualValue(end))
+                  ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+                .get();
         logInfo(
           'getTransactionsByDateRange() returned ${result.length} transactions',
         );
@@ -137,12 +138,13 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return executeWithErrorHandling<List<Transaction>>(
       operationName: 'getTransactionsByDateRangeAndCategory',
       operation: () async {
-        final result = await (select(db.transactions)
-              ..where((t) => t.date.isBiggerOrEqualValue(start))
-              ..where((t) => t.date.isSmallerOrEqualValue(end))
-              ..where((t) => t.categoryId.equals(categoryId))
-              ..orderBy([(t) => OrderingTerm.desc(t.date)]))
-            .get();
+        final result =
+            await (select(db.transactions)
+                  ..where((t) => t.date.isBiggerOrEqualValue(start))
+                  ..where((t) => t.date.isSmallerOrEqualValue(end))
+                  ..where((t) => t.categoryId.equals(categoryId))
+                  ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+                .get();
         logInfo(
           'getTransactionsByDateRangeAndCategory() returned ${result.length} transactions',
         );

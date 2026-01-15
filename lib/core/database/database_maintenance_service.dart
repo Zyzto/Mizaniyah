@@ -15,11 +15,7 @@ class DatabaseMaintenanceService with Loggable {
       await _database.customStatement('VACUUM');
       logInfo('VACUUM completed successfully');
     } catch (e, stackTrace) {
-      logError(
-        'VACUUM failed',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      logError('VACUUM failed', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -31,11 +27,7 @@ class DatabaseMaintenanceService with Loggable {
       await _database.customStatement('ANALYZE');
       logInfo('ANALYZE completed successfully');
     } catch (e, stackTrace) {
-      logError(
-        'ANALYZE failed',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      logError('ANALYZE failed', error: e, stackTrace: stackTrace);
       rethrow;
     }
   }
@@ -44,20 +36,18 @@ class DatabaseMaintenanceService with Loggable {
   Future<int> getDatabaseSize() async {
     logDebug('Getting database size');
     try {
-      final result = await _database.customSelect(
-        'SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()',
-        readsFrom: {},
-      ).getSingle();
+      final result = await _database
+          .customSelect(
+            'SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()',
+            readsFrom: {},
+          )
+          .getSingle();
 
       final size = result.read<int>('size');
       logInfo('Database size: $size bytes');
       return size;
     } catch (e, stackTrace) {
-      logError(
-        'Failed to get database size',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      logError('Failed to get database size', error: e, stackTrace: stackTrace);
       return 0;
     }
   }
@@ -79,10 +69,12 @@ class DatabaseMaintenanceService with Loggable {
 
       for (final table in tables) {
         try {
-          final result = await _database.customSelect(
-            'SELECT COUNT(*) as count FROM $table',
-            readsFrom: {},
-          ).getSingle();
+          final result = await _database
+              .customSelect(
+                'SELECT COUNT(*) as count FROM $table',
+                readsFrom: {},
+              )
+              .getSingle();
           stats[table] = result.read<int>('count');
         } catch (e) {
           logWarning('Failed to get count for table $table: $e');
@@ -106,8 +98,7 @@ class DatabaseMaintenanceService with Loggable {
   Future<Map<String, dynamic>> getIndexStatistics() async {
     logDebug('Getting index statistics');
     try {
-      final result = await _database.customSelect(
-        '''
+      final result = await _database.customSelect('''
         SELECT 
           name,
           tbl_name,
@@ -115,9 +106,7 @@ class DatabaseMaintenanceService with Loggable {
         FROM sqlite_master
         WHERE type = 'index' AND name NOT LIKE 'sqlite_%'
         ORDER BY name
-        ''',
-        readsFrom: {},
-      ).get();
+        ''', readsFrom: {}).get();
 
       final indexes = <String, Map<String, dynamic>>{};
       for (final row in result) {
@@ -161,10 +150,9 @@ class DatabaseMaintenanceService with Loggable {
   Future<List<Map<String, dynamic>>> explainQuery(String sql) async {
     logDebug('Explaining query: $sql');
     try {
-      final result = await _database.customSelect(
-        'EXPLAIN QUERY PLAN $sql',
-        readsFrom: {},
-      ).get();
+      final result = await _database
+          .customSelect('EXPLAIN QUERY PLAN $sql', readsFrom: {})
+          .get();
 
       final plan = <Map<String, dynamic>>[];
       for (final row in result) {
@@ -179,11 +167,7 @@ class DatabaseMaintenanceService with Loggable {
       logInfo('Query plan: $plan');
       return plan;
     } catch (e, stackTrace) {
-      logError(
-        'Failed to explain query',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      logError('Failed to explain query', error: e, stackTrace: stackTrace);
       return [];
     }
   }

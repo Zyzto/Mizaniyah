@@ -5,7 +5,8 @@ class Budgets extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get categoryId =>
       integer().references(Categories, #id, onDelete: KeyAction.cascade)();
-  RealColumn get amount => real()(); // Budget amount (must be > 0, enforced via check constraint)
+  RealColumn get amount =>
+      real()(); // Budget amount (must be > 0, enforced via check constraint)
   TextColumn get period => text().withDefault(
     const Constant('monthly'),
   )(); // 'monthly', 'weekly', 'yearly' (validated via check constraint)

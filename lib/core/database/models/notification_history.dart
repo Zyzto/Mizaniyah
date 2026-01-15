@@ -11,10 +11,7 @@ class NotificationHistory extends Table {
   TextColumn get title => text()();
   TextColumn get body => text()();
   TextColumn get payload => text().nullable()(); // Additional data as JSON
-  BoolColumn get wasTapped =>
-      boolean().withDefault(const Constant(false))();
-  BoolColumn get wasDismissed =>
-      boolean().withDefault(const Constant(false))();
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  BoolColumn get wasTapped => boolean().withDefault(const Constant(false))();
+  BoolColumn get wasDismissed => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

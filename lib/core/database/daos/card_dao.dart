@@ -130,5 +130,4 @@ class CardDao extends DatabaseAccessor<AppDatabase>
       onError: () => 0,
     );
   }
-
 }

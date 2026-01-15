@@ -1,5 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../app_database.dart' as db;
+
+part 'database_provider.g.dart';
 
 /// Singleton database instance to avoid multiple database warnings.
 /// This ensures all parts of the app use the same database connection.
@@ -12,6 +14,7 @@ db.AppDatabase getDatabase() {
 
 /// Centralized database provider for Riverpod 3.0
 /// All DAO providers should depend on this provider
-final databaseProvider = Provider<db.AppDatabase>((ref) {
+@riverpod
+db.AppDatabase database(DatabaseRef ref) {
   return getDatabase();
-});
+}
