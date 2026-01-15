@@ -126,6 +126,19 @@ const autoConfirmTransactionsSettingDef = BoolSetting(
   order: 1,
 );
 
+/// Confidence threshold for auto-creating transactions (0.5-1.0)
+const confidenceThresholdSettingDef = DoubleSetting(
+  'sms_confidence_threshold',
+  defaultValue: 0.7,
+  min: 0.5,
+  max: 1.0,
+  step: 0.05,
+  titleKey: 'confidence_threshold',
+  icon: Icons.trending_up,
+  section: 'sms',
+  order: 2,
+);
+
 // =============================================================================
 // CURRENCY SETTINGS
 // =============================================================================
@@ -195,6 +208,7 @@ const allSettings = <SettingDefinition>[
   // SMS
   smsDetectionEnabledSettingDef,
   autoConfirmTransactionsSettingDef,
+  confidenceThresholdSettingDef,
 
   // Currency
   defaultCurrencySettingDef,

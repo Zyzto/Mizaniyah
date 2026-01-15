@@ -98,10 +98,11 @@ class SettingTileBuilder {
       final min = settingDef.min ?? 0.0;
       final max = settingDef.max ?? 100.0;
       final step = settingDef.step;
+      final currentDouble = currentValue as double;
       tile = SliderSettingsTile(
         leading: settingDef.icon != null ? Icon(settingDef.icon) : null,
         title: Text(settingDef.titleKey.tr()),
-        value: currentValue,
+        value: currentDouble,
         min: min,
         max: max,
         divisions: step > 0 ? ((max - min) / step).round() : null,
@@ -110,6 +111,24 @@ class SettingTileBuilder {
           ref.read(settings.provider(settingDef).notifier).set(value);
         },
       );
+      // Add subtitle showing percentage for confidence threshold
+      if (settingDef.key == 'sms_confidence_threshold') {
+        tile = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            tile,
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 4),
+              child: Text(
+                '${(currentDouble * 100).toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        );
+      }
     } else if (settingDef is ColorSetting) {
       tile = _buildColorSettingTile(
         context,

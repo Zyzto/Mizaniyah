@@ -11,7 +11,10 @@ import '../../../core/widgets/error_snackbar.dart';
 class ExportSection {
   const ExportSection._();
 
-  static SettingsSectionWidget buildSection(BuildContext context, WidgetRef ref) {
+  static SettingsSectionWidget buildSection(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     return SettingsSectionWidget(
       title: 'export'.tr(),
       icon: Icons.file_download,
@@ -38,7 +41,10 @@ class ExportSection {
     );
   }
 
-  static Future<void> _exportTransactions(BuildContext context, WidgetRef ref) async {
+  static Future<void> _exportTransactions(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     try {
       final exportService = ref.read(exportServiceProvider);
       final filePath = await exportService.exportTransactionsToCsv();

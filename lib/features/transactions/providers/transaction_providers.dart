@@ -15,7 +15,10 @@ final transactionsProvider = StreamProvider<List<db.Transaction>>((ref) async* {
 });
 
 /// Single transaction provider - kept alive to avoid refetching
-final transactionProvider = FutureProvider.family<db.Transaction, int>((ref, id) async {
+final transactionProvider = FutureProvider.family<db.Transaction, int>((
+  ref,
+  id,
+) async {
   ref.keepAlive();
   final dao = ref.watch(transactionDaoProvider);
   final result = await dao.getTransactionById(id);
@@ -44,13 +47,17 @@ class TransactionSearchQuery extends _$TransactionSearchQuery {
 /// Persisted across navigation for smooth UX
 /// Using non-nullable parameters with sentinel values for code generation compatibility
 /// categoryId: -1 means no filter, searchQuery: empty string means no filter
-final filteredTransactionsProvider = StreamProvider.family<List<db.Transaction>, ({int categoryId, String searchQuery})>((ref, params) async* {
-  ref.keepAlive();
-  final dao = ref.watch(transactionDaoProvider);
-  await for (final transactions in dao.watchTransactionsFiltered(
-    categoryId: params.categoryId == -1 ? null : params.categoryId,
-    searchQuery: params.searchQuery.isEmpty ? null : params.searchQuery,
-  )) {
-    yield transactions;
-  }
-});
+final filteredTransactionsProvider =
+    StreamProvider.family<
+      List<db.Transaction>,
+      ({int categoryId, String searchQuery})
+    >((ref, params) async* {
+      ref.keepAlive();
+      final dao = ref.watch(transactionDaoProvider);
+      await for (final transactions in dao.watchTransactionsFiltered(
+        categoryId: params.categoryId == -1 ? null : params.categoryId,
+        searchQuery: params.searchQuery.isEmpty ? null : params.searchQuery,
+      )) {
+        yield transactions;
+      }
+    });

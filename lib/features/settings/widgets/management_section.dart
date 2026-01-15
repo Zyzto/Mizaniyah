@@ -12,7 +12,10 @@ import '../../categories/providers/category_providers.dart';
 class ManagementSection {
   const ManagementSection._();
 
-  static SettingsSectionWidget buildSection(BuildContext context, WidgetRef ref) {
+  static SettingsSectionWidget buildSection(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return SettingsSectionWidget(

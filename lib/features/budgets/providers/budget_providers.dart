@@ -18,7 +18,10 @@ final activeBudgetsProvider = FutureProvider<List<db.Budget>>((ref) async {
   return dao.getActiveBudgets();
 });
 
-final budgetsByCategoryProvider = FutureProvider.family<List<db.Budget>, int>((ref, categoryId) async {
+final budgetsByCategoryProvider = FutureProvider.family<List<db.Budget>, int>((
+  ref,
+  categoryId,
+) async {
   ref.keepAlive();
   final dao = ref.watch(budgetDaoProvider);
   return dao.getBudgetsByCategory(categoryId);
@@ -34,14 +37,20 @@ final budgetProvider = FutureProvider.family<db.Budget, int>((ref, id) async {
   return result;
 });
 
-final remainingBudgetProvider = FutureProvider.family<double, int>((ref, categoryId) async {
+final remainingBudgetProvider = FutureProvider.family<double, int>((
+  ref,
+  categoryId,
+) async {
   ref.keepAlive();
   final service = ref.watch(budgetServiceProvider);
   final result = await service.getRemainingBudgetForCategory(categoryId);
   return result ?? 0.0;
 });
 
-final budgetStatusColorProvider = FutureProvider.family<int, int>((ref, categoryId) async {
+final budgetStatusColorProvider = FutureProvider.family<int, int>((
+  ref,
+  categoryId,
+) async {
   ref.keepAlive();
   final service = ref.watch(budgetServiceProvider);
   final result = await service.getBudgetStatusColorForCategory(categoryId);

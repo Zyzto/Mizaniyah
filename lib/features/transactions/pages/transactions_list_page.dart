@@ -27,7 +27,7 @@ class _TransactionsListPageState extends ConsumerState<TransactionsListPage>
   String _debouncedSearchQuery = '';
   int? _selectedCategoryId;
   late final Debouncer _searchDebouncer;
-  
+
   // Cache previous data to avoid skeleton flashing when filters change
   AsyncValue<List<db.Transaction>>? _previousData;
 
@@ -70,18 +70,19 @@ class _TransactionsListPageState extends ConsumerState<TransactionsListPage>
         searchQuery: _getSearchQuery(),
       )),
     );
-    
+
     // Maintain previous data to avoid skeleton flashing when filters change
     // Update cache when we have successful data
     if (transactionsAsync.hasValue) {
       _previousData = transactionsAsync;
     }
-    
+
     // Use previous data if current is loading to avoid skeleton flash
     // This provides smooth transitions when switching filters
     // Since streams update quickly, showing previous data briefly is acceptable
-    final effectiveAsync = transactionsAsync.isLoading && 
-            _previousData != null && 
+    final effectiveAsync =
+        transactionsAsync.isLoading &&
+            _previousData != null &&
             _previousData!.hasValue
         ? _previousData! // Show cached data while loading to avoid flash
         : transactionsAsync; // Use current state (data or error)

@@ -11,10 +11,12 @@ import 'package:mizaniyah/core/utils/currency_formatter.dart';
 import 'package:mizaniyah/features/sms_templates/providers/sms_template_providers.dart';
 import 'package:drift/drift.dart' as drift;
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
 import '../../../core/widgets/error_state.dart';
 import '../../../core/widgets/error_snackbar.dart';
+import 'edit_confirmation_dialog.dart';
 
 class PendingConfirmationsTab extends ConsumerStatefulWidget {
   const PendingConfirmationsTab({super.key});
@@ -32,6 +34,7 @@ class _PendingConfirmationsTabState
 
   final Set<int> _selectedIds = {};
   bool _isSelectionMode = false;
+  String _confidenceFilter = 'all'; // 'all', 'high', 'medium', 'low'
 
   @override
   Widget build(BuildContext context) {
@@ -49,14 +52,36 @@ class _PendingConfirmationsTabState
           );
         }
 
+        // Filter by confidence
+        final filtered = _filterByConfidence(confirmations);
+
+        // Sort confirmations by confidence (high to low) or date (newest first)
+        final sortedConfirmations =
+            List<db.PendingSmsConfirmation>.from(filtered)..sort((a, b) {
+              try {
+                final aJson = jsonDecode(a.parsedData) as Map<String, dynamic>;
+                final bJson = jsonDecode(b.parsedData) as Map<String, dynamic>;
+                final aConf = aJson['confidence'] as double? ?? 0.0;
+                final bConf = bJson['confidence'] as double? ?? 0.0;
+                // Sort by confidence descending, then by date descending
+                final confCompare = bConf.compareTo(aConf);
+                if (confCompare != 0) return confCompare;
+                return b.createdAt.compareTo(a.createdAt);
+              } catch (e) {
+                return b.createdAt.compareTo(a.createdAt);
+              }
+            });
+
         return Column(
           children: [
-            if (_isSelectionMode) _buildSelectionBar(confirmations),
+            // Filter and sort controls
+            _buildFilterBar(),
+            if (_isSelectionMode) _buildSelectionBar(sortedConfirmations),
             Expanded(
               child: ListView.builder(
-                itemCount: confirmations.length,
+                itemCount: sortedConfirmations.length,
                 itemBuilder: (context, index) {
-                  final confirmation = confirmations[index];
+                  final confirmation = sortedConfirmations[index];
                   return _PendingConfirmationCard(
                     confirmation: confirmation,
                     isSelected: _selectedIds.contains(confirmation.id),
@@ -91,6 +116,74 @@ class _PendingConfirmationsTabState
         onRetry: () => ref.invalidate(pendingSmsConfirmationsProvider),
       ),
     );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'filter_by_confidence'.tr(),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SegmentedButton<String>(
+              segments: [
+                ButtonSegment(value: 'all', label: Text('all'.tr())),
+                ButtonSegment(value: 'high', label: Text('high'.tr())),
+                ButtonSegment(value: 'medium', label: Text('medium'.tr())),
+                ButtonSegment(value: 'low', label: Text('low'.tr())),
+              ],
+              selected: {_confidenceFilter},
+              onSelectionChanged: (Set<String> selected) {
+                setState(() {
+                  _confidenceFilter = selected.first;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<db.PendingSmsConfirmation> _filterByConfidence(
+    List<db.PendingSmsConfirmation> confirmations,
+  ) {
+    if (_confidenceFilter == 'all') {
+      return confirmations;
+    }
+
+    return confirmations.where((confirmation) {
+      try {
+        final parsedDataJson =
+            jsonDecode(confirmation.parsedData) as Map<String, dynamic>;
+        final confidence = parsedDataJson['confidence'] as double? ?? 0.0;
+
+        switch (_confidenceFilter) {
+          case 'high':
+            return confidence >= 0.7;
+          case 'medium':
+            return confidence >= 0.5 && confidence < 0.7;
+          case 'low':
+            return confidence < 0.5;
+          default:
+            return true;
+        }
+      } catch (e) {
+        return true; // Include if we can't parse
+      }
+    }).toList();
   }
 
   Widget _buildSelectionBar(List<db.PendingSmsConfirmation> confirmations) {
@@ -210,6 +303,10 @@ class _PendingConfirmationsTabState
       final amount = parsedDataJson['amount'] as double?;
       final currency = parsedDataJson['currency'] as String? ?? 'USD';
       final cardLast4 = parsedDataJson['card_last4'] as String?;
+      final transactionDateStr = parsedDataJson['transaction_date'] as String?;
+      final transactionDate = transactionDateStr != null
+          ? DateTime.tryParse(transactionDateStr)
+          : null;
 
       if (storeName == null || amount == null) {
         if (!mounted || !context.mounted) return;
@@ -227,15 +324,41 @@ class _PendingConfirmationsTabState
         cardId = card?.id;
       }
 
+      // Use extracted transaction date or fallback to confirmation creation date
+      final date = transactionDate ?? confirmation.createdAt;
+
+      // Generate SMS hash for duplicate detection
+      final smsHash =
+          '${confirmation.smsSender}|${confirmation.smsBody}|${date.toIso8601String().split('T')[0]}';
+      final hashBytes = utf8.encode(smsHash);
+      final hash = sha256.convert(hashBytes).toString();
+
+      // Check for duplicate
+      final duplicate = await transactionDao.findDuplicateBySmsHash(hash);
+      if (duplicate != null) {
+        if (!mounted || !context.mounted) return;
+        if (!silent) {
+          HapticFeedback.heavyImpact();
+          ErrorSnackbar.show(context, 'duplicate_transaction_detected'.tr());
+        }
+        // Delete confirmation since it's a duplicate
+        await pendingSmsDao.deleteConfirmation(confirmation.id);
+        return;
+      }
+
       // Create transaction
       final transaction = db.TransactionsCompanion(
         amount: drift.Value(amount),
         currencyCode: drift.Value(currency),
         storeName: drift.Value(storeName),
-        cardId: drift.Value(cardId),
-        categoryId: const drift.Value.absent(),
-        date: drift.Value(DateTime.now()),
+        cardId: cardId != null
+            ? drift.Value(cardId)
+            : const drift.Value.absent(),
+        categoryId:
+            const drift.Value.absent(), // Category can be set via edit dialog
+        date: drift.Value(date),
         source: const drift.Value('sms'),
+        smsHash: drift.Value(hash),
         notes: drift.Value('approved_from_sms'.tr()),
       );
 
@@ -288,9 +411,17 @@ class _PendingConfirmationsTabState
   }
 
   void _editConfirmation(db.PendingSmsConfirmation confirmation) {
-    // TODO: Implement edit dialog
     HapticFeedback.lightImpact();
-    ErrorSnackbar.show(context, 'edit_feature_coming_soon'.tr());
+    showDialog(
+      context: context,
+      builder: (context) => EditConfirmationDialog(confirmation: confirmation),
+    ).then((editedData) {
+      if (editedData != null && mounted) {
+        // Confirmation was updated, stream will auto-refresh
+        HapticFeedback.lightImpact();
+        ErrorSnackbar.showSuccess(context, 'confirmation_updated'.tr());
+      }
+    });
   }
 
   void _viewSms(db.PendingSmsConfirmation confirmation) {
