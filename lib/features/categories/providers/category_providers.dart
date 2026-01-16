@@ -3,6 +3,7 @@ import 'package:flutter_logging_service/flutter_logging_service.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/providers/dao_providers.dart';
 
+/// All categories stream - persisted across navigation
 final categoriesProvider = StreamProvider<List<db.Category>>((ref) async* {
   ref.keepAlive();
   final dao = ref.watch(categoryDaoProvider);
@@ -20,6 +21,7 @@ final categoriesProvider = StreamProvider<List<db.Category>>((ref) async* {
   }
 });
 
+/// Active categories provider
 final activeCategoriesProvider = FutureProvider<List<db.Category>>((ref) async {
   final dao = ref.watch(categoryDaoProvider);
   try {
@@ -34,6 +36,7 @@ final activeCategoriesProvider = FutureProvider<List<db.Category>>((ref) async {
   }
 });
 
+/// Single category by ID provider
 final categoryProvider = FutureProvider.family<db.Category?, int>((
   ref,
   id,

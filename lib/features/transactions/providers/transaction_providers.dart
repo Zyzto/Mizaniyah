@@ -1,5 +1,5 @@
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/providers/dao_providers.dart';
 
@@ -45,7 +45,6 @@ class TransactionSearchQuery extends _$TransactionSearchQuery {
 
 /// Stream provider for filtered transactions (optimized - filters in database)
 /// Persisted across navigation for smooth UX
-/// Using non-nullable parameters with sentinel values for code generation compatibility
 /// categoryId: -1 means no filter, searchQuery: empty string means no filter
 final filteredTransactionsProvider =
     StreamProvider.family<

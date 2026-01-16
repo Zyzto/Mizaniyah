@@ -4,6 +4,7 @@ import '../../../core/database/providers/dao_providers.dart';
 import '../../../core/services/providers/budget_service_provider.dart'
     show budgetServiceProvider;
 
+/// All budgets stream - persisted across navigation
 final budgetsProvider = StreamProvider<List<db.Budget>>((ref) async* {
   ref.keepAlive();
   final dao = ref.watch(budgetDaoProvider);
@@ -12,12 +13,14 @@ final budgetsProvider = StreamProvider<List<db.Budget>>((ref) async* {
   }
 });
 
+/// Active budgets provider - kept alive
 final activeBudgetsProvider = FutureProvider<List<db.Budget>>((ref) async {
   ref.keepAlive();
   final dao = ref.watch(budgetDaoProvider);
   return dao.getActiveBudgets();
 });
 
+/// Budgets by category provider - kept alive
 final budgetsByCategoryProvider = FutureProvider.family<List<db.Budget>, int>((
   ref,
   categoryId,
@@ -27,6 +30,7 @@ final budgetsByCategoryProvider = FutureProvider.family<List<db.Budget>, int>((
   return dao.getBudgetsByCategory(categoryId);
 });
 
+/// Single budget provider - kept alive
 final budgetProvider = FutureProvider.family<db.Budget, int>((ref, id) async {
   ref.keepAlive();
   final dao = ref.watch(budgetDaoProvider);
@@ -37,6 +41,7 @@ final budgetProvider = FutureProvider.family<db.Budget, int>((ref, id) async {
   return result;
 });
 
+/// Remaining budget for a category - kept alive
 final remainingBudgetProvider = FutureProvider.family<double, int>((
   ref,
   categoryId,
@@ -47,6 +52,7 @@ final remainingBudgetProvider = FutureProvider.family<double, int>((
   return result ?? 0.0;
 });
 
+/// Budget status color for a category - kept alive
 final budgetStatusColorProvider = FutureProvider.family<int, int>((
   ref,
   categoryId,

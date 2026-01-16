@@ -55,6 +55,9 @@ class SmsDetectionService with Loggable {
   double _confidenceThreshold =
       SmsDetectionConstants.defaultAutoCreateConfidenceThreshold;
 
+  /// Public getter to check if SMS listening is active
+  bool get isListening => _isListening;
+
   /// Initialize the SMS detection service
   /// Prefer using the factory constructor for new code
   Future<void> init(

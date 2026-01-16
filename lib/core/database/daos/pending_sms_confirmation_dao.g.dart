@@ -6,4 +6,16 @@ part of 'pending_sms_confirmation_dao.dart';
 mixin _$PendingSmsConfirmationDaoMixin on DatabaseAccessor<AppDatabase> {
   $PendingSmsConfirmationsTable get pendingSmsConfirmations =>
       attachedDatabase.pendingSmsConfirmations;
+  PendingSmsConfirmationDaoManager get managers =>
+      PendingSmsConfirmationDaoManager(this);
+}
+
+class PendingSmsConfirmationDaoManager {
+  final _$PendingSmsConfirmationDaoMixin _db;
+  PendingSmsConfirmationDaoManager(this._db);
+  $$PendingSmsConfirmationsTableTableManager get pendingSmsConfirmations =>
+      $$PendingSmsConfirmationsTableTableManager(
+        _db.attachedDatabase,
+        _db.pendingSmsConfirmations,
+      );
 }

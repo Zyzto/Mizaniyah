@@ -5,7 +5,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_scroll_behavior.dart';
 import 'features/settings/providers/settings_framework_providers.dart';
-import 'features/settings/settings_definitions.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/providers/sms_detection_provider.dart';
 import 'core/navigation/app_router.dart';
@@ -22,6 +21,7 @@ class App extends ConsumerStatefulWidget {
 
 class _AppState extends ConsumerState<App> {
   bool _smsPreloaded = false;
+  bool _initialLanguageSynced = false;
 
   @override
   void initState() {
@@ -57,70 +57,58 @@ class _AppState extends ConsumerState<App> {
     NotificationService.setRouter(router);
 
     // Watch SMS detection settings to manage the service
+    // This now returns a proper state object instead of void
     ref.watch(smsDetectionManagerProvider);
 
-    // Get settings from framework
-    ThemeMode themeMode;
-    int themeColor;
-    String fontSizeScale;
-    Locale? locale;
+    // Use convenience providers for cleaner access with built-in error handling
+    final themeMode = ref.watch(themeModeProvider);
+    final themeColor = ref.watch(themeColorProvider);
+    final fontSizeScale = ref.watch(fontSizeScaleProvider);
 
-    try {
-      final settings = ref.watch(mizaniyahSettingsProvider);
-      final themeModeStr = ref.watch(settings.provider(themeModeSettingDef));
-      themeMode = _parseThemeMode(themeModeStr);
-      themeColor = ref.watch(settings.provider(themeColorSettingDef));
-      fontSizeScale = ref.watch(settings.provider(fontSizeScaleSettingDef));
+    // Listen to language setting changes and sync with EasyLocalization
+    // Using ref.listen ensures we react to changes immediately
+    ref.listen<String>(languageSettingProvider, (previous, next) {
+      if (previous != next && context.mounted) {
+        final newLocale = Locale(next);
+        context.setLocale(newLocale);
+        Log.debug('Language changed from $previous to $next');
+      }
+    });
 
-      // Get language setting and update locale
-      final languageCode = ref.watch(settings.provider(languageSettingDef));
-      locale = Locale(languageCode);
-      // Update EasyLocalization context locale if it's different
-      if (context.locale.languageCode != languageCode) {
-        // Use SchedulerBinding to ensure this runs after the current frame
+    // On first build, sync saved language setting with EasyLocalization
+    // This ensures app starts with the correct language from settings
+    if (!_initialLanguageSynced) {
+      _initialLanguageSynced = true;
+      final savedLanguage = ref.read(languageSettingProvider);
+      if (context.locale.languageCode != savedLanguage) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            context.setLocale(locale!);
+          if (mounted && context.mounted) {
+            context.setLocale(Locale(savedLanguage));
+            Log.debug('Initial language synced to: $savedLanguage');
           }
         });
       }
-    } catch (e) {
-      Log.warning('Settings framework not initialized, using defaults');
-      themeMode = ThemeMode.system;
-      themeColor = 0xFF2E7D32; // Default Material Green
-      fontSizeScale = 'normal';
-      locale = const Locale('en');
     }
 
+    // Use EasyLocalization's locale (context.locale) as the source of truth
+    // This ensures translations update immediately when language changes
     return MaterialApp.router(
       title: 'Mizaniyah',
       debugShowCheckedModeBanner: kDebugMode,
       scrollBehavior: AppScrollBehavior(),
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
-      locale: locale,
+      locale: context.locale, // Use EasyLocalization's locale
       theme: AppTheme.lightTheme(
-        seedColor: Color(themeColor),
+        seedColor: themeColor,
         fontSizeScale: fontSizeScale,
       ),
       darkTheme: AppTheme.darkTheme(
-        seedColor: Color(themeColor),
+        seedColor: themeColor,
         fontSizeScale: fontSizeScale,
       ),
       themeMode: themeMode,
       routerConfig: router,
     );
-  }
-
-  ThemeMode _parseThemeMode(String themeModeStr) {
-    switch (themeModeStr) {
-      case 'light':
-        return ThemeMode.light;
-      case 'dark':
-        return ThemeMode.dark;
-      case 'system':
-      default:
-        return ThemeMode.system;
-    }
   }
 }

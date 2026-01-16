@@ -7,4 +7,17 @@ mixin _$CategoryMappingDaoMixin on DatabaseAccessor<AppDatabase> {
   $CategoriesTable get categories => attachedDatabase.categories;
   $CategoryMappingsTable get categoryMappings =>
       attachedDatabase.categoryMappings;
+  CategoryMappingDaoManager get managers => CategoryMappingDaoManager(this);
+}
+
+class CategoryMappingDaoManager {
+  final _$CategoryMappingDaoMixin _db;
+  CategoryMappingDaoManager(this._db);
+  $$CategoriesTableTableManager get categories =>
+      $$CategoriesTableTableManager(_db.attachedDatabase, _db.categories);
+  $$CategoryMappingsTableTableManager get categoryMappings =>
+      $$CategoryMappingsTableTableManager(
+        _db.attachedDatabase,
+        _db.categoryMappings,
+      );
 }

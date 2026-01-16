@@ -6,4 +6,16 @@ part of 'notification_history_dao.dart';
 mixin _$NotificationHistoryDaoMixin on DatabaseAccessor<AppDatabase> {
   $NotificationHistoryTable get notificationHistory =>
       attachedDatabase.notificationHistory;
+  NotificationHistoryDaoManager get managers =>
+      NotificationHistoryDaoManager(this);
+}
+
+class NotificationHistoryDaoManager {
+  final _$NotificationHistoryDaoMixin _db;
+  NotificationHistoryDaoManager(this._db);
+  $$NotificationHistoryTableTableManager get notificationHistory =>
+      $$NotificationHistoryTableTableManager(
+        _db.attachedDatabase,
+        _db.notificationHistory,
+      );
 }

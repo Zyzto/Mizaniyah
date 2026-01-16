@@ -1,10 +1,12 @@
 import 'dart:async';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:another_telephony/telephony.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import '../../../core/services/sms_reader_service.dart';
 import '../../../core/services/sms_parsing_service.dart';
 import '../../../core/database/providers/dao_providers.dart';
+
+part 'sms_providers.g.dart';
 
 /// SMS with parsing status
 class SmsWithStatus {
@@ -37,12 +39,8 @@ class SmsWithStatus {
 
 /// Provider for SMS list with parsing status
 /// Uses progressive loading: shows SMS immediately, parses in background
-final smsListProvider =
-    NotifierProvider<SmsListNotifier, AsyncValue<List<SmsWithStatus>>>(() {
-      return SmsListNotifier();
-    });
-
-class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
+@Riverpod(keepAlive: true)
+class SmsList extends _$SmsList {
   final SmsReaderService _smsReaderService = SmsReaderService.instance;
   final Map<String, SmsWithStatus> _parsingCache = {};
   bool _isLoading = false;
@@ -55,8 +53,6 @@ class SmsListNotifier extends Notifier<AsyncValue<List<SmsWithStatus>>> {
 
   @override
   AsyncValue<List<SmsWithStatus>> build() {
-    // Keep provider alive to persist state across navigation
-    ref.keepAlive();
     // Load initial SMS when provider is first accessed (if not already loading or loaded)
     // Note: Don't access state here as it's not initialized yet
     if (!_isLoading && !_hasData) {

@@ -60,8 +60,7 @@ class SmsAndNotificationsTab extends ConsumerStatefulWidget {
       _SmsAndNotificationsTabState();
 }
 
-class _SmsAndNotificationsTabState
-    extends ConsumerState<SmsAndNotificationsTab>
+class _SmsAndNotificationsTabState extends ConsumerState<SmsAndNotificationsTab>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -123,20 +122,24 @@ class _SmsAndNotificationsTabState
       final date = smsWithStatus.sms.date != null
           ? DateTime.fromMillisecondsSinceEpoch(smsWithStatus.sms.date!)
           : DateTime.now();
-      items.add(UnifiedItem(
-        type: UnifiedItemType.sms,
-        smsWithStatus: smsWithStatus,
-        sortDate: date,
-      ));
+      items.add(
+        UnifiedItem(
+          type: UnifiedItemType.sms,
+          smsWithStatus: smsWithStatus,
+          sortDate: date,
+        ),
+      );
     }
 
     // Add notification items
     for (final notification in notifications) {
-      items.add(UnifiedItem(
-        type: UnifiedItemType.notification,
-        notification: notification,
-        sortDate: notification.createdAt,
-      ));
+      items.add(
+        UnifiedItem(
+          type: UnifiedItemType.notification,
+          notification: notification,
+          sortDate: notification.createdAt,
+        ),
+      );
     }
 
     // Sort by date descending (newest first)
@@ -172,7 +175,8 @@ class _SmsAndNotificationsTabState
     }
 
     // Filter SMS by date range (if in all mode and date range is set)
-    if ((_viewMode == 'all' || _viewMode == 'sms') && (_startDate != null || _endDate != null)) {
+    if ((_viewMode == 'all' || _viewMode == 'sms') &&
+        (_startDate != null || _endDate != null)) {
       filteredSms = filteredSms.where((item) {
         final smsDate = item.sms.date != null
             ? DateTime.fromMillisecondsSinceEpoch(item.sms.date!)
@@ -196,8 +200,9 @@ class _SmsAndNotificationsTabState
           .where((n) => n.notificationType == 'sms_confirmation')
           .toList();
     } else if (_selectedFilter == 'unread') {
-      filteredNotifications =
-          filteredNotifications.where((n) => !n.wasTapped).toList();
+      filteredNotifications = filteredNotifications
+          .where((n) => !n.wasTapped)
+          .toList();
     }
 
     // Filter by date range
@@ -300,12 +305,19 @@ class _SmsAndNotificationsTabState
                             children: [
                               ListView.separated(
                                 controller: _scrollController,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                itemCount: filteredItems.length + (isLoadingMore ? 1 : 0),
-                                separatorBuilder: (context, index) => const SizedBox(height: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                itemCount:
+                                    filteredItems.length +
+                                    (isLoadingMore ? 1 : 0),
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 8),
                                 itemBuilder: (context, index) {
                                   // Show loading indicator at the end when loading more
-                                  if (index == filteredItems.length && isLoadingMore) {
+                                  if (index == filteredItems.length &&
+                                      isLoadingMore) {
                                     return const Padding(
                                       padding: EdgeInsets.all(16),
                                       child: Center(
@@ -313,7 +325,7 @@ class _SmsAndNotificationsTabState
                                       ),
                                     );
                                   }
-                                  
+
                                   final item = filteredItems[index];
                                   return _UnifiedListItem(
                                     item: item,
@@ -323,11 +335,15 @@ class _SmsAndNotificationsTabState
                                     },
                                     onCreateTemplate: () {
                                       HapticFeedback.lightImpact();
-                                      _createTemplateFromSms(item.smsWithStatus!.sms);
+                                      _createTemplateFromSms(
+                                        item.smsWithStatus!.sms,
+                                      );
                                     },
                                     onNotificationTap: () {
                                       HapticFeedback.lightImpact();
-                                      _handleNotificationTap(item.notification!);
+                                      _handleNotificationTap(
+                                        item.notification!,
+                                      );
                                     },
                                     onDismissNotification: () {
                                       HapticFeedback.mediumImpact();
@@ -338,9 +354,9 @@ class _SmsAndNotificationsTabState
                               ),
                               // Show parsing indicator overlay only if there are items actually being parsed
                               if (hasParsingItems && !isLoading)
-                                Positioned(
+                                PositionedDirectional(
                                   bottom: 16,
-                                  right: 16,
+                                  end: 16,
                                   child: _buildParsingIndicator(context),
                                 ),
                             ],
@@ -370,39 +386,53 @@ class _SmsAndNotificationsTabState
   Widget _buildViewModeToggle(BuildContext context, bool isIOS) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final useCompactLabels =
+        screenWidth < 400; // Use shorter labels on small screens
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.1),
-          ),
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.1)),
         ),
       ),
       child: SegmentedButton<String>(
         style: SegmentedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          minimumSize: const Size(0, 36),
         ),
         segments: [
           ButtonSegment(
             value: 'all',
             icon: const Icon(Icons.view_list_outlined, size: 18),
-            label: Text('all'.tr()),
+            label: Text(
+              'all'.tr(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
             tooltip: 'view_all_items'.tr(),
           ),
           if (!isIOS)
             ButtonSegment(
               value: 'sms',
               icon: const Icon(Icons.sms_outlined, size: 18),
-              label: Text('all_sms'.tr()),
+              label: Text(
+                useCompactLabels ? 'SMS' : 'all_sms'.tr(),
+                style: const TextStyle(fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
               tooltip: 'view_sms_only'.tr(),
             ),
           ButtonSegment(
             value: 'notifications',
             icon: const Icon(Icons.notifications_outlined, size: 18),
-            label: Text('notifications'.tr()),
+            label: Text(
+              useCompactLabels ? 'Notif' : 'notifications'.tr(),
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
             tooltip: 'view_notifications_only'.tr(),
           ),
         ],
@@ -432,7 +462,7 @@ class _SmsAndNotificationsTabState
   Widget _buildParsingIndicator(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -481,202 +511,159 @@ class _SmsAndNotificationsTabState
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final hasActiveFilters = _hasActiveFilters();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.1),
-          ),
+          bottom: BorderSide(color: colorScheme.outline.withValues(alpha: 0.1)),
         ),
       ),
-      child: Row(
-        children: [
-          // Search button or field
-          _isSearchExpanded
-              ? Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    decoration: InputDecoration(
-                      hintText: _viewMode == 'notifications'
-                          ? 'search_notifications_hint'.tr()
-                          : 'search_sms_hint'.tr(),
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 20),
-                              tooltip: 'clear_search'.tr(),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                setState(() {
-                                  _searchQuery = '';
-                                  _debouncedSearchQuery = '';
-                                  _searchController.clear();
-                                });
-                                _searchDebouncer.cancel();
-                              },
-                            )
-                          : IconButton(
-                              icon: const Icon(Icons.close, size: 20),
-                              tooltip: 'close'.tr(),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                setState(() {
-                                  _isSearchExpanded = false;
-                                  _searchQuery = '';
-                                  _debouncedSearchQuery = '';
-                                  _searchController.clear();
-                                });
-                                _searchFocusNode.unfocus();
-                                _searchDebouncer.cancel();
-                              },
-                            ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      isDense: true,
-                    ),
-                    textInputAction: TextInputAction.search,
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                    onSubmitted: (_) {
-                      _searchFocusNode.unfocus();
-                    },
-                  ),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Active filter chips (scrollable)
-                    if (hasActiveFilters)
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width - 200,
-                        height: 32,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: _buildActiveFilterChips(context, isIOS),
-                        ),
-                      ),
-                    // Search icon button
-                    IconButton(
-                      icon: const Icon(Icons.search, size: 20),
-                      tooltip: _viewMode == 'notifications'
-                          ? 'search_notifications_hint'.tr()
-                          : 'search_sms_hint'.tr(),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _isSearchExpanded = true;
-                        });
-                        Future.delayed(
-                          const Duration(milliseconds: 100),
-                          () => _searchFocusNode.requestFocus(),
-                        );
-                      },
-                      style: IconButton.styleFrom(
-                        backgroundColor: colorScheme.surfaceContainerHighest,
-                        minimumSize: const Size(32, 32),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    // Date range button (if in notifications or all view)
-                    if ((_viewMode == 'notifications' || _viewMode == 'all') &&
-                        (_startDate == null && _endDate == null))
-                      IconButton(
-                        icon: const Icon(Icons.date_range, size: 20),
-                        tooltip: 'filter_by_date'.tr(),
+      child: _isSearchExpanded
+          ? TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              decoration: InputDecoration(
+                hintText: _viewMode == 'notifications'
+                    ? 'search_notifications_hint'.tr()
+                    : 'search_sms_hint'.tr(),
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        tooltip: 'clear_search'.tr(),
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          _showDateRangePicker();
+                          setState(() {
+                            _searchQuery = '';
+                            _debouncedSearchQuery = '';
+                            _searchController.clear();
+                          });
+                          _searchDebouncer.cancel();
                         },
-                        style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.surfaceContainerHighest,
-                          minimumSize: const Size(32, 32),
-                          padding: EdgeInsets.zero,
-                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        tooltip: 'close'.tr(),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          setState(() {
+                            _isSearchExpanded = false;
+                            _searchQuery = '';
+                            _debouncedSearchQuery = '';
+                            _searchController.clear();
+                          });
+                          _searchFocusNode.unfocus();
+                          _searchDebouncer.cancel();
+                        },
                       ),
-                    // Filter menu button
-                    PopupMenuButton<String>(
-                      icon: Stack(
-                        children: [
-                          Icon(
-                            Icons.filter_list,
-                            size: 20,
-                            color: hasActiveFilters
-                                ? colorScheme.primary
-                                : colorScheme.onSurface,
-                          ),
-                          if (hasActiveFilters)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                isDense: true,
+              ),
+              textInputAction: TextInputAction.search,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              onSubmitted: (_) {
+                _searchFocusNode.unfocus();
+              },
+            )
+          : Row(
+              children: [
+                // Fixed buttons on start (left in LTR): Search and Date
+                IconButton(
+                  icon: const Icon(Icons.search, size: 20),
+                  tooltip: _viewMode == 'notifications'
+                      ? 'search_notifications_hint'.tr()
+                      : 'search_sms_hint'.tr(),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _isSearchExpanded = true;
+                    });
+                    Future.delayed(
+                      const Duration(milliseconds: 100),
+                      () => _searchFocusNode.requestFocus(),
+                    );
+                  },
+                  style: IconButton.styleFrom(
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    minimumSize: const Size(36, 36),
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Date range button (if in notifications or all view)
+                if (_viewMode == 'notifications' || _viewMode == 'all')
+                  IconButton(
+                    icon: Stack(
+                      children: [
+                        Icon(
+                          Icons.date_range,
+                          size: 20,
+                          color: (_startDate != null || _endDate != null)
+                              ? colorScheme.primary
+                              : colorScheme.onSurface,
+                        ),
+                        if (_startDate != null || _endDate != null)
+                          PositionedDirectional(
+                            end: 0,
+                            top: 0,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
                               ),
                             ),
-                        ],
-                      ),
-                      tooltip: 'filters'.tr(),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      onSelected: (value) {
-                        HapticFeedback.lightImpact();
-                        if (value == 'matched_only') {
-                          setState(() {
-                            _showMatchedOnly = !_showMatchedOnly;
-                            if (_showMatchedOnly) _showUnmatchedOnly = false;
-                          });
-                        } else if (value == 'unmatched_only') {
-                          setState(() {
-                            _showUnmatchedOnly = !_showUnmatchedOnly;
-                            if (_showUnmatchedOnly) _showMatchedOnly = false;
-                          });
-                        }
-                      },
-                      itemBuilder: (context) => _buildFilterMenuItems(context, isIOS),
+                          ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    // Compact stats
-                    _buildCompactStats(
-                      context,
-                      isIOS,
-                      totalSms,
-                      matchedCount,
-                      unmatchedCount,
-                      parsingCount,
-                      notificationCount,
+                    tooltip: 'filter_by_date'.tr(),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _showDateRangePicker();
+                    },
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.surfaceContainerHighest,
+                      minimumSize: const Size(36, 36),
+                      padding: EdgeInsets.zero,
                     ),
-                  ],
+                  ),
+                const SizedBox(width: 8),
+                // Filter chips (scrollable) - shows both active and available filters
+                Expanded(
+                  child: SizedBox(
+                    height: 32,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: _buildFilterChips(context, isIOS),
+                    ),
+                  ),
                 ),
-        ],
-      ),
+              ],
+            ),
     );
   }
 
   bool _hasActiveFilters() {
     if (_viewMode == 'sms' || _viewMode == 'all') {
-      if (_showMatchedOnly || _showUnmatchedOnly || _debouncedSearchQuery.isNotEmpty) {
+      if (_showMatchedOnly ||
+          _showUnmatchedOnly ||
+          _debouncedSearchQuery.isNotEmpty) {
         return true;
       }
     }
@@ -688,145 +675,223 @@ class _SmsAndNotificationsTabState
     return false;
   }
 
-  List<Widget> _buildActiveFilterChips(BuildContext context, bool isIOS) {
+  List<Widget> _buildFilterChips(BuildContext context, bool isIOS) {
     final chips = <Widget>[];
     final colorScheme = Theme.of(context).colorScheme;
 
-    // SMS filters
+    // SMS filters - show as toggleable chips
     if ((_viewMode == 'sms' || _viewMode == 'all') && !isIOS) {
-      if (_showMatchedOnly) {
-        chips.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: InputChip(
-              label: Text('matched_only'.tr()),
-              avatar: Icon(Icons.check_circle, size: 16, color: colorScheme.primary),
-              onDeleted: () {
-                HapticFeedback.lightImpact();
-                setState(() => _showMatchedOnly = false);
-              },
-              deleteIcon: const Icon(Icons.close, size: 16),
-              backgroundColor: colorScheme.primaryContainer,
-              deleteIconColor: colorScheme.onPrimaryContainer,
-              labelStyle: TextStyle(
-                color: colorScheme.onPrimaryContainer,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-        );
-      }
-      if (_showUnmatchedOnly) {
-        chips.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: InputChip(
-              label: Text('unmatched_only'.tr()),
-              avatar: Icon(Icons.cancel, size: 16, color: colorScheme.error),
-              onDeleted: () {
-                HapticFeedback.lightImpact();
-                setState(() => _showUnmatchedOnly = false);
-              },
-              deleteIcon: const Icon(Icons.close, size: 16),
-              backgroundColor: colorScheme.errorContainer,
-              deleteIconColor: colorScheme.onErrorContainer,
-              labelStyle: TextStyle(
-                color: colorScheme.onErrorContainer,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-        );
-      }
-      if (_debouncedSearchQuery.isNotEmpty) {
-        chips.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: InputChip(
-              label: Text(
-                _debouncedSearchQuery.length > 20
-                    ? '${_debouncedSearchQuery.substring(0, 20)}...'
-                    : _debouncedSearchQuery,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              avatar: const Icon(Icons.search, size: 16),
-              onDeleted: () {
-                HapticFeedback.lightImpact();
-                setState(() {
-                  _searchQuery = '';
-                  _debouncedSearchQuery = '';
-                  _searchController.clear();
-                });
-                _searchDebouncer.cancel();
-              },
-              deleteIcon: const Icon(Icons.close, size: 16),
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              deleteIconColor: colorScheme.onSurfaceVariant,
-              labelStyle: TextStyle(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-        );
-      }
+      // Matched only filter
+      chips.add(
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 6),
+          child: _showMatchedOnly
+              ? InputChip(
+                  label: Text('matched_only'.tr()),
+                  avatar: Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  onDeleted: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _showMatchedOnly = false);
+                  },
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  backgroundColor: colorScheme.primaryContainer,
+                  deleteIconColor: colorScheme.onPrimaryContainer,
+                  labelStyle: TextStyle(
+                    color: colorScheme.onPrimaryContainer,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                )
+              : FilterChip(
+                  label: Text('matched_only'.tr()),
+                  avatar: Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  selected: false,
+                  onSelected: (selected) {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _showMatchedOnly = true;
+                      _showUnmatchedOnly = false;
+                    });
+                  },
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+        ),
+      );
+
+      // Unmatched only filter
+      chips.add(
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 6),
+          child: _showUnmatchedOnly
+              ? InputChip(
+                  label: Text('unmatched_only'.tr()),
+                  avatar: Icon(
+                    Icons.cancel,
+                    size: 16,
+                    color: colorScheme.error,
+                  ),
+                  onDeleted: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _showUnmatchedOnly = false);
+                  },
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  backgroundColor: colorScheme.errorContainer,
+                  deleteIconColor: colorScheme.onErrorContainer,
+                  labelStyle: TextStyle(
+                    color: colorScheme.onErrorContainer,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                )
+              : FilterChip(
+                  label: Text('unmatched_only'.tr()),
+                  avatar: Icon(
+                    Icons.cancel_outlined,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  selected: false,
+                  onSelected: (selected) {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _showUnmatchedOnly = true;
+                      _showMatchedOnly = false;
+                    });
+                  },
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+        ),
+      );
     }
 
-    // Notification filters
-    if (_viewMode == 'notifications' || _viewMode == 'all') {
-      if (_selectedFilter != 'all') {
-        chips.add(
-          Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: InputChip(
-              label: Text(_selectedFilter == 'sms_confirmation'
-                  ? 'sms'.tr()
-                  : 'unread'.tr()),
-              avatar: Icon(
-                _selectedFilter == 'sms_confirmation' ? Icons.sms : Icons.mark_email_unread,
-                size: 16,
-                color: colorScheme.tertiary,
-              ),
-              onDeleted: () {
-                HapticFeedback.lightImpact();
-                setState(() => _selectedFilter = 'all');
-              },
-              deleteIcon: const Icon(Icons.close, size: 16),
-              backgroundColor: colorScheme.tertiaryContainer,
-              deleteIconColor: colorScheme.onTertiaryContainer,
-              labelStyle: TextStyle(
-                color: colorScheme.onTertiaryContainer,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    // Search query chip (only when active, applies to all modes)
+    if (_debouncedSearchQuery.isNotEmpty) {
+      chips.add(
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 6),
+          child: InputChip(
+            label: Text(
+              _debouncedSearchQuery.length > 20
+                  ? '${_debouncedSearchQuery.substring(0, 20)}...'
+                  : _debouncedSearchQuery,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
+            avatar: const Icon(Icons.search, size: 16),
+            onDeleted: () {
+              HapticFeedback.lightImpact();
+              setState(() {
+                _searchQuery = '';
+                _debouncedSearchQuery = '';
+                _searchController.clear();
+              });
+              _searchDebouncer.cancel();
+            },
+            deleteIcon: const Icon(Icons.close, size: 16),
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            deleteIconColor: colorScheme.onSurfaceVariant,
+            labelStyle: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        );
-      }
+        ),
+      );
     }
-    
+
+    // Notification filters - show as toggleable chips
+    if (_viewMode == 'notifications' || _viewMode == 'all') {
+      // Unread filter
+      chips.add(
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 6),
+          child: _selectedFilter == 'unread'
+              ? InputChip(
+                  label: Text('unread'.tr()),
+                  avatar: Icon(
+                    Icons.mark_email_unread,
+                    size: 16,
+                    color: colorScheme.tertiary,
+                  ),
+                  onDeleted: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _selectedFilter = 'all');
+                  },
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  backgroundColor: colorScheme.tertiaryContainer,
+                  deleteIconColor: colorScheme.onTertiaryContainer,
+                  labelStyle: TextStyle(
+                    color: colorScheme.onTertiaryContainer,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                )
+              : FilterChip(
+                  label: Text('unread'.tr()),
+                  avatar: Icon(
+                    Icons.mark_email_unread_outlined,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  selected: false,
+                  onSelected: (selected) {
+                    HapticFeedback.lightImpact();
+                    setState(() => _selectedFilter = 'unread');
+                  },
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+        ),
+      );
+    }
+
     // Date range filter (applies to both SMS and notifications in all mode)
     if (_startDate != null || _endDate != null) {
       final dateRange = _startDate != null && _endDate != null
           ? '${DateFormat('MMM dd').format(_startDate!)} - ${DateFormat('MMM dd').format(_endDate!)}'
           : _startDate != null
-              ? 'from_date'.tr(args: [DateFormat('MMM dd').format(_startDate!)])
-              : 'until_date'.tr(args: [DateFormat('MMM dd').format(_endDate!)]);
+          ? 'from_date'.tr(args: [DateFormat('MMM dd').format(_startDate!)])
+          : 'until_date'.tr(args: [DateFormat('MMM dd').format(_endDate!)]);
       chips.add(
         Padding(
-          padding: const EdgeInsets.only(right: 6),
+          padding: const EdgeInsetsDirectional.only(end: 6),
           child: InputChip(
             label: Text(dateRange),
             avatar: const Icon(Icons.date_range, size: 16),
@@ -855,292 +920,6 @@ class _SmsAndNotificationsTabState
     return chips;
   }
 
-  List<PopupMenuEntry<String>> _buildFilterMenuItems(BuildContext context, bool isIOS) {
-    final items = <PopupMenuEntry<String>>[];
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    // SMS filters (only if not iOS and in SMS or All view)
-    if (!isIOS && (_viewMode == 'sms' || _viewMode == 'all')) {
-      items.add(
-        PopupMenuItem<String>(
-          value: 'sms_filters_header',
-          enabled: false,
-          child: Text(
-            'sms_filters'.tr(),
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      );
-      items.add(
-        CheckedPopupMenuItem<String>(
-          value: 'matched_only',
-          checked: _showMatchedOnly,
-          child: Row(
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                size: 20,
-                color: _showMatchedOnly
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text('matched_only'.tr())),
-            ],
-          ),
-        ),
-      );
-      items.add(
-        CheckedPopupMenuItem<String>(
-          value: 'unmatched_only',
-          checked: _showUnmatchedOnly,
-          child: Row(
-            children: [
-              Icon(
-                Icons.cancel_outlined,
-                size: 20,
-                color: _showUnmatchedOnly
-                    ? colorScheme.error
-                    : colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text('unmatched_only'.tr())),
-            ],
-          ),
-        ),
-      );
-      if (_viewMode == 'all') {
-        items.add(const PopupMenuDivider());
-      }
-    }
-
-    // Notification filters (if in Notifications or All view)
-    if (_viewMode == 'notifications' || _viewMode == 'all') {
-      if (!isIOS && _viewMode == 'all') {
-        items.add(
-          PopupMenuItem<String>(
-            value: 'notification_filters_header',
-            enabled: false,
-            child: Text(
-              'notification_filters'.tr(),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.tertiary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        );
-      }
-      items.add(
-        PopupMenuItem<String>(
-          value: 'notification_type',
-          enabled: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'notification_type'.tr(),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(value: 'all', label: Text('all'.tr())),
-                  ButtonSegment(value: 'sms_confirmation', label: Text('sms'.tr())),
-                  ButtonSegment(value: 'unread', label: Text('unread'.tr())),
-                ],
-                selected: {_selectedFilter},
-                onSelectionChanged: (Set<String> newSelection) {
-                  setState(() {
-                    _selectedFilter = newSelection.first;
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Date range filter (available in all modes, shown at the end)
-    if (items.isNotEmpty) {
-      items.add(const PopupMenuDivider());
-    }
-    items.add(
-      PopupMenuItem<String>(
-        value: 'date_range',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'filter_by_date'.tr(),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (_startDate != null || _endDate != null)
-                  IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    onPressed: () {
-                      setState(() {
-                        _startDate = null;
-                        _endDate = null;
-                      });
-                      Navigator.pop(context);
-                    },
-                    tooltip: 'clear'.tr(),
-                  ),
-              ],
-            ),
-            if (_startDate != null || _endDate != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.date_range, size: 18, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _startDate != null && _endDate != null
-                            ? '${DateFormat('MMM dd, yyyy').format(_startDate!)} - ${DateFormat('MMM dd, yyyy').format(_endDate!)}'
-                            : _startDate != null
-                                ? 'from_date'.tr(args: [DateFormat('MMM dd, yyyy').format(_startDate!)])
-                                : 'until_date'.tr(args: [DateFormat('MMM dd, yyyy').format(_endDate!)]),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  _showDateRangePicker();
-                });
-              },
-              icon: const Icon(Icons.calendar_today, size: 18),
-              label: Text(
-                _startDate != null || _endDate != null
-                    ? 'change_date_range'.tr()
-                    : 'select_date_range'.tr(),
-              ),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 40),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (items.isEmpty) {
-      items.add(
-        PopupMenuItem<String>(
-          value: 'no_filters',
-          enabled: false,
-          child: Text('no_filters_available'.tr()),
-        ),
-      );
-    }
-
-    return items;
-  }
-
-  Widget _buildCompactStats(
-    BuildContext context,
-    bool isIOS,
-    int totalSms,
-    int matchedCount,
-    int unmatchedCount,
-    int parsingCount,
-    int notificationCount,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final stats = <Widget>[];
-
-    if (_viewMode == 'all' && !isIOS) {
-      final totalItems = totalSms + notificationCount;
-      stats.add(_buildCompactStatChip(
-        context,
-        totalItems.toString(),
-        Icons.inbox_outlined,
-        colorScheme.primary,
-        colorScheme.primaryContainer,
-      ));
-    } else if (_viewMode == 'sms' && !isIOS) {
-      stats.add(_buildCompactStatChip(
-        context,
-        totalSms.toString(),
-        Icons.sms_outlined,
-        colorScheme.primary,
-        colorScheme.primaryContainer,
-      ));
-    } else if (_viewMode == 'notifications') {
-      stats.add(_buildCompactStatChip(
-        context,
-        notificationCount.toString(),
-        Icons.notifications_outlined,
-        colorScheme.tertiary,
-        colorScheme.tertiaryContainer,
-      ));
-    }
-
-    return Row(mainAxisSize: MainAxisSize.min, children: stats);
-  }
-
-  Widget _buildCompactStatChip(
-    BuildContext context,
-    String count,
-    IconData icon,
-    Color iconColor,
-    Color backgroundColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: iconColor),
-          const SizedBox(width: 6),
-          Text(
-            count,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: iconColor,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-
   Widget _buildLoadingState(BuildContext context) {
     return Column(
       children: [
@@ -1155,9 +934,9 @@ class _SmsAndNotificationsTabState
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -1166,9 +945,9 @@ class _SmsAndNotificationsTabState
                     width: 100,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
@@ -1183,9 +962,9 @@ class _SmsAndNotificationsTabState
                     width: 80,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -1193,9 +972,9 @@ class _SmsAndNotificationsTabState
                     width: 80,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -1212,7 +991,7 @@ class _SmsAndNotificationsTabState
 
   String _getEmptyStateTitle() {
     final hasFilters = _hasActiveFilters();
-    
+
     if (_viewMode == 'sms') {
       if (_debouncedSearchQuery.isNotEmpty) {
         return 'no_sms_matching'.tr(args: [_debouncedSearchQuery]);
@@ -1243,7 +1022,7 @@ class _SmsAndNotificationsTabState
 
   String? _getEmptyStateSubtitle() {
     final hasFilters = _hasActiveFilters();
-    
+
     if (_viewMode == 'sms') {
       if (hasFilters) {
         return 'try_adjusting_filters'.tr();
@@ -1265,13 +1044,13 @@ class _SmsAndNotificationsTabState
 
   Widget _buildEmptyState(BuildContext context) {
     final hasFilters = _hasActiveFilters();
-    
+
     return EmptyState(
       icon: _viewMode == 'sms'
           ? Icons.sms_outlined
           : _viewMode == 'notifications'
-              ? Icons.notifications_none_outlined
-              : Icons.inbox_outlined,
+          ? Icons.notifications_none_outlined
+          : Icons.inbox_outlined,
       title: _getEmptyStateTitle(),
       subtitle: _getEmptyStateSubtitle(),
       actionLabel: hasFilters ? 'clear_all_filters'.tr() : null,
@@ -1321,7 +1100,9 @@ class _SmsAndNotificationsTabState
 
   void _showDateRangePicker() async {
     final now = DateTime.now();
-    final firstDate = now.subtract(const Duration(days: 365 * 2)); // Allow 2 years back
+    final firstDate = now.subtract(
+      const Duration(days: 365 * 2),
+    ); // Allow 2 years back
     final lastDate = now.add(const Duration(days: 1)); // Allow today
 
     final picked = await showDateRangePicker(
@@ -1336,9 +1117,9 @@ class _SmsAndNotificationsTabState
       confirmText: 'confirm'.tr(),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme,
-          ),
+          data: Theme.of(
+            context,
+          ).copyWith(colorScheme: Theme.of(context).colorScheme),
           child: child!,
         );
       },
@@ -1347,7 +1128,11 @@ class _SmsAndNotificationsTabState
     if (picked != null) {
       setState(() {
         // Normalize dates to start and end of day
-        _startDate = DateTime(picked.start.year, picked.start.month, picked.start.day);
+        _startDate = DateTime(
+          picked.start.year,
+          picked.start.month,
+          picked.start.day,
+        );
         _endDate = DateTime(
           picked.end.year,
           picked.end.month,
@@ -1447,8 +1232,8 @@ class _SmsListItemWithStatus extends StatelessWidget {
         : DateTime.now();
     final bodyPreview =
         smsWithStatus.sms.body != null && smsWithStatus.sms.body!.length > 100
-            ? '${smsWithStatus.sms.body!.substring(0, 100)}...'
-            : smsWithStatus.sms.body ?? '';
+        ? '${smsWithStatus.sms.body!.substring(0, 100)}...'
+        : smsWithStatus.sms.body ?? '';
 
     final matchResult = smsWithStatus.matchResult;
     final parsedData = matchResult != null
@@ -1490,22 +1275,22 @@ class _SmsListItemWithStatus extends StatelessWidget {
                       color: smsWithStatus.isMatched
                           ? colorScheme.primaryContainer
                           : smsWithStatus.isParsing
-                              ? colorScheme.secondaryContainer
-                              : colorScheme.surfaceContainerHighest,
+                          ? colorScheme.secondaryContainer
+                          : colorScheme.surfaceContainerHighest,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       smsWithStatus.isParsing
                           ? Icons.hourglass_empty
                           : smsWithStatus.isMatched
-                              ? Icons.check_circle
-                              : Icons.sms_outlined,
+                          ? Icons.check_circle
+                          : Icons.sms_outlined,
                       size: 22,
                       color: smsWithStatus.isMatched
                           ? colorScheme.onPrimaryContainer
                           : smsWithStatus.isParsing
-                              ? colorScheme.onSecondaryContainer
-                              : colorScheme.onSurfaceVariant,
+                          ? colorScheme.onSecondaryContainer
+                          : colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1645,17 +1430,16 @@ class _SmsListItemWithStatus extends StatelessWidget {
         Text(
           '$label: ',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(fontWeight: FontWeight.w500),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1755,8 +1539,9 @@ class _NotificationCard extends StatelessWidget {
                             child: Text(
                               notification.title,
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight:
-                                    isUnread ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isUnread
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -1764,7 +1549,9 @@ class _NotificationCard extends StatelessWidget {
                             Container(
                               width: 10,
                               height: 10,
-                              margin: const EdgeInsets.only(left: 4),
+                              margin: const EdgeInsetsDirectional.only(
+                                start: 4,
+                              ),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: colorScheme.primary,
@@ -2029,9 +1816,9 @@ class _SmsDetailsSheet extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(
@@ -2054,19 +1841,17 @@ class _SmsDetailsSheet extends StatelessWidget {
           width: 100,
           child: Text(
             label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w500),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
       ],
