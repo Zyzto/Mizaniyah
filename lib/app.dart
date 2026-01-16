@@ -9,14 +9,48 @@ import 'features/settings/settings_definitions.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/providers/sms_detection_provider.dart';
 import 'core/navigation/app_router.dart';
+import 'features/sms_notifications/providers/sms_providers.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 
 /// Main application widget
-class App extends ConsumerWidget {
+class App extends ConsumerStatefulWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<App> createState() => _AppState();
+}
+
+class _AppState extends ConsumerState<App> {
+  bool _smsPreloaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Preload SMS in background after first frame (non-blocking)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Use a delay to ensure app is fully initialized and database is ready
+      // Also ensures ProviderScope is fully set up
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted && !_smsPreloaded) {
+          try {
+            // Preload SMS in background without blocking
+            // This happens in the background and doesn't hog the UI thread
+            // Access the provider to trigger initialization, then preload
+            final notifier = ref.read(smsListProvider.notifier);
+            notifier.preloadSms();
+            _smsPreloaded = true;
+            Log.debug('SMS preloading started in background');
+          } catch (e) {
+            // Silently fail - SMS will load when page is accessed
+            Log.debug('SMS preload skipped: $e');
+          }
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
 
     // Set router in NotificationService for navigation from notification taps

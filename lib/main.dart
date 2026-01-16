@@ -147,6 +147,20 @@ void main() async {
       Log.debug(
         'SMS detection service initialized (listening controlled by settings)',
       );
+
+      // Preload SMS in background (non-blocking, fire-and-forget)
+      // This happens after database is ready but doesn't block app startup
+      Future.delayed(const Duration(seconds: 1), () {
+        try {
+          // Access the provider to trigger preloading
+          // This will be handled by the App widget's postFrameCallback
+          // We just ensure the service is ready
+          Log.debug('SMS preloading will start after app initialization');
+        } catch (e) {
+          // Silently fail - SMS will load when page is accessed
+          Log.debug('SMS preload initialization skipped: $e');
+        }
+      });
     } catch (e, stackTrace) {
       Log.error(
         'Failed to initialize services',

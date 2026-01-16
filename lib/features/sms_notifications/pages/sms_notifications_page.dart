@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/pending_confirmations_tab.dart';
-import '../widgets/all_sms_tab.dart';
-import '../widgets/notifications_tab.dart';
+import '../widgets/sms_and_notifications_tab.dart';
 
 class SmsNotificationsPage extends ConsumerStatefulWidget {
   final TabController tabController;
@@ -21,8 +20,7 @@ class _SmsNotificationsPageState extends ConsumerState<SmsNotificationsPage> {
       controller: widget.tabController,
       children: const [
         PendingConfirmationsTab(),
-        AllSmsTab(),
-        NotificationsTab(),
+        SmsAndNotificationsTab(),
       ],
     );
   }

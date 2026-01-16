@@ -27,10 +27,9 @@ PreferredSizeWidget buildSmsNotificationsAppBar(
                 icon: const Icon(Icons.pending_outlined),
                 text: 'pending_confirmations'.tr(),
               ),
-              Tab(icon: const Icon(Icons.sms_outlined), text: 'all_sms'.tr()),
               Tab(
-                icon: const Icon(Icons.notifications_outlined),
-                text: 'notifications'.tr(),
+                icon: const Icon(Icons.sms_outlined),
+                text: 'sms_notifications'.tr(),
               ),
             ],
           )

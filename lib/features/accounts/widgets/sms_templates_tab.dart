@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
@@ -11,8 +9,7 @@ import '../../../core/database/app_database.dart' as db;
 import '../../../core/database/providers/dao_providers.dart';
 import '../../../core/navigation/route_paths.dart';
 import '../../sms_management/widgets/sms_template_tester.dart';
-import '../../sms_notifications/widgets/all_sms_tab.dart';
-import '../../sms_notifications/widgets/notifications_tab.dart';
+import '../../sms_notifications/widgets/sms_and_notifications_tab.dart';
 import '../../sms_notifications/widgets/pending_confirmations_tab.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_skeleton.dart';
@@ -31,16 +28,12 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
   bool get wantKeepAlive => true;
 
   late TabController _tabController;
-  bool _isIOS = false;
 
   @override
   void initState() {
     super.initState();
-    // Detect iOS platform
-    _isIOS = !kIsWeb && Platform.isIOS;
-    // On iOS: Pending, Templates, and Notifications (3 tabs, no SMS reading)
-    // On Android: Pending, Templates, SMS, and Notifications (4 tabs)
-    _tabController = TabController(length: _isIOS ? 3 : 4, vsync: this);
+    // Pending, Templates, and SMS & Notifications (3 tabs)
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -67,11 +60,9 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
               icon: const Icon(Icons.pattern_outlined),
               text: 'sms_templates'.tr(),
             ),
-            if (!_isIOS)
-              Tab(icon: const Icon(Icons.sms_outlined), text: 'all_sms'.tr()),
             Tab(
-              icon: const Icon(Icons.notifications_outlined),
-              text: 'notifications'.tr(),
+              icon: const Icon(Icons.sms_outlined),
+              text: 'sms_notifications'.tr(),
             ),
           ],
         ),
@@ -81,8 +72,7 @@ class _SmsTemplatesTabState extends ConsumerState<SmsTemplatesTab>
             children: [
               const PendingConfirmationsTab(),
               _buildTemplatesTab(),
-              if (!_isIOS) const AllSmsTab(),
-              const NotificationsTab(),
+              const SmsAndNotificationsTab(),
             ],
           ),
         ),
