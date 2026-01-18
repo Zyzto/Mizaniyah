@@ -1811,8 +1811,8 @@ class _SmsDetailsSheet extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 80, maxWidth: 120),
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1821,6 +1821,7 @@ class _SmsDetailsSheet extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
@@ -1837,8 +1838,8 @@ class _SmsDetailsSheet extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 100,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 80, maxWidth: 120),
           child: Text(
             label,
             style: Theme.of(
@@ -1846,6 +1847,7 @@ class _SmsDetailsSheet extends StatelessWidget {
             ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,

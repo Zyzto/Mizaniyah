@@ -80,25 +80,24 @@ class SmsParsingService with Loggable {
 
     // Object with extraction method
     if (rule is Map<String, dynamic>) {
-      // Use capture group from main pattern
-      if (rule.containsKey('group') && mainMatch != null) {
-        final groupIndex = rule['group'];
-        if (groupIndex is int &&
-            groupIndex > 0 &&
-            groupIndex <= mainMatch.groupCount) {
-          return mainMatch.group(groupIndex)?.trim();
-        }
-      }
-
-      // Use separate regex pattern
+      // Prefer field-specific pattern over capture group (more flexible)
+      // Field-specific patterns allow fields to appear in any order
       if (rule.containsKey('pattern')) {
         final patternStr = rule['pattern'] as String?;
         if (patternStr != null) {
           try {
-            final pattern = RegExp(patternStr, caseSensitive: false);
+            final pattern = RegExp(
+              patternStr,
+              caseSensitive: false,
+              multiLine: true,
+              dotAll: true,
+            );
             final match = pattern.firstMatch(smsBody);
             if (match != null && match.groupCount >= 1) {
-              return match.group(1)?.trim();
+              final extracted = match.group(1)?.trim();
+              if (extracted != null && extracted.isNotEmpty) {
+                return extracted;
+              }
             }
           } catch (e) {
             Log.warning(
@@ -107,12 +106,27 @@ class SmsParsingService with Loggable {
           }
         }
       }
+
+      // Fallback to capture group from main pattern
+      if (rule.containsKey('group') && mainMatch != null) {
+        final groupIndex = rule['group'];
+        if (groupIndex is int &&
+            groupIndex > 0 &&
+            groupIndex <= mainMatch.groupCount) {
+          return mainMatch.group(groupIndex)?.trim();
+        }
+      }
     }
 
     // Legacy support: direct regex pattern string
     if (rule is String && rule.isNotEmpty) {
       try {
-        final pattern = RegExp(rule, caseSensitive: false);
+        final pattern = RegExp(
+          rule,
+          caseSensitive: false,
+          multiLine: true,
+          dotAll: true,
+        );
         final match = pattern.firstMatch(smsBody);
         if (match != null && match.groupCount >= 1) {
           return match.group(1)?.trim();
@@ -247,14 +261,22 @@ class SmsParsingService with Loggable {
 
   /// Parse SMS using pattern and extraction rules
   /// Returns ParsedSmsData if successful, null otherwise
+  /// [smsDate] - Optional SMS timestamp to use as fallback for transaction date
   static ParsedSmsData? parseSmsWithRules(
     String smsBody,
     String pattern,
-    String extractionRulesJson,
-  ) {
+    String extractionRulesJson, {
+    DateTime? smsDate,
+  }) {
     try {
       // Check if SMS matches the template pattern
-      final patternRegex = RegExp(pattern, caseSensitive: false);
+      // Use multiLine and dotAll flags to handle multi-line SMS messages correctly
+      final patternRegex = RegExp(
+        pattern,
+        caseSensitive: false,
+        multiLine: true,
+        dotAll: true,
+      );
       final mainMatch = patternRegex.firstMatch(smsBody);
       if (mainMatch == null) {
         Log.debug('SMS does not match template pattern: $pattern');
@@ -329,6 +351,16 @@ class SmsParsingService with Loggable {
         }
       }
 
+      // Use SMS date as fallback if enabled and no date was extracted
+      if (transactionDate == null && smsDate != null) {
+        final useSmsDateFallback =
+            extractionRules['use_sms_date_fallback'] == true;
+        if (useSmsDateFallback) {
+          transactionDate = smsDate;
+          Log.debug('Using SMS date as fallback: $smsDate');
+        }
+      }
+
       // Validate that we extracted at least amount and store name
       if (amount == null || storeName == null || storeName.isEmpty) {
         Log.warning(
@@ -357,11 +389,17 @@ class SmsParsingService with Loggable {
 
   /// Parse SMS using a template
   /// Returns ParsedSmsData if successful, null otherwise
-  static ParsedSmsData? parseSms(String smsBody, db.SmsTemplate template) {
+  /// [smsDate] - Optional SMS timestamp to use as fallback for transaction date
+  static ParsedSmsData? parseSms(
+    String smsBody,
+    db.SmsTemplate template, {
+    DateTime? smsDate,
+  }) {
     return parseSmsWithRules(
       smsBody,
       template.pattern,
       template.extractionRules,
+      smsDate: smsDate,
     );
   }
 
@@ -375,7 +413,12 @@ class SmsParsingService with Loggable {
     double confidence = 0.5; // Base confidence
 
     try {
-      final patternRegex = RegExp(pattern, caseSensitive: false);
+      final patternRegex = RegExp(
+        pattern,
+        caseSensitive: false,
+        multiLine: true,
+        dotAll: true,
+      );
       final match = patternRegex.firstMatch(smsBody);
 
       if (match != null) {
@@ -443,10 +486,12 @@ class SmsParsingService with Loggable {
 
   /// Find matching template for SMS from a list of templates
   /// Returns the first matching template, parsed data, and confidence score, or null
+  /// [smsDate] - Optional SMS timestamp to use as fallback for transaction date
   static Map<String, dynamic>? findMatchingTemplate(
     String smsBody,
-    List<db.SmsTemplate> templates,
-  ) {
+    List<db.SmsTemplate> templates, {
+    DateTime? smsDate,
+  }) {
     // Sort templates by priority (higher priority first)
     final sortedTemplates = List<db.SmsTemplate>.from(templates)
       ..sort((a, b) => b.priority.compareTo(a.priority));
@@ -455,7 +500,7 @@ class SmsParsingService with Loggable {
     Map<String, dynamic>? bestMatch;
 
     for (final template in sortedTemplates) {
-      final parsed = parseSms(smsBody, template);
+      final parsed = parseSms(smsBody, template, smsDate: smsDate);
       if (parsed != null) {
         final confidence = _calculateConfidence(
           smsBody,
@@ -497,7 +542,12 @@ class SmsParsingService with Loggable {
 
     // Validate pattern is valid regex
     try {
-      RegExp(pattern, caseSensitive: false);
+      RegExp(
+        pattern,
+        caseSensitive: false,
+        multiLine: true,
+        dotAll: true,
+      );
     } catch (e) {
       errors.add('Invalid pattern regex: $e');
       return errors; // Can't continue validation if pattern is invalid
@@ -513,7 +563,12 @@ class SmsParsingService with Loggable {
     }
 
     // Check main pattern for capture groups
-    final patternRegex = RegExp(pattern, caseSensitive: false);
+    final patternRegex = RegExp(
+      pattern,
+      caseSensitive: false,
+      multiLine: true,
+      dotAll: true,
+    );
     // Try to get group count by matching with a very permissive test string
     // Use a long string with various characters to increase chance of match
     final testString = 'test 123 ABC def 456.78 USD card 1234';
@@ -570,7 +625,12 @@ class SmsParsingService with Loggable {
         final patternStr = rule['pattern'] as String?;
         if (patternStr != null) {
           try {
-            RegExp(patternStr, caseSensitive: false);
+            RegExp(
+              patternStr,
+              caseSensitive: false,
+              multiLine: true,
+              dotAll: true,
+            );
           } catch (e) {
             errors.add('Invalid regex pattern for $fieldName: $e');
           }

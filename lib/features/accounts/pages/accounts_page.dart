@@ -114,9 +114,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage>
                     ],
                   ),
                 if (!isEmpty)
-                  Positioned(
-                    bottom: 100, // Position above floating nav bar
-                    right: 16,
+                  PositionedDirectional(
+                    bottom: -8, // Position above floating nav bar
+                    end: 16,
                     child: SafeArea(
                       child: FloatingActionButton(
                         onPressed: () {

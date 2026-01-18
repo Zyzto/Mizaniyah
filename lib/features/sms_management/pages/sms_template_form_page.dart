@@ -42,6 +42,7 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
   late TextEditingController _extractionRulesController;
   late TextEditingController _priorityController;
   bool _isActive = true;
+  bool _useSmsDateFallback = false;
   bool _isSaving = false;
   bool _patternReceivedFromWizard = false;
   bool _showSaveReminder = false;
@@ -63,6 +64,17 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
     );
     _isActive = widget.template?.isActive ?? true;
 
+    // Read use_sms_date_fallback from existing extraction rules
+    if (widget.template != null) {
+      try {
+        final rules =
+            jsonDecode(widget.template!.extractionRules) as Map<String, dynamic>;
+        _useSmsDateFallback = rules['use_sms_date_fallback'] == true;
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+
     // Pre-fill sender pattern with exact sender name if provided
     if (widget.initialSender != null && widget.initialSender!.isNotEmpty) {
       // Escape regex special characters for exact match
@@ -70,7 +82,11 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
         RegExp(r'[.*+?^${}()|[\]\\]'),
         (match) => '\\${match.group(0)}',
       );
-      _senderPatternController.text = escapedSender;
+      // Add anchors for exact matching (unless user already added them)
+      final hasAnchors = escapedSender.startsWith(r'^') && escapedSender.endsWith(r'$');
+      _senderPatternController.text = hasAnchors
+          ? escapedSender
+          : '^$escapedSender\$';
     }
 
     // Add listeners to rebuild when text changes (for pattern tester visibility)
@@ -182,11 +198,13 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
 
       // Validate pattern and extraction rules
       final pattern = _patternController.text.trim();
-      final extractionRules = _extractionRulesController.text.trim();
+      final extractionRulesText = _extractionRulesController.text.trim();
 
       // Validate extraction rules JSON
+      Map<String, dynamic> extractionRulesMap;
       try {
-        jsonDecode(extractionRules);
+        extractionRulesMap =
+            jsonDecode(extractionRulesText) as Map<String, dynamic>;
       } catch (e) {
         if (!mounted || !context.mounted) return;
         HapticFeedback.heavyImpact();
@@ -196,6 +214,14 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
         );
         return;
       }
+
+      // Add use_sms_date_fallback option to extraction rules
+      if (_useSmsDateFallback) {
+        extractionRulesMap['use_sms_date_fallback'] = true;
+      } else {
+        extractionRulesMap.remove('use_sms_date_fallback');
+      }
+      final extractionRules = jsonEncode(extractionRulesMap);
 
       // Validate template using parsing service
       final validationErrors = SmsParsingService.validateTemplate(
@@ -223,9 +249,7 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
           db.SmsTemplatesCompanion(
             senderPattern: senderPatternValue,
             pattern: drift.Value(_patternController.text.trim()),
-            extractionRules: drift.Value(
-              _extractionRulesController.text.trim(),
-            ),
+            extractionRules: drift.Value(extractionRules),
             priority: drift.Value(int.tryParse(_priorityController.text) ?? 0),
             isActive: drift.Value(_isActive),
           ),
@@ -244,9 +268,7 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
             id: drift.Value(widget.template!.id),
             senderPattern: senderPatternValue,
             pattern: drift.Value(_patternController.text.trim()),
-            extractionRules: drift.Value(
-              _extractionRulesController.text.trim(),
-            ),
+            extractionRules: drift.Value(extractionRules),
             priority: drift.Value(int.tryParse(_priorityController.text) ?? 0),
             isActive: drift.Value(_isActive),
           ),
@@ -282,6 +304,17 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
               : 'edit_sms_template'.tr(),
         ),
         actions: [
+          // Delete button (only when editing)
+          if (widget.template != null && !_isSaving)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'delete'.tr(),
+              color: Theme.of(context).colorScheme.error,
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _confirmDeleteTemplate();
+              },
+            ),
           if (_isSaving)
             const Padding(
               padding: EdgeInsets.all(16),
@@ -525,6 +558,18 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
             ),
             const SizedBox(height: 24),
             SwitchListTile(
+              title: Text('use_sms_date_fallback'.tr()),
+              subtitle: Text('use_sms_date_fallback_description'.tr()),
+              value: _useSmsDateFallback,
+              onChanged: (value) {
+                HapticFeedback.lightImpact();
+                setState(() {
+                  _useSmsDateFallback = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
               title: Text('active'.tr()),
               subtitle: Text('active_template_description'.tr()),
               value: _isActive,
@@ -543,9 +588,91 @@ class _SmsTemplateFormPageState extends ConsumerState<SmsTemplateFormPage> {
               isLoading: _isSaving,
               semanticLabel: 'save_template'.tr(),
             ),
+            // Delete button at bottom (only when editing)
+            if (widget.template != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _isSaving
+                    ? null
+                    : () {
+                        HapticFeedback.mediumImpact();
+                        _confirmDeleteTemplate();
+                      },
+                icon: const Icon(Icons.delete_outline),
+                label: Text('delete_template'.tr()),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteTemplate() async {
+    if (widget.template == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('delete_template'.tr()),
+        content: Text(
+          'delete_template_confirmation'.tr(
+            args: [
+              widget.template!.pattern.length > 50
+                  ? '${widget.template!.pattern.substring(0, 50)}...'
+                  : widget.template!.pattern,
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('cancel'.tr()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text('delete'.tr()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _deleteTemplate();
+    }
+  }
+
+  Future<void> _deleteTemplate() async {
+    if (widget.template == null) return;
+
+    try {
+      final dao = ref.read(smsTemplateDaoProvider);
+      await dao.deleteTemplate(widget.template!.id);
+
+      if (!mounted || !context.mounted) return;
+
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.showSuccess(
+        context,
+        'template_deleted_successfully'.tr(),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted || !context.mounted) return;
+      HapticFeedback.heavyImpact();
+      ErrorSnackbar.show(
+        context,
+        'error_deleting_template'.tr(),
+      );
+    }
   }
 }

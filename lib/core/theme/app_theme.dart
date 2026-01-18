@@ -1,22 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
+import 'theme_config.dart';
+import 'theme_extensions.dart';
 
+/// Central theme factory for the Mizaniyah app.
+/// 
+/// Provides light and dark theme configurations using Material 3 design system.
 class AppTheme {
-  // Helper method to get text scale factor from font size scale setting
-  static double _getTextScaleFactor(String? fontSizeScale) {
-    switch (fontSizeScale) {
-      case 'small':
-        return 0.85;
-      case 'normal':
-        return 1.0;
-      case 'large':
-        return 1.15;
-      case 'extra_large':
-        return 1.3;
-      default:
-        return 1.0;
-    }
-  }
+  AppTheme._(); // Private constructor to prevent instantiation
 
   // Helper method to scale text theme
   static TextTheme _scaleTextTheme(
@@ -72,21 +63,24 @@ class AppTheme {
     );
   }
 
+  /// Creates a light theme with the specified seed color and font size scale.
+  /// 
+  /// [seedColor] - The primary color to generate the color scheme from.
+  ///               Defaults to [ThemeConfig.defaultSeedColor] if not provided.
+  /// [fontSizeScale] - Font size scale option ('small', 'normal', 'large', 'extra_large').
+  ///                  Defaults to 'normal' if not provided.
   static ThemeData lightTheme({Color? seedColor, String? fontSizeScale}) {
-    // Card styling constants
-    const double cardElevation = 2.0;
-    const double cardBorderRadius = 12.0;
-
     Log.debug(
       'AppTheme.lightTheme(seedColor=$seedColor, fontSizeScale=$fontSizeScale)',
     );
-    final baseSeedColor = seedColor ?? Colors.deepPurple;
+    
+    final baseSeedColor = seedColor ?? ThemeConfig.defaultSeedColor;
     final colorScheme = ColorScheme.fromSeed(
       seedColor: baseSeedColor,
       brightness: Brightness.light,
     );
 
-    final textScaleFactor = _getTextScaleFactor(fontSizeScale);
+    final textScaleFactor = ThemeConfig.getTextScaleFactor(fontSizeScale);
     final baseTextTheme = ThemeData.light().textTheme;
     final textTheme = _scaleTextTheme(baseTextTheme, textScaleFactor);
 
@@ -94,75 +88,101 @@ class AppTheme {
       useMaterial3: true,
       textTheme: textTheme,
       colorScheme: colorScheme.copyWith(
-        surface: Colors.white,
-        surfaceContainerHighest: Colors.grey[100]!,
-        onSurface: Colors.grey[900]!,
-        onSurfaceVariant: Colors.grey[700]!,
-        outline: Colors.grey[400]!,
-        outlineVariant: Colors.grey[300]!,
+        surface: ThemeConfig.lightSurface,
+        surfaceContainerHighest: ThemeConfig.lightSurfaceContainerHighest,
+        onSurface: ThemeConfig.lightOnSurface,
+        onSurfaceVariant: ThemeConfig.lightOnSurfaceVariant,
+        outline: ThemeConfig.lightOutline,
+        outlineVariant: ThemeConfig.lightOutlineVariant,
         primary: baseSeedColor,
         onPrimary: Colors.white,
         secondary: baseSeedColor.withValues(alpha: 0.8),
         onSecondary: Colors.white,
-        error: Colors.red[700]!,
+        error: ThemeConfig.lightError,
         onError: Colors.white,
       ),
       appBarTheme: AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
+        centerTitle: ThemeConfig.appBarCenterTitle,
+        elevation: ThemeConfig.appBarElevation,
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       cardTheme: CardThemeData(
-        elevation: cardElevation,
+        elevation: ThemeConfig.cardElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(cardBorderRadius),
+          borderRadius: BorderRadius.circular(ThemeConfig.cardBorderRadius),
         ),
         color: colorScheme.surface,
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.grey[300]!,
-        thickness: 1,
-        space: 1,
+      dividerTheme: const DividerThemeData(
+        color: ThemeConfig.lightDivider,
+        thickness: ThemeConfig.dividerThickness,
+        space: ThemeConfig.dividerSpacing,
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[400]!),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.lightOutline,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[400]!),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.lightOutline,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: baseSeedColor, width: 2),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: baseSeedColor,
+            width: ThemeConfig.inputFocusedBorderWidth,
+          ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red[700]!),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.lightError,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
         ),
       ),
-      iconTheme: IconThemeData(color: Colors.grey[800]!),
+      iconTheme: IconThemeData(color: ThemeConfig.lightIcon),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        contentTextStyle: TextStyle(color: colorScheme.onSurface),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.radiusM),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      extensions: const <ThemeExtension<dynamic>>[
+        AppThemeExtension.light,
+      ],
     );
   }
 
+  /// Creates a dark theme with the specified seed color and font size scale.
+  /// 
+  /// [seedColor] - The primary color to generate the color scheme from.
+  ///               Defaults to [ThemeConfig.defaultSeedColor] if not provided.
+  /// [fontSizeScale] - Font size scale option ('small', 'normal', 'large', 'extra_large').
+  ///                  Defaults to 'normal' if not provided.
   static ThemeData darkTheme({Color? seedColor, String? fontSizeScale}) {
-    // Card styling constants
-    const double cardElevation = 2.0;
-    const double cardBorderRadius = 12.0;
-
     Log.debug(
       'AppTheme.darkTheme(seedColor=$seedColor, fontSizeScale=$fontSizeScale)',
     );
-    final baseSeedColor = seedColor ?? Colors.deepPurple;
+    
+    final baseSeedColor = seedColor ?? ThemeConfig.defaultSeedColor;
     final colorScheme = ColorScheme.fromSeed(
       seedColor: baseSeedColor,
       brightness: Brightness.dark,
     );
 
-    final textScaleFactor = _getTextScaleFactor(fontSizeScale);
+    final textScaleFactor = ThemeConfig.getTextScaleFactor(fontSizeScale);
     final baseTextTheme = ThemeData.dark().textTheme;
     final textTheme = _scaleTextTheme(baseTextTheme, textScaleFactor);
 
@@ -170,57 +190,184 @@ class AppTheme {
       useMaterial3: true,
       textTheme: textTheme,
       colorScheme: colorScheme.copyWith(
-        surface: Colors.grey[900]!,
-        surfaceContainerHighest: Colors.grey[800]!,
-        onSurface: Colors.grey[100]!,
-        onSurfaceVariant: Colors.grey[300]!,
-        outline: Colors.grey[600]!,
-        outlineVariant: Colors.grey[700]!,
+        surface: ThemeConfig.darkSurface,
+        surfaceContainerHighest: ThemeConfig.darkSurfaceContainerHighest,
+        onSurface: ThemeConfig.darkOnSurface,
+        onSurfaceVariant: ThemeConfig.darkOnSurfaceVariant,
+        outline: ThemeConfig.darkOutline,
+        outlineVariant: ThemeConfig.darkOutlineVariant,
         primary: baseSeedColor,
         onPrimary: Colors.white,
         secondary: baseSeedColor.withValues(alpha: 0.8),
         onSecondary: Colors.white,
-        error: Colors.red[400]!,
+        error: ThemeConfig.darkError,
         onError: Colors.white,
       ),
       appBarTheme: AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
+        centerTitle: ThemeConfig.appBarCenterTitle,
+        elevation: ThemeConfig.appBarElevation,
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       cardTheme: CardThemeData(
-        elevation: cardElevation,
+        elevation: ThemeConfig.cardElevation,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(cardBorderRadius),
+          borderRadius: BorderRadius.circular(ThemeConfig.cardBorderRadius),
         ),
         color: colorScheme.surface,
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.grey[700]!,
-        thickness: 1,
-        space: 1,
+      dividerTheme: const DividerThemeData(
+        color: ThemeConfig.darkDivider,
+        thickness: ThemeConfig.dividerThickness,
+        space: ThemeConfig.dividerSpacing,
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[600]!),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.darkOutline,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[600]!),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.darkOutline,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: baseSeedColor, width: 2),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: baseSeedColor,
+            width: ThemeConfig.inputFocusedBorderWidth,
+          ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red[400]!),
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.darkError,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
         ),
       ),
-      iconTheme: IconThemeData(color: Colors.grey[200]!),
+      iconTheme: IconThemeData(color: ThemeConfig.darkIcon),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        contentTextStyle: TextStyle(color: colorScheme.onSurface),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.radiusM),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      extensions: const <ThemeExtension<dynamic>>[
+        AppThemeExtension.dark,
+      ],
+    );
+  }
+
+  /// Creates an AMOLED theme with the specified seed color and font size scale.
+  /// 
+  /// AMOLED theme uses pure black (#000000) surfaces for battery savings on AMOLED screens.
+  /// 
+  /// [seedColor] - The primary color to generate the color scheme from.
+  ///               Defaults to [ThemeConfig.defaultSeedColor] if not provided.
+  /// [fontSizeScale] - Font size scale option ('small', 'normal', 'large', 'extra_large').
+  ///                  Defaults to 'normal' if not provided.
+  static ThemeData amoledTheme({Color? seedColor, String? fontSizeScale}) {
+    Log.debug(
+      'AppTheme.amoledTheme(seedColor=$seedColor, fontSizeScale=$fontSizeScale)',
+    );
+    
+    final baseSeedColor = seedColor ?? ThemeConfig.defaultSeedColor;
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: baseSeedColor,
+      brightness: Brightness.dark,
+    );
+
+    final textScaleFactor = ThemeConfig.getTextScaleFactor(fontSizeScale);
+    final baseTextTheme = ThemeData.dark().textTheme;
+    final textTheme = _scaleTextTheme(baseTextTheme, textScaleFactor);
+
+    return ThemeData(
+      useMaterial3: true,
+      textTheme: textTheme,
+      colorScheme: colorScheme.copyWith(
+        surface: ThemeConfig.amoledSurface,
+        surfaceContainerHighest: ThemeConfig.amoledSurfaceContainerHighest,
+        onSurface: ThemeConfig.amoledOnSurface,
+        onSurfaceVariant: ThemeConfig.amoledOnSurfaceVariant,
+        outline: ThemeConfig.amoledOutline,
+        outlineVariant: ThemeConfig.amoledOutlineVariant,
+        primary: baseSeedColor,
+        onPrimary: Colors.white,
+        secondary: baseSeedColor.withValues(alpha: 0.8),
+        onSecondary: Colors.white,
+        error: ThemeConfig.amoledError,
+        onError: Colors.white,
+      ),
+      appBarTheme: AppBarTheme(
+        centerTitle: ThemeConfig.appBarCenterTitle,
+        elevation: ThemeConfig.appBarElevation,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
+      ),
+      cardTheme: CardThemeData(
+        elevation: ThemeConfig.cardElevation,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.cardBorderRadius),
+        ),
+        color: colorScheme.surface,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: ThemeConfig.amoledDivider,
+        thickness: ThemeConfig.dividerThickness,
+        space: ThemeConfig.dividerSpacing,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.amoledOutline,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.amoledOutline,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: baseSeedColor,
+            width: ThemeConfig.inputFocusedBorderWidth,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
+          borderSide: BorderSide(
+            color: ThemeConfig.amoledError,
+            width: ThemeConfig.inputDefaultBorderWidth,
+          ),
+        ),
+      ),
+      iconTheme: IconThemeData(color: ThemeConfig.amoledIcon),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        contentTextStyle: TextStyle(color: colorScheme.onSurface),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.radiusM),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      extensions: const <ThemeExtension<dynamic>>[
+        AppThemeExtension.dark,
+      ],
     );
   }
 }

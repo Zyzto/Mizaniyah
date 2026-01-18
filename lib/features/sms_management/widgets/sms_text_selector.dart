@@ -58,8 +58,11 @@ const List<String> _availableLabels = [
   'amount',
   'currency',
   'card_last4',
+  'account_number',
+  'reference_number',
   'intention',
   'date',
+  'time',
   'purchase_source',
 ];
 
@@ -70,8 +73,11 @@ Map<String, String> _getLabelDisplayNames() {
     'amount': 'label_amount'.tr(),
     'currency': 'label_currency'.tr(),
     'card_last4': 'label_card_last4'.tr(),
+    'account_number': 'label_account_number'.tr(),
+    'reference_number': 'label_reference_number'.tr(),
     'intention': 'label_intention'.tr(),
     'date': 'label_date'.tr(),
+    'time': 'label_time'.tr(),
     'purchase_source': 'label_purchase_source'.tr(),
   };
 }
@@ -83,8 +89,11 @@ Map<String, String> _getLabelDescriptions() {
     'amount': 'label_amount_description'.tr(),
     'currency': 'label_currency_description'.tr(),
     'card_last4': 'label_card_last4_description'.tr(),
+    'account_number': 'label_account_number_description'.tr(),
+    'reference_number': 'label_reference_number_description'.tr(),
     'intention': 'label_intention_description'.tr(),
     'date': 'label_date_description'.tr(),
+    'time': 'label_time_description'.tr(),
     'purchase_source': 'label_purchase_source_description'.tr(),
   };
 }
@@ -94,8 +103,11 @@ const Map<String, Color> _labelColors = {
   'amount': Color(0xFF9C27B0), // Purple
   'currency': Color(0xFF2196F3), // Blue
   'card_last4': Color(0xFFF44336), // Red
+  'account_number': Color(0xFF795548), // Brown
+  'reference_number': Color(0xFF607D8B), // Blue Grey
   'intention': Color(0xFF4CAF50), // Green
   'date': Color(0xFFFFC107), // Amber
+  'time': Color(0xFFFF5722), // Deep Orange
   'purchase_source': Color(0xFF00BCD4), // Cyan
 };
 
@@ -110,10 +122,16 @@ IconData _getLabelIcon(String label) {
       return Icons.currency_exchange;
     case 'card_last4':
       return Icons.credit_card;
+    case 'account_number':
+      return Icons.account_balance;
+    case 'reference_number':
+      return Icons.tag;
     case 'intention':
       return Icons.category;
     case 'date':
       return Icons.calendar_today;
+    case 'time':
+      return Icons.access_time;
     case 'purchase_source':
       return Icons.point_of_sale;
     default:
@@ -192,9 +210,14 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
     for (final existing in widget.selections) {
       if (existing.overlapsWith(newSelection) &&
           existing != _editingSelection) {
+        final colorScheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('selection_overlaps'.tr()),
+            content: Text(
+              'selection_overlaps'.tr(),
+              style: TextStyle(color: colorScheme.onErrorContainer),
+            ),
+            backgroundColor: colorScheme.errorContainer,
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -221,18 +244,23 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
       builder: (context) => _LabelPickerDialog(
         selection: selection,
         selectedText: selectedText,
+        existingSelections: widget.selections,
         onLabelSelected: (label) {
           // Validate label selection
           final warning = _validateLabelSelection(label, selectedText);
           if (warning != null) {
             // Show warning but still allow selection
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              final colorScheme = Theme.of(context).colorScheme;
+            ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(warning),
+                  content: Text(
+                    warning,
+                    style: TextStyle(color: colorScheme.onErrorContainer),
+                  ),
+                  backgroundColor: colorScheme.errorContainer,
                   duration: const Duration(seconds: 3),
                   behavior: SnackBarBehavior.floating,
-                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -295,9 +323,15 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
       if (cleaned.contains('.') && double.tryParse(cleaned) != null) {
         return 'label_validation_amount_warning'.tr();
       }
+      // Extract just digits
+      final digitsOnly = cleaned.replaceAll(RegExp(r'[^\d]'), '');
       // If it's more than 4 digits, it's likely an amount
-      if (RegExp(r'^\d+$').hasMatch(cleaned) && cleaned.length > 4) {
+      if (digitsOnly.length > 4) {
         return 'label_validation_amount_warning'.tr();
+      }
+      // If it's less than 4 digits, warn but allow
+      if (digitsOnly.length < 4 && digitsOnly.isNotEmpty) {
+        return 'label_validation_card_digits_warning'.tr();
       }
     }
 
@@ -637,11 +671,13 @@ class _SmsTextSelectorState extends State<SmsTextSelector> {
 class _LabelPickerDialog extends StatelessWidget {
   final SmsTextSelection selection;
   final String selectedText;
+  final List<SmsTextSelection> existingSelections;
   final ValueChanged<String> onLabelSelected;
 
   const _LabelPickerDialog({
     required this.selection,
     required this.selectedText,
+    required this.existingSelections,
     required this.onLabelSelected,
   });
 
@@ -726,20 +762,74 @@ class _LabelPickerDialog extends StatelessWidget {
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _availableLabels.map((label) {
-                    final displayNames = _getLabelDisplayNames();
-                    final descriptions = _getLabelDescriptions();
-                    final displayName = displayNames[label] ?? label;
-                    final description = descriptions[label] ?? '';
-                    final color = _labelColors[label] ?? Colors.blue;
-                    final isSelected = selection.label == label;
-                    return InkWell(
-                      onTap: () {
-                        onLabelSelected(label);
-                        Navigator.of(context).pop();
-                      },
+                child: Builder(
+                  builder: (context) {
+                    // Check if we're editing an existing selection (by position match)
+                    final isEditingExisting = existingSelections.any((s) =>
+                        s.start == selection.start && s.end == selection.end);
+                    
+                    // Get labels used by OTHER selections (exclude current if editing)
+                    final usedLabels = existingSelections
+                        .where((s) =>
+                            // Exclude the current selection being edited
+                            !(s.start == selection.start && s.end == selection.end))
+                        .map((s) => s.label)
+                        .toSet();
+
+                    // Filter and reorder labels:
+                    // 1. Current selection's label first (only if editing existing)
+                    // 2. Then unselected labels
+                    // 3. Hide already selected labels (except current if editing)
+                    final availableLabels = <String>[];
+                    
+                    // Add current selection's label first ONLY if editing an existing selection
+                    // (not for new selections with default label)
+                    if (isEditingExisting &&
+                        selection.label.isNotEmpty &&
+                        _availableLabels.contains(selection.label)) {
+                      availableLabels.add(selection.label);
+                    }
+                    
+                    // Add unselected labels (not used by other selections)
+                    for (final label in _availableLabels) {
+                      // Skip if already added as current selection (when editing)
+                      if (isEditingExisting && label == selection.label) {
+                        continue;
+                      }
+                      // For new selections, also skip the default label if it's already used
+                      // Only add if not used by other selections
+                      if (!usedLabels.contains(label)) {
+                        availableLabels.add(label);
+                      }
+                    }
+
+                    if (availableLabels.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Text(
+                            'all_labels_selected'.tr(),
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: availableLabels.map((label) {
+                        final displayNames = _getLabelDisplayNames();
+                        final descriptions = _getLabelDescriptions();
+                        final displayName = displayNames[label] ?? label;
+                        final description = descriptions[label] ?? '';
+                        final color = _labelColors[label] ?? Colors.blue;
+                        final isSelected = selection.label == label;
+                        return InkWell(
+                          onTap: () {
+                            onLabelSelected(label);
+                            Navigator.of(context).pop();
+                          },
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
@@ -808,7 +898,9 @@ class _LabelPickerDialog extends StatelessWidget {
                         ),
                       ),
                     );
-                  }).toList(),
+                      }).toList(),
+                    );
+                  },
                 ),
               ),
             ),

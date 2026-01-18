@@ -101,6 +101,11 @@ class SmsBatchProcessor with Loggable {
             final sender = sms.address ?? '';
             final body = sms.body ?? '';
 
+            // Extract SMS date (timestamp in milliseconds)
+            final smsDate = sms.date != null
+                ? DateTime.fromMillisecondsSinceEpoch(sms.date!)
+                : null;
+
             if (body.isEmpty) {
               processed++;
               yield (
@@ -113,7 +118,11 @@ class SmsBatchProcessor with Loggable {
             }
 
             // Match SMS
-            final matchResult = await _smsMatcher.matchSms(sender, body);
+            final matchResult = await _smsMatcher.matchSms(
+              sender,
+              body,
+              smsDate: smsDate,
+            );
 
             if (matchResult != null) {
               matched++;

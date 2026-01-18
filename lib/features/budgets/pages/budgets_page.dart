@@ -108,9 +108,9 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage>
       data: (budgets) {
         if (budgets.isEmpty) return null; // Hide FAB when empty
 
-        return Positioned(
-          bottom: 100, // Position above floating nav bar
-          right: 16,
+        return PositionedDirectional(
+          bottom: -8, // Position above floating nav bar
+          end: 16,
           child: SafeArea(
             child: FloatingActionButton(
               onPressed: () {
@@ -134,9 +134,9 @@ class _BudgetsPageState extends ConsumerState<BudgetsPage>
       data: (categories) {
         if (categories.isEmpty) return null; // Hide FAB when empty
 
-        return Positioned(
-          bottom: 100, // Position above floating nav bar
-          right: 16,
+        return PositionedDirectional(
+          bottom: -8, // Position above floating nav bar
+          end: 16,
           child: SafeArea(
             child: FloatingActionButton(
               onPressed: () {

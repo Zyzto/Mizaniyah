@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_scroll_behavior.dart';
+import 'core/theme/theme_config.dart';
 import 'features/settings/providers/settings_framework_providers.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/providers/sms_detection_provider.dart';
@@ -62,6 +63,7 @@ class _AppState extends ConsumerState<App> {
 
     // Use convenience providers for cleaner access with built-in error handling
     final themeMode = ref.watch(themeModeProvider);
+    final themeModeString = ref.watch(themeModeStringProvider);
     final themeColor = ref.watch(themeColorProvider);
     final fontSizeScale = ref.watch(fontSizeScaleProvider);
 
@@ -92,23 +94,54 @@ class _AppState extends ConsumerState<App> {
 
     // Use EasyLocalization's locale (context.locale) as the source of truth
     // This ensures translations update immediately when language changes
-    return MaterialApp.router(
-      title: 'Mizaniyah',
-      debugShowCheckedModeBanner: kDebugMode,
-      scrollBehavior: AppScrollBehavior(),
-      localizationsDelegates: context.localizationDelegates,
-      supportedLocales: context.supportedLocales,
-      locale: context.locale, // Use EasyLocalization's locale
-      theme: AppTheme.lightTheme(
-        seedColor: themeColor,
-        fontSizeScale: fontSizeScale,
+    
+    // Build current theme data for AnimatedTheme
+    // Handle AMOLED theme separately
+    final currentThemeData = themeModeString == 'amoled'
+        ? AppTheme.amoledTheme(
+            seedColor: themeColor,
+            fontSizeScale: fontSizeScale,
+          )
+        : themeMode == ThemeMode.dark
+            ? AppTheme.darkTheme(
+                seedColor: themeColor,
+                fontSizeScale: fontSizeScale,
+              )
+            : AppTheme.lightTheme(
+                seedColor: themeColor,
+                fontSizeScale: fontSizeScale,
+              );
+    
+    // For AMOLED, we need to override both light and dark themes
+    final lightTheme = AppTheme.lightTheme(
+      seedColor: themeColor,
+      fontSizeScale: fontSizeScale,
+    );
+    final darkTheme = themeModeString == 'amoled'
+        ? AppTheme.amoledTheme(
+            seedColor: themeColor,
+            fontSizeScale: fontSizeScale,
+          )
+        : AppTheme.darkTheme(
+            seedColor: themeColor,
+            fontSizeScale: fontSizeScale,
+          );
+    
+    return AnimatedTheme(
+      data: currentThemeData,
+      duration: ThemeConfig.animationMedium,
+      child: MaterialApp.router(
+        title: 'Mizaniyah',
+        debugShowCheckedModeBanner: kDebugMode,
+        scrollBehavior: AppScrollBehavior(),
+        localizationsDelegates: context.localizationDelegates,
+        supportedLocales: context.supportedLocales,
+        locale: context.locale, // Use EasyLocalization's locale
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        themeMode: themeModeString == 'amoled' ? ThemeMode.dark : themeMode,
+        routerConfig: router,
       ),
-      darkTheme: AppTheme.darkTheme(
-        seedColor: themeColor,
-        fontSizeScale: fontSizeScale,
-      ),
-      themeMode: themeMode,
-      routerConfig: router,
     );
   }
 }

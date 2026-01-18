@@ -24,6 +24,8 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
   ParsedSmsData? _parsedData;
   String? _errorMessage;
   bool _patternMatches = false;
+  double? _confidenceScore;
+  int _captureGroupCount = 0;
 
   @override
   void dispose() {
@@ -36,6 +38,8 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
       _parsedData = null;
       _errorMessage = null;
       _patternMatches = false;
+      _confidenceScore = null;
+      _captureGroupCount = 0;
     });
 
     final testSms = _testSmsController.text.trim();
@@ -47,9 +51,19 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
     }
 
     // Validate pattern
+    RegExpMatch? regexMatch;
     try {
-      final patternRegex = RegExp(widget.pattern, caseSensitive: false);
-      _patternMatches = patternRegex.hasMatch(testSms);
+      final patternRegex = RegExp(
+        widget.pattern,
+        caseSensitive: false,
+        multiLine: true,
+        dotAll: true,
+      );
+      regexMatch = patternRegex.firstMatch(testSms);
+      _patternMatches = regexMatch != null;
+      if (regexMatch != null) {
+        _captureGroupCount = regexMatch.groupCount;
+      }
     } catch (e) {
       setState(() {
         _errorMessage = 'invalid_pattern_regex'.tr(args: [e.toString()]);
@@ -87,8 +101,31 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
           _errorMessage = 'parse_failed'.tr();
         });
       } else {
+        // Calculate confidence score
+        double confidence = 0.5; // Base confidence
+        
+        // Higher confidence if pattern matches a significant portion
+        if (regexMatch != null) {
+          final matchLength = regexMatch.end - regexMatch.start;
+          final smsLength = testSms.length;
+          if (smsLength > 0) {
+            confidence += (matchLength / smsLength) * 0.2;
+          }
+          // Bonus for capture groups
+          confidence += (_captureGroupCount / 10.0).clamp(0.0, 0.15);
+        }
+        
+        // Bonus for extracted fields
+        int extractedFields = 0;
+        if (parsed.storeName != null && parsed.storeName!.isNotEmpty) extractedFields++;
+        if (parsed.amount != null && parsed.amount! > 0) extractedFields++;
+        if (parsed.currency != null && parsed.currency!.isNotEmpty) extractedFields++;
+        if (parsed.cardLast4Digits != null) extractedFields++;
+        confidence += (extractedFields / 4.0) * 0.15;
+        
         setState(() {
           _parsedData = parsed;
+          _confidenceScore = confidence.clamp(0.0, 1.0);
         });
       }
     } catch (e) {
@@ -190,17 +227,52 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
                           ).colorScheme.onPrimaryContainer,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'template_matched_successfully'.tr(),
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            'template_matched_successfully'.tr(),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
+                        // Confidence badge
+                        if (_confidenceScore != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getConfidenceColor(_confidenceScore!),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${(_confidenceScore! * 100).toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
+                    // Capture groups info
+                    if (_captureGroupCount > 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'capture_groups_found'.tr(args: ['$_captureGroupCount']),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     _buildParsedDataRow(
                       'store_name'.tr(),
@@ -216,6 +288,11 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
                       _buildParsedDataRow(
                         'card_last4'.tr(),
                         _parsedData!.cardLast4Digits,
+                      ),
+                    if (_parsedData!.transactionDate != null)
+                      _buildParsedDataRow(
+                        'date'.tr(),
+                        DateFormat('yyyy-MM-dd').format(_parsedData!.transactionDate!),
                       ),
                   ],
                 ),
@@ -264,13 +341,14 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 80, maxWidth: 120),
             child: Text(
               '$label:',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               value ?? 'N/A',
@@ -284,5 +362,16 @@ class _SmsTemplateTesterState extends State<SmsTemplateTester> {
         ],
       ),
     );
+  }
+
+  Color _getConfidenceColor(double confidence) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (confidence >= 0.7) {
+      return colorScheme.primary;
+    } else if (confidence >= 0.5) {
+      return colorScheme.secondary;
+    } else {
+      return colorScheme.error;
+    }
   }
 }

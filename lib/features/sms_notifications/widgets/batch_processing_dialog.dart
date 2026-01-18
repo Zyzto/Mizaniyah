@@ -144,7 +144,7 @@ class _BatchProcessingDialogState extends ConsumerState<BatchProcessingDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Title
+              // Title (fixed at top)
               Row(
                 children: [
                   Icon(Icons.batch_prediction, color: colorScheme.primary),
@@ -164,114 +164,216 @@ class _BatchProcessingDialogState extends ConsumerState<BatchProcessingDialog> {
               ),
               const SizedBox(height: 16),
 
-              if (!_isProcessing && !_isCompleted) ...[
-                // Date range selection
-                Text(
-                  'select_date_range'.tr(),
-                  style: theme.textTheme.titleSmall,
-                ),
-                const SizedBox(height: 12),
-
-                // Start date
-                EnhancedDatePickerField(
-                  labelText: 'start_date'.tr(),
-                  initialDate: _startDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                  onDateSelected: (date) {
-                    setState(() {
-                      _startDate = date;
-                      if (_endDate.isBefore(_startDate)) {
-                        _endDate = _startDate;
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                // End date
-                EnhancedDatePickerField(
-                  labelText: 'end_date'.tr(),
-                  initialDate: _endDate,
-                  firstDate: _startDate,
-                  lastDate: DateTime.now(),
-                  onDateSelected: (date) {
-                    setState(() {
-                      _endDate = date;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Auto-create toggle
-                SwitchListTile(
-                  title: Text('auto_create_transactions'.tr()),
-                  subtitle: Text(
-                    'auto_create_description'.tr(),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  value: _autoCreate,
-                  onChanged: (value) {
-                    setState(() {
-                      _autoCreate = value;
-                    });
-                  },
-                ),
-
-                if (_autoCreate) ...[
-                  const SizedBox(height: 8),
-                  // Confidence threshold slider
-                  Text(
-                    '${'confidence_threshold'.tr()}: ${(_confidenceThreshold * 100).toStringAsFixed(0)}%',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  Slider(
-                    value: _confidenceThreshold,
-                    min: 0.5,
-                    max: 1.0,
-                    divisions: 10,
-                    label:
-                        '${(_confidenceThreshold * 100).toStringAsFixed(0)}%',
-                    onChanged: (value) {
-                      setState(() {
-                        _confidenceThreshold = value;
-                      });
-                    },
-                  ),
-                ],
-
-                const Spacer(),
-
-                // Info text
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
+              // Scrollable content
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _autoCreate
-                              ? 'batch_info_auto_create'.tr()
-                              : 'batch_info_pending'.tr(),
-                          style: theme.textTheme.bodySmall,
+                      if (!_isProcessing && !_isCompleted) ...[
+                        // Date range selection
+                        Text(
+                          'select_date_range'.tr(),
+                          style: theme.textTheme.titleSmall,
                         ),
-                      ),
+                        const SizedBox(height: 12),
+
+                        // Start date
+                        EnhancedDatePickerField(
+                          labelText: 'start_date'.tr(),
+                          initialDate: _startDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                          onDateSelected: (date) {
+                            setState(() {
+                              _startDate = date;
+                              if (_endDate.isBefore(_startDate)) {
+                                _endDate = _startDate;
+                              }
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
+                        // End date
+                        EnhancedDatePickerField(
+                          labelText: 'end_date'.tr(),
+                          initialDate: _endDate,
+                          firstDate: _startDate,
+                          lastDate: DateTime.now(),
+                          onDateSelected: (date) {
+                            setState(() {
+                              _endDate = date;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Auto-create toggle
+                        SwitchListTile(
+                          title: Text('auto_create_transactions'.tr()),
+                          subtitle: Text(
+                            'auto_create_description'.tr(),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          value: _autoCreate,
+                          onChanged: (value) {
+                            setState(() {
+                              _autoCreate = value;
+                            });
+                          },
+                        ),
+
+                        if (_autoCreate) ...[
+                          const SizedBox(height: 8),
+                          // Confidence threshold slider
+                          Text(
+                            '${'confidence_threshold'.tr()}: ${(_confidenceThreshold * 100).toStringAsFixed(0)}%',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          Slider(
+                            value: _confidenceThreshold,
+                            min: 0.5,
+                            max: 1.0,
+                            divisions: 10,
+                            label:
+                                '${(_confidenceThreshold * 100).toStringAsFixed(0)}%',
+                            onChanged: (value) {
+                              setState(() {
+                                _confidenceThreshold = value;
+                              });
+                            },
+                          ),
+                        ],
+
+                        const SizedBox(height: 16),
+
+                        // Info text
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer
+                                .withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: colorScheme.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _autoCreate
+                                      ? 'batch_info_auto_create'.tr()
+                                      : 'batch_info_pending'.tr(),
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (_isProcessing) ...[
+                        // Processing indicator
+                        const SizedBox(height: 24),
+                        LinearProgressIndicator(
+                          value: _total > 0 ? _processed / _total : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'processing_sms'.tr(args: ['$_processed', '$_total']),
+                          style: theme.textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Stats
+                        _buildStatRow(
+                          context,
+                          Icons.check_circle_outline,
+                          'matched'.tr(),
+                          '$_matched',
+                          colorScheme.primary,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildStatRow(
+                          context,
+                          Icons.add_circle_outline,
+                          'created'.tr(),
+                          '$_created',
+                          colorScheme.tertiary,
+                        ),
+                      ] else if (_isCompleted) ...[
+                        // Completed
+                        const SizedBox(height: 24),
+                        Icon(
+                          Icons.check_circle,
+                          color: colorScheme.primary,
+                          size: 64,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'batch_completed'.tr(),
+                          style: theme.textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Final stats
+                        _buildStatRow(
+                          context,
+                          Icons.sms_outlined,
+                          'total_processed'.tr(),
+                          '$_processed',
+                          colorScheme.onSurface,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildStatRow(
+                          context,
+                          Icons.check_circle_outline,
+                          'matched'.tr(),
+                          '$_matched',
+                          colorScheme.primary,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildStatRow(
+                          context,
+                          Icons.add_circle_outline,
+                          _autoCreate
+                              ? 'transactions_created'.tr()
+                              : 'pending_created'.tr(),
+                          '$_created',
+                          colorScheme.tertiary,
+                        ),
+
+                        if (_error != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _error!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ],
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 16),
-
-                // Action buttons
+              // Action buttons (fixed at bottom)
+              const SizedBox(height: 16),
+              if (!_isProcessing && !_isCompleted)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -286,113 +388,21 @@ class _BatchProcessingDialogState extends ConsumerState<BatchProcessingDialog> {
                       label: Text('start_processing'.tr()),
                     ),
                   ],
-                ),
-              ] else if (_isProcessing) ...[
-                // Processing indicator
-                const SizedBox(height: 24),
-                LinearProgressIndicator(
-                  value: _total > 0 ? _processed / _total : null,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'processing_sms'.tr(args: ['$_processed', '$_total']),
-                  style: theme.textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-
-                // Stats
-                _buildStatRow(
-                  context,
-                  Icons.check_circle_outline,
-                  'matched'.tr(),
-                  '$_matched',
-                  colorScheme.primary,
-                ),
-                const SizedBox(height: 8),
-                _buildStatRow(
-                  context,
-                  Icons.add_circle_outline,
-                  'created'.tr(),
-                  '$_created',
-                  colorScheme.tertiary,
-                ),
-
-                const Spacer(),
-
-                // Cancel button
+                )
+              else if (_isProcessing)
                 Center(
                   child: TextButton(
                     onPressed: _cancel,
                     child: Text('cancel'.tr()),
                   ),
-                ),
-              ] else if (_isCompleted) ...[
-                // Completed
-                const SizedBox(height: 24),
-                Icon(Icons.check_circle, color: colorScheme.primary, size: 64),
-                const SizedBox(height: 16),
-                Text(
-                  'batch_completed'.tr(),
-                  style: theme.textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-
-                // Final stats
-                _buildStatRow(
-                  context,
-                  Icons.sms_outlined,
-                  'total_processed'.tr(),
-                  '$_processed',
-                  colorScheme.onSurface,
-                ),
-                const SizedBox(height: 8),
-                _buildStatRow(
-                  context,
-                  Icons.check_circle_outline,
-                  'matched'.tr(),
-                  '$_matched',
-                  colorScheme.primary,
-                ),
-                const SizedBox(height: 8),
-                _buildStatRow(
-                  context,
-                  Icons.add_circle_outline,
-                  _autoCreate
-                      ? 'transactions_created'.tr()
-                      : 'pending_created'.tr(),
-                  '$_created',
-                  colorScheme.tertiary,
-                ),
-
-                if (_error != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _error!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                ],
-
-                const Spacer(),
-
-                // Done button
+                )
+              else if (_isCompleted)
                 Center(
                   child: FilledButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     child: Text('done'.tr()),
                   ),
                 ),
-              ],
             ],
           ),
         ),

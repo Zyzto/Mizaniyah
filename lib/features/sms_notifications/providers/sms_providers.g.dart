@@ -49,7 +49,7 @@ final class SmsListProvider
   }
 }
 
-String _$smsListHash() => r'335e6a46c33658ebde83141bb4b82e750f575674';
+String _$smsListHash() => r'f121d2edbe106e1370cbe344d89d44e0cc385be9';
 
 /// Provider for SMS list with parsing status
 /// Uses progressive loading: shows SMS immediately, parses in background

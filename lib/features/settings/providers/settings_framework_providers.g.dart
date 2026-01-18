@@ -8,17 +8,66 @@ part of 'settings_framework_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider for theme mode setting
+/// Provider for theme mode setting (returns string value)
+
+@ProviderFor(themeModeString)
+const themeModeStringProvider = ThemeModeStringProvider._();
+
+/// Provider for theme mode setting (returns string value)
+
+final class ThemeModeStringProvider
+    extends $FunctionalProvider<String, String, String>
+    with $Provider<String> {
+  /// Provider for theme mode setting (returns string value)
+  const ThemeModeStringProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'themeModeStringProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$themeModeStringHash();
+
+  @$internal
+  @override
+  $ProviderElement<String> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String create(Ref ref) {
+    return themeModeString(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String>(value),
+    );
+  }
+}
+
+String _$themeModeStringHash() => r'fe233b7510856100d10b79a0b8dc061a930d6f43';
+
+/// Provider for theme mode setting (returns ThemeMode enum)
+/// Note: 'amoled' is handled separately in app.dart
 
 @ProviderFor(themeMode)
 const themeModeProvider = ThemeModeProvider._();
 
-/// Provider for theme mode setting
+/// Provider for theme mode setting (returns ThemeMode enum)
+/// Note: 'amoled' is handled separately in app.dart
 
 final class ThemeModeProvider
     extends $FunctionalProvider<ThemeMode, ThemeMode, ThemeMode>
     with $Provider<ThemeMode> {
-  /// Provider for theme mode setting
+  /// Provider for theme mode setting (returns ThemeMode enum)
+  /// Note: 'amoled' is handled separately in app.dart
   const ThemeModeProvider._()
     : super(
         from: null,
@@ -52,7 +101,7 @@ final class ThemeModeProvider
   }
 }
 
-String _$themeModeHash() => r'a28704445324236e6cab3ff2e3e495fdeee37564';
+String _$themeModeHash() => r'0b0be91fa91b9c14f39a5a63f3556cd24365f695';
 
 /// Provider for theme color setting (returns Color)
 

@@ -54,19 +54,29 @@ T _safeReadSetting<T>(Ref ref, SettingDefinition settingDef, T defaultValue) {
   }
 }
 
-/// Provider for theme mode setting
+/// Provider for theme mode setting (returns string value)
 @riverpod
-ThemeMode themeMode(Ref ref) {
-  final themeModeStr = _safeReadSetting<String>(
+String themeModeString(Ref ref) {
+  return _safeReadSetting<String>(
     ref,
     themeModeSettingDef,
     'system',
   );
+}
+
+/// Provider for theme mode setting (returns ThemeMode enum)
+/// Note: 'amoled' is handled separately in app.dart
+@riverpod
+ThemeMode themeMode(Ref ref) {
+  final themeModeStr = ref.watch(themeModeStringProvider);
 
   switch (themeModeStr) {
     case 'light':
       return ThemeMode.light;
     case 'dark':
+      return ThemeMode.dark;
+    case 'amoled':
+      // AMOLED is treated as dark mode for ThemeMode, but uses custom theme
       return ThemeMode.dark;
     case 'system':
     default:

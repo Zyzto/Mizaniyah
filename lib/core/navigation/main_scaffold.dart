@@ -226,7 +226,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
           if (showFab)
             PositionedDirectional(
               end: 16,
-              bottom: 100,
+              bottom: -8,
               child: SafeArea(
                 child: FloatingActionButton(
                   onPressed: () {

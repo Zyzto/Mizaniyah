@@ -1,0 +1,89 @@
+# Android-only CI: builds debug APK on push/PR.
+# Debug builds use debug signing and separate artifact names, so they do not
+# conflict with release APKs or Play Store. Use a separate release workflow
+# (e.g. on v* tags) when you need signed release artifacts.
+
+name: Build Android (Debug)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android Debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.38.2'
+          cache: true
+
+      - name: Fix git ownership (act only)
+        if: ${{ env.ACT }}
+        run: git config --global --add safe.directory '*'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Cache build_runner
+        id: build-runner-cache
+        uses: actions/cache@v4
+        with:
+          path: .dart_tool/build
+          key: ${{ runner.os }}-build_runner-${{ hashFiles('**/*.dart') }}
+          restore-keys: |
+            ${{ runner.os }}-build_runner-
+
+      - name: Generate code
+        if: steps.build-runner-cache.outputs.cache-hit != 'true'
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Clean build directory
+        run: flutter clean
+
+      - name: Clean Gradle build
+        working-directory: android
+        run: |
+          if [ -f ./gradlew ]; then
+            chmod +x ./gradlew
+            ./gradlew clean || true
+          else
+            echo "⚠️ gradlew not found, skipping Gradle clean"
+          fi
+
+      - name: Verify MainActivity exists
+        run: |
+          path="android/app/src/main/kotlin/com/example/mizaniyah/MainActivity.kt"
+          if [ -f "$path" ]; then
+            echo "✅ MainActivity.kt found"
+          else
+            echo "❌ MainActivity.kt not found at: $path"
+            find android/app/src/main -type f -name "*.kt" 2>/dev/null || true
+            exit 1
+          fi
+
+      - name: Build Debug APK
+        run: flutter build apk --debug
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

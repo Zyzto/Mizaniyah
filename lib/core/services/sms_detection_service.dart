@@ -283,6 +283,11 @@ class SmsDetectionService with Loggable {
     final sender = message.address ?? '';
     final body = message.body ?? '';
 
+    // Extract SMS date (timestamp in milliseconds)
+    final smsDate = message.date != null
+        ? DateTime.fromMillisecondsSinceEpoch(message.date!)
+        : null;
+
     logDebug('Received SMS from $sender: $body');
 
     if (_smsMatcher == null || _confirmationHandler == null) {
@@ -292,7 +297,11 @@ class SmsDetectionService with Loggable {
 
     try {
       // Match SMS to template and parse transaction data (runs in background isolate)
-      final matchResult = await _smsMatcher!.matchSms(sender, body);
+      final matchResult = await _smsMatcher!.matchSms(
+        sender,
+        body,
+        smsDate: smsDate,
+      );
       if (matchResult == null) {
         return; // No match found, silently ignore
       }

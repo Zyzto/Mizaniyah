@@ -47,13 +47,18 @@ const currencySection = SettingSection(
 // GENERAL SETTINGS
 // =============================================================================
 
-/// Theme mode setting (system, light, dark)
+/// Theme mode setting (system, light, dark, amoled)
 const themeModeSettingDef = EnumSetting(
   'theme_mode',
   defaultValue: 'system',
   titleKey: 'theme',
-  options: ['system', 'light', 'dark'],
-  optionLabels: {'system': 'system', 'light': 'light', 'dark': 'dark'},
+  options: ['system', 'light', 'dark', 'amoled'],
+  optionLabels: {
+    'system': 'system',
+    'light': 'light',
+    'dark': 'dark',
+    'amoled': 'amoled',
+  },
   icon: Icons.dark_mode,
   section: 'general',
   order: 0,

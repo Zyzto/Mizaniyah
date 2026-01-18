@@ -177,8 +177,17 @@ class SmsList extends _$SmsList {
             continue;
           }
 
+          // Extract SMS date for fallback
+          final smsDate = smsWithStatus.sms.date != null
+              ? DateTime.fromMillisecondsSinceEpoch(smsWithStatus.sms.date!)
+              : null;
+
           // Parse SMS
-          final match = SmsParsingService.findMatchingTemplate(body, templates);
+          final match = SmsParsingService.findMatchingTemplate(
+            body,
+            templates,
+            smsDate: smsDate,
+          );
           final parsed = smsWithStatus.copyWith(
             matchResult: match,
             isMatched: match != null,

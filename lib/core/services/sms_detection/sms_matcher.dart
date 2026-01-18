@@ -33,7 +33,12 @@ class SmsMatcher with Loggable {
 
   /// Match SMS to templates and parse transaction data
   /// Returns SmsMatchResult if match found, null otherwise
-  Future<SmsMatchResult?> matchSms(String sender, String body) async {
+  /// [smsDate] - Optional SMS timestamp to use as fallback for transaction date
+  Future<SmsMatchResult?> matchSms(
+    String sender,
+    String body, {
+    DateTime? smsDate,
+  }) async {
     logDebug('Matching SMS from sender: $sender');
 
     try {
@@ -66,7 +71,11 @@ class SmsMatcher with Loggable {
       // Parse SMS with templates
       // Note: Template matching is fast enough to run on main isolate
       // Heavy regex operations are already optimized in SmsParsingService
-      final match = SmsParsingService.findMatchingTemplate(body, templates);
+      final match = SmsParsingService.findMatchingTemplate(
+        body,
+        templates,
+        smsDate: smsDate,
+      );
 
       if (match == null) {
         logDebug('SMS does not match any template for sender: $sender');

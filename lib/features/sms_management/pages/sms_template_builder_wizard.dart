@@ -627,8 +627,11 @@ class _SmsTemplateBuilderWizardState
                             'amount': 'label_amount'.tr(),
                             'currency': 'label_currency'.tr(),
                             'card_last4': 'label_card_last4'.tr(),
+                            'account_number': 'label_account_number'.tr(),
+                            'reference_number': 'label_reference_number'.tr(),
                             'intention': 'label_intention'.tr(),
                             'date': 'label_date'.tr(),
+                            'time': 'label_time'.tr(),
                             'purchase_source': 'label_purchase_source'.tr(),
                           };
                           final color =
@@ -637,8 +640,11 @@ class _SmsTemplateBuilderWizardState
                                 'amount': const Color(0xFF9C27B0),
                                 'currency': const Color(0xFF2196F3),
                                 'card_last4': const Color(0xFFF44336),
+                                'account_number': const Color(0xFF795548),
+                                'reference_number': const Color(0xFF607D8B),
                                 'intention': const Color(0xFF4CAF50),
                                 'date': const Color(0xFFFFC107),
+                                'time': const Color(0xFFFF5722),
                                 'purchase_source': const Color(0xFF00BCD4),
                               }[selection.label] ??
                               Theme.of(context).colorScheme.primary;
@@ -866,8 +872,11 @@ class _SmsTemplateBuilderWizardState
             'amount': 'label_amount'.tr(),
             'currency': 'label_currency'.tr(),
             'card_last4': 'label_card_last4'.tr(),
+            'account_number': 'label_account_number'.tr(),
+            'reference_number': 'label_reference_number'.tr(),
             'intention': 'label_intention'.tr(),
             'date': 'label_date'.tr(),
+            'time': 'label_time'.tr(),
             'purchase_source': 'label_purchase_source'.tr(),
           };
           return displayNames[s.label] ?? s.label;
@@ -918,11 +927,15 @@ class _SmsTemplateBuilderWizardState
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'fields_extracted'.tr(args: [extractedFields]),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    Expanded(
+                      child: Text(
+                        'fields_extracted'.tr(args: [extractedFields]),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                        ),
                       ),
                     ),
                   ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/theme_config.dart';
 
 /// Helper class for showing error snackbars
 class ErrorSnackbar {
@@ -17,14 +18,21 @@ class ErrorSnackbar {
           children: [
             Icon(Icons.error_outline, color: colorScheme.onErrorContainer),
             const SizedBox(width: 8),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: colorScheme.onErrorContainer),
+              ),
+            ),
           ],
         ),
         backgroundColor: colorScheme.errorContainer,
         duration: duration,
         action: action,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.radiusM),
+        ),
       ),
     );
   }
@@ -47,14 +55,21 @@ class ErrorSnackbar {
               color: colorScheme.onPrimaryContainer,
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: colorScheme.onPrimaryContainer),
+              ),
+            ),
           ],
         ),
         backgroundColor: colorScheme.primaryContainer,
         duration: duration,
         action: action,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.radiusM),
+        ),
       ),
     );
   }
@@ -74,14 +89,21 @@ class ErrorSnackbar {
           children: [
             Icon(Icons.info_outline, color: colorScheme.onSecondaryContainer),
             const SizedBox(width: 8),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(color: colorScheme.onSecondaryContainer),
+              ),
+            ),
           ],
         ),
         backgroundColor: colorScheme.secondaryContainer,
         duration: duration,
         action: action,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ThemeConfig.radiusM),
+        ),
       ),
     );
   }
