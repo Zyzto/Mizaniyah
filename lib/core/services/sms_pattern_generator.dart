@@ -38,7 +38,11 @@ class SmsPatternGenerator {
     final pattern = _buildRegexPattern(smsText, sortedSelections);
 
     // Build extraction rules (includes pattern and field-specific patterns)
-    final extractionRules = _buildExtractionRules(sortedSelections, pattern, smsText);
+    final extractionRules = _buildExtractionRules(
+      sortedSelections,
+      pattern,
+      smsText,
+    );
 
     return PatternGenerationResult(
       pattern: pattern,
@@ -59,20 +63,22 @@ class SmsPatternGenerator {
 
     for (int i = 0; i < selections.length; i++) {
       final selection = selections[i];
-      
+
       // Add text before selection - use very flexible pattern
       if (selection.start > currentIndex) {
         final beforeText = text.substring(currentIndex, selection.start);
         // Get next field label for context (if available)
-        final nextFieldLabel = i < selections.length - 1 
-            ? selections[i + 1].label 
+        final nextFieldLabel = i < selections.length - 1
+            ? selections[i + 1].label
             : '';
-        buffer.write(_buildPositionBasedPattern(
-          beforeText, 
-          nextFieldLabel, 
-          i, 
-          totalFields,
-        ));
+        buffer.write(
+          _buildPositionBasedPattern(
+            beforeText,
+            nextFieldLabel,
+            i,
+            totalFields,
+          ),
+        );
       }
 
       // Add capture group for selection
@@ -125,7 +131,7 @@ class SmsPatternGenerator {
         // Check if asterisks are before or after
         final hasAsterisksBefore = selectedText.trim().startsWith('*');
         final hasAsterisksAfter = selectedText.trim().endsWith('*');
-        
+
         if (hasAsterisksBefore) {
           // Pattern: **1234 or *1234
           return r'\*{1,2}[\d٠-٩]{4}';
@@ -160,12 +166,14 @@ class SmsPatternGenerator {
     // For date, use pattern for dates (various formats)
     if (label == 'date') {
       // Try to match common date formats
-      if (RegExp(r'^[\d٠-٩]{1,2}[/-][\d٠-٩]{1,2}[/-][\d٠-٩]{2,4}$')
-          .hasMatch(selectedText)) {
+      if (RegExp(
+        r'^[\d٠-٩]{1,2}[/-][\d٠-٩]{1,2}[/-][\d٠-٩]{2,4}$',
+      ).hasMatch(selectedText)) {
         return r'[\d٠-٩]{1,2}[/-][\d٠-٩]{1,2}[/-][\d٠-٩]{2,4}';
       }
-      if (RegExp(r'^[\d٠-٩]{4}[/-][\d٠-٩]{1,2}[/-][\d٠-٩]{1,2}$')
-          .hasMatch(selectedText)) {
+      if (RegExp(
+        r'^[\d٠-٩]{4}[/-][\d٠-٩]{1,2}[/-][\d٠-٩]{1,2}$',
+      ).hasMatch(selectedText)) {
         return r'[\d٠-٩]{4}[/-][\d٠-٩]{1,2}[/-][\d٠-٩]{1,2}';
       }
       // Fallback to general date pattern
@@ -174,7 +182,9 @@ class SmsPatternGenerator {
 
     // For time, use pattern for time formats (HH:MM or HH:MM:SS)
     if (label == 'time') {
-      if (RegExp(r'^[\d٠-٩]{1,2}:[\d٠-٩]{2}(:\d{2})?$').hasMatch(selectedText)) {
+      if (RegExp(
+        r'^[\d٠-٩]{1,2}:[\d٠-٩]{2}(:\d{2})?$',
+      ).hasMatch(selectedText)) {
         return r'[\d٠-٩]{1,2}:[\d٠-٩]{2}(:[\d٠-٩]{2})?';
       }
       return r'[\d٠-٩:]+';
@@ -188,7 +198,9 @@ class SmsPatternGenerator {
         final length = digitsOnly.length;
         if (length >= 4 && length <= 24) {
           // Use string interpolation (not raw string) to include the length values
-          return r'[\d٠-٩*]{' '${length - 2},${length + 2}' + r'}';
+          return r'[\d٠-٩*]{'
+              '${length - 2},${length + 2}'
+              r'}';
         }
       }
       return r'[\d٠-٩*]+';
@@ -232,7 +244,7 @@ class SmsPatternGenerator {
       // Pattern: [^\n\r]+ but exclude lines that start with digits (to avoid false matches)
       return r'[^\n\r0-9٠-٩]+';
     }
-    
+
     // For other fields, use non-greedy pattern
     return r'.+?';
   }
@@ -279,17 +291,17 @@ class SmsPatternGenerator {
     // Extract meaningful words from the text (potential structural indicators)
     // Keep them as optional anchors but allow flexible text around them
     final trimmed = text.trim();
-    
+
     // Find the last significant word/phrase in the text (likely the indicator)
     // This is learned from the actual SMS, not hardcoded
     final words = trimmed.split(RegExp(r'[\s\n\r]+'));
     if (words.isNotEmpty) {
       // Take the last 1-2 words as potential structural indicator
-      final lastWords = words.length <= 2 
-          ? words 
+      final lastWords = words.length <= 2
+          ? words
           : words.sublist(words.length - 2);
       final potentialIndicator = lastWords.join(' ').trim();
-      
+
       if (potentialIndicator.isNotEmpty) {
         // Escape and use as optional anchor
         final escaped = _escapeRegex(potentialIndicator);
@@ -326,11 +338,12 @@ class SmsPatternGenerator {
           smsText,
           selection,
         );
-        
+
         // Use both capture group (for main pattern) and field pattern (for flexibility)
         rules[selection.label] = {
           'group': selection.captureGroup,
-          'pattern': fieldPattern, // Field-specific pattern for independent extraction
+          'pattern':
+              fieldPattern, // Field-specific pattern for independent extraction
         };
       }
     }
@@ -364,18 +377,21 @@ class SmsPatternGenerator {
     // Look back a reasonable amount to find potential indicators
     final contextStart = (selection.start - 50).clamp(0, selection.start);
     final contextText = smsText.substring(contextStart, selection.start);
-    
+
     // Extract the word/phrase immediately before the selection
     // This is what the user sees as the "label" for this field
-    final immediateBefore = _extractImmediateContext(contextText, selection.start - contextStart);
-    
+    final immediateBefore = _extractImmediateContext(
+      contextText,
+      selection.start - contextStart,
+    );
+
     // Get the capture pattern for this field type
     final capturePattern = _getCapturePattern(label, smsText, selection);
-    
+
     // Build pattern using learned indicator from actual SMS text
     if (immediateBefore != null && immediateBefore.isNotEmpty) {
       final escapedIndicator = _escapeRegex(immediateBefore);
-      
+
       // Special handling for store_name: capture until newline, exclude digits
       // This avoids false matches while capturing full store names
       if (label == 'store_name') {
@@ -384,64 +400,80 @@ class SmsPatternGenerator {
         // Exclude digits to avoid matching card/account numbers
         return escapedIndicator + r'\s*:?\s*([^\n\r0-9٠-٩]+)';
       }
-      
+
       // For amount: check if there's non-numeric text after the number
       // Learn dynamically from the SMS structure (currency might be before or after)
       if (label == 'amount') {
-        final textAfter = smsText.substring(selection.end, 
-            (selection.end + 30).clamp(selection.end, smsText.length));
+        final textAfter = smsText.substring(
+          selection.end,
+          (selection.end + 30).clamp(selection.end, smsText.length),
+        );
         // Check if there's text after that looks like currency (letters/words, not just numbers)
-        final hasTextAfter = RegExp(r'\s+[A-Za-z\u0600-\u06FF]{2,}').hasMatch(textAfter);
-        
+        final hasTextAfter = RegExp(
+          r'\s+[A-Za-z\u0600-\u06FF]{2,}',
+        ).hasMatch(textAfter);
+
         if (hasTextAfter) {
           // Text (currency) after number: capture number first, then text
           // This handles "50 SAR", "13 ريال", etc.
-          return r'(?:.*?)?(' + capturePattern + r')\s+[A-Za-z\u0600-\u06FF\s]+';
+          return r'(?:.*?)?(' +
+              capturePattern +
+              r')\s+[A-Za-z\u0600-\u06FF\s]+';
         } else {
           // Text (currency) before number or no currency: standard pattern
           // This handles "مبلغ: 13", "SAR 80", etc.
-          return r'(?:.*?)?' + escapedIndicator + r'[:\s]*(' + capturePattern + r')';
+          return r'(?:.*?)?' +
+              escapedIndicator +
+              r'[:\s]*(' +
+              capturePattern +
+              r')';
         }
       }
-      
+
       // Default pattern: learned indicator (optional colon/space/punctuation) + value
-      return r'(?:.*?)?' + escapedIndicator + r'[:\s]*(' + capturePattern + r')';
+      return r'(?:.*?)?' +
+          escapedIndicator +
+          r'[:\s]*(' +
+          capturePattern +
+          r')';
     }
-    
+
     // If no clear indicator found, use flexible pattern
     // Special handling for store_name to stop at newline
     if (label == 'store_name') {
       return r'([^\n\r0-9٠-٩]+)';
     }
-    
+
     return r'(?:.*?)?(' + capturePattern + r')';
   }
 
   /// Extract the immediate context (word/phrase) before a selection
   /// Returns the text that appears to be the "label" for this field
-  static String? _extractImmediateContext(String contextText, int relativePosition) {
+  static String? _extractImmediateContext(
+    String contextText,
+    int relativePosition,
+  ) {
     if (contextText.isEmpty) return null;
-    
+
     // Find the last word or phrase before the selection
     // Look for patterns like: "word:", "word ", "phrase:", etc.
     final trimmed = contextText.trim();
     if (trimmed.isEmpty) return null;
-    
+
     // Extract the last "token" (word or phrase) before the selection
     // This handles cases like "مبلغ:", "from:", "بطاقة مدى:", etc.
     final words = trimmed.split(RegExp(r'[\s\n\r]+'));
     if (words.isEmpty) return null;
-    
+
     // Take the last 1-3 words as potential indicator
     // This handles both single words ("مبلغ") and phrases ("بطاقة مدى")
-    final lastWords = words.length <= 3 
-        ? words 
+    final lastWords = words.length <= 3
+        ? words
         : words.sublist(words.length - 3);
-    
+
     final indicator = lastWords.join(' ').trim();
-    
+
     // Clean up: remove trailing punctuation but keep colons (they're part of the pattern)
     return indicator.replaceAll(RegExp(r'[^\w\u0600-\u06FF\s:]+$'), '');
   }
-
 }

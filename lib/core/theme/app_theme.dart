@@ -123,14 +123,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.lightOutline,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.lightOutline,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
@@ -144,13 +144,13 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.lightError,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
         ),
       ),
-      iconTheme: IconThemeData(color: ThemeConfig.lightIcon),
+      iconTheme: const IconThemeData(color: ThemeConfig.lightIcon),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: colorScheme.surfaceContainerHighest,
         contentTextStyle: TextStyle(color: colorScheme.onSurface),
@@ -225,14 +225,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.darkOutline,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.darkOutline,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
@@ -246,13 +246,13 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.darkError,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
         ),
       ),
-      iconTheme: IconThemeData(color: ThemeConfig.darkIcon),
+      iconTheme: const IconThemeData(color: ThemeConfig.darkIcon),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: colorScheme.surfaceContainerHighest,
         contentTextStyle: TextStyle(color: colorScheme.onSurface),
@@ -329,14 +329,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.amoledOutline,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.amoledOutline,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
@@ -350,13 +350,13 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConfig.inputBorderRadius),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: ThemeConfig.amoledError,
             width: ThemeConfig.inputDefaultBorderWidth,
           ),
         ),
       ),
-      iconTheme: IconThemeData(color: ThemeConfig.amoledIcon),
+      iconTheme: const IconThemeData(color: ThemeConfig.amoledIcon),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: colorScheme.surfaceContainerHighest,
         contentTextStyle: TextStyle(color: colorScheme.onSurface),
